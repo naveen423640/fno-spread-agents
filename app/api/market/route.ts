@@ -1,4 +1,5 @@
 import { marketSnapshot, snapshotAsOf, type SectorIndex } from '@/lib/market-snapshot';
+import { describeLiveFeed } from '@/lib/market-session';
 
 const FYERS_DATA_BASE = 'https://api-t1.fyers.in/data';
 const NSE_ARCHIVE_BASE = 'https://nsearchives.nseindia.com/products/content';
@@ -248,7 +249,8 @@ export async function GET(request: Request) {
     if (date === 'live') {
       const live = await fetchFyersLive(request);
       if (live) {
-        return json({ ...live, asOf: new Date().toISOString(), source: 'FYERS live', sectorSource: 'FYERS Nifty sector indices', live: true });
+        const feed = describeLiveFeed(new Date());
+        return json({ ...live, ...feed, sectorSource: 'FYERS Nifty sector indices', ...(feed.live ? {} : { notice: 'Market closed. Showing the last close.' }) });
       }
 
       return json({
