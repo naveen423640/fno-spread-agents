@@ -51,8 +51,8 @@ function Card({ title, children, note }: { title: string; children: ReactNode; n
   );
 }
 
-export function MarkovRegime() {
-  const [ticker, setTicker] = useState('TCS');
+export function MarkovRegime({ initialTicker = 'TCS' }: { initialTicker?: string }) {
+  const [ticker, setTicker] = useState(initialTicker);
   const [labelWindow, setLabelWindow] = useState<LabelWindow>(20);
   const [method, setMethod] = useState<Method>('vol');
   const [horizon, setHorizon] = useState<Horizon>(5);

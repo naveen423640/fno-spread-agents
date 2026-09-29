@@ -249,6 +249,7 @@ export default function Home() {
   const [chartView, setChartView] = useState<'price' | 'oi'>('price');
   const [chartRange, setChartRange] = useState<ChartRange>('2d');
   const [assistantOpen, setAssistantOpen] = useState(false);
+  const [regimeTicker, setRegimeTicker] = useState<string | null>(null);
   const [marketAssistantOpen, setMarketAssistantOpen] = useState(false);
   const [openInterest, setOpenInterest] = useState<OpenInterestPayload | null>(null);
   const [openInterestLoading, setOpenInterestLoading] = useState(false);
@@ -412,7 +413,7 @@ export default function Home() {
       </nav>
 
       <section className="mx-auto max-w-[1800px] space-y-4 px-4 py-5 lg:px-7">
-        {activeSurface === 'markov-regime' ? <MarkovRegime /> : activeSurface === 'backtest' ? <BacktestPanel /> : activeSurface === 'strategy-lab' ? <StrategyLab /> : <>
+        {activeSurface === 'markov-regime' ? <MarkovRegime key={regimeTicker ?? 'default'} initialTicker={regimeTicker ?? undefined} /> : activeSurface === 'backtest' ? <BacktestPanel /> : activeSurface === 'strategy-lab' ? <StrategyLab /> : <>
         <Card className="gap-3 py-3">
           <CardContent className="flex flex-wrap items-end gap-3 px-3">
             <div className="flex rounded-lg bg-muted p-1">
@@ -517,6 +518,7 @@ export default function Home() {
                     ))}
                   </div>}
                   <Button size="sm" variant={assistantOpen ? 'default' : 'outline'} aria-pressed={assistantOpen} onClick={() => setAssistantOpen((current) => !current)} title="Ask AI about this stock"><Sparkles />AI analyst</Button>
+                  <Button size="sm" variant="outline" onClick={() => { setRegimeTicker(selected.ticker); setChartOpen(false); setActiveSurface('markov-regime'); }} title={`Open the Markov regime tab for ${selected.ticker}`}><Activity />Markov regime</Button>
                 </div>
               </DialogHeader>
               <div className="min-h-0 min-w-0 space-y-4 overflow-x-hidden overflow-y-auto px-3 pb-6 sm:px-6">
