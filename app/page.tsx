@@ -288,8 +288,10 @@ export default function Home() {
     return () => window.clearInterval(timer);
   }, [mode, loadMarket]);
 
+  const selectedSymbol = selected?.symbol;
+
   useEffect(() => {
-    if (!selected || !chartOpen) return;
+    if (!selectedSymbol || !chartOpen) return;
     const controller = new AbortController();
     const requestDate = mode === 'live' ? 'live' : date;
     setChartLoading(true);
@@ -297,7 +299,7 @@ export default function Home() {
     setChartPoints([]);
     const requestTimer = window.setTimeout(async () => {
       try {
-        const response = await fetch(`/api/market/chart?symbol=${encodeURIComponent(selected.symbol)}&date=${requestDate}&range=${chartRange}`, {
+        const response = await fetch(`/api/market/chart?symbol=${encodeURIComponent(selectedSymbol)}&date=${requestDate}&range=${chartRange}`, {
           cache: 'no-store',
           signal: controller.signal,
         });
@@ -315,21 +317,21 @@ export default function Home() {
       window.clearTimeout(requestTimer);
       controller.abort();
     };
-  }, [selected?.symbol, chartOpen, chartRange, mode, date, asOf]);
+  }, [selectedSymbol, chartOpen, chartRange, mode, date, asOf]);
 
   useEffect(() => {
     if (mode === 'historical') setChartView('price');
   }, [mode]);
 
   useEffect(() => {
-    if (!selected || !chartOpen || chartView !== 'oi' || mode !== 'live') return;
+    if (!selectedSymbol || !chartOpen || chartView !== 'oi' || mode !== 'live') return;
     const controller = new AbortController();
     setOpenInterestLoading(true);
     setOpenInterestError('');
     setOpenInterest(null);
     const requestTimer = window.setTimeout(async () => {
       try {
-        const response = await fetch(`/api/market/open-interest?symbol=${encodeURIComponent(selected.symbol)}`, {
+        const response = await fetch(`/api/market/open-interest?symbol=${encodeURIComponent(selectedSymbol)}`, {
           cache: 'no-store',
           signal: controller.signal,
         });
@@ -347,7 +349,7 @@ export default function Home() {
       window.clearTimeout(requestTimer);
       controller.abort();
     };
-  }, [selected?.symbol, chartOpen, chartView, mode, asOf]);
+  }, [selectedSymbol, chartOpen, chartView, mode, asOf]);
 
   const enriched = useMemo(() => stocks.map((stock) => ({ ...stock, sector: sectorFor(stock.ticker) })), [stocks]);
   const sectorTiles = useMemo(() => {
