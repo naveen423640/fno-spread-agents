@@ -78,7 +78,7 @@ Concluding "no edge" is a valid, successful outcome. No profit is promised or as
 | Horizon | Swing: entry after signal; hold until target, early-exit rule, or pre-expiry exit |
 | Broker | FYERS, for **data only**. No order-placing code exists. |
 | Budget | No fixed amount. Free tiers across multiple LLM providers; paid LLM spend defaults to ₹0. |
-| Deployment | Local computer first; kept portable for a later cloud move |
+| Deployment | **Local only for Phases 1-4.** The dashboard runs locally and reads the engine through a local read-only API. Cloud deployment of the dashboard is deferred and out of scope until after Phase 6. |
 | Notifications | Dashboard only (for now) |
 
 ## 3. Architecture
@@ -94,10 +94,33 @@ NSE daily archives (history) + FYERS (live quotes, paper mode)
   → 7 Dashboard (local web page)
 ```
 
-- **Repository layout (approved):** `fno-spread-agents` keeps the existing TypeScript app as the dashboard and adds a new Python `engine/` package (DuckDB + Parquet, ledger, strategy plug-ins, agent team). The existing TypeScript backtest is a reference implementation and test oracle, not the production engine. The engine runs locally first; the dashboard reads engine output through a local API or exported files, decided in the plan.
+- **Repository layout (approved):** `fno-spread-agents` keeps the existing TypeScript app as the dashboard and adds a new Python `engine/` package (DuckDB + Parquet, ledger, strategy plug-ins, agent team). The existing TypeScript backtest is a reference implementation and test oracle, not the production engine. The engine runs locally. In Phases 1-4 the dashboard also runs locally and reads engine output through a **local read-only API** (bound to localhost, GET only, no endpoint that writes to the ledger or places or cancels anything). The dashboard never writes to the engine. Cloud deployment is deferred.
 - Backtest, replay and paper trading all run **the same code for steps 2, 3, 5 and 6**. Only the data source differs.
 - Every data record carries `effective_date`, `publication/available_timestamp` and `retrieval_timestamp`. A decision may only read data available before its decision time.
 - One ledger is the source of truth, with one logical writer for order and position transitions.
+
+### 3.1 Engine-side FYERS authentication
+
+The app keeps the FYERS token in a browser cookie. The engine cannot use that, so it has its own auth, data-only:
+- **Storage:** the engine keeps its FYERS app credentials and access token in a local file outside the repository and outside the browser (path from an environment variable, file permissions restricted to the user). The token is never written to the database, logs, experiment records or LLM prompts, and is never sent to the dashboard.
+- **Obtaining a token:** a manual, user-run login step (FYERS OAuth) that writes the token file. The engine never logs in on its own or stores the user's password or PIN.
+- **Expiry:** the token's expiry time is recorded when it is stored. The engine checks it at start-up and before each scheduled step. A token within 30 minutes of expiry is reported as `EXPIRING` on the dashboard.
+- **Missing, expired or rejected token:**
+  - new entries are blocked;
+  - data-dependent steps that need live quotes are skipped and marked stale;
+  - an incident is recorded once (not repeated per call);
+  - the dashboard shows "FYERS token needed";
+  - exits are still evaluated with the last valid data and are flagged stale, never filled from fabricated prices.
+- **Scope:** the token is used only for data endpoints. The test in section 10 asserts the engine never references a FYERS order endpoint.
+- The exact token lifetime and refresh rules are unverified (section 12).
+
+### 3.2 Oracle parity with the existing 6-month test
+
+The Python engine must reproduce the existing TypeScript 6-month strategy test (`lib/backtest/daily-engine.ts`) before any new strategy is trusted.
+- A built-in config `legacy_six_month_v1` mirrors the old rules: the last 6 completed monthly cycles, top 50 stocks by prior-day option traded value, both a bull call and a bear put for every stock, entry at the first trading day's open, ATM long leg and the nearest qualifying short strike, R:R minimum 2, 80% target, no stop, forced exit at the T-1 close, flat per-leg slippage and round-trip costs.
+- For the same input archives, the engine's trades and result tables must match the TypeScript output. The comparison uses a fixed data snapshot and is recorded as an experiment.
+- Any discrepancy is **investigated and explained**, not assumed to be a bug in either implementation. Each is classified as engine bug, oracle bug, or deliberate difference, and recorded.
+- Phase 1 exit gate includes parity on the data layer; the Phase 2/3 gate includes parity on trades and tables.
 
 ## 4. Trading rules — default strategy `trend_oi_v0.1` (fixed before any testing)
 
@@ -216,7 +239,10 @@ Every verdict requires sourced reasons in a validated schema. The risk engine ca
 - Verdicts are written to our database, which is authoritative.
 - Bound to localhost, with telemetry disabled.
 - Our own cost log is kept as a backup.
+
 - Introduced only after the rules engine and paper trading work.
+
+**Existing OpenAI analyst:** the app's current AI analyst (`/api/market-assistant`, `/api/stock-assistant`) calls OpenAI directly and is not part of the agent team. During agent evaluation (Phases 5-6) it must be either (a) routed through the same AI-cost tracker with its model, tokens and cost logged, or (b) disabled. Until one of these is done, agent-versus-rules comparisons are not valid. The decision defaults to disabled.
 
 ## 8. Daily schedule (IST, trading days)
 
@@ -282,17 +308,17 @@ Each gate records a short CEO / CFO / CTO finding and a decision: continue, repa
 
 | Phase | Scope | Gate |
 |---|---|---|
-| 0 | Codebase audit (done, section 0); verification audit (section 12); add test runners and the no-order-endpoint test; add `EXECUTION_MODE` / `LIVE_EXECUTION_ENABLED`; fix the base-app defects (hardcoded "FYERS live" label, hardcoded 2026-08-31 date, static universe); revise this spec | All assumptions classified: verified / documented-untested / needs adaptation / unsupported |
-| 1 | Data foundation: NSE F&O history, point-in-time universe, lot sizes, ban list, calendar, corporate actions | Leakage and integrity tests pass |
+| 0 | **First step: `git init` and commit the untouched copy as the baseline** (done: `ed49b10`). Then: codebase audit (done, section 0); verification audit (section 12); add test runners and the no-order-endpoint test; add `EXECUTION_MODE` / `LIVE_EXECUTION_ENABLED`; fix the hardcoded "FYERS live" label and the hardcoded 2026-08-31 date; revise this spec | All assumptions classified: verified / documented-untested / needs adaptation / unsupported |
+| 1 | Data foundation: NSE F&O history, point-in-time universe, lot sizes, ban list, calendar, corporate actions; replace the static 210-stock heat-map universe with a dated universe; engine-side FYERS auth (section 3.1) | Leakage and integrity tests pass; data-layer oracle parity (section 3.2) |
 | 2 | Strategy engine (config building blocks + plug-in interface + schema validation) and direction study for `trend_oi_v0.1` | Signal shows direction value, or stop/rethink |
-| 3 | Spread builder, costs, risk engine, paper broker, ledger, historical backtest | Pre-registered backtest gate |
+| 3 | Spread builder, costs, risk engine, paper broker, ledger, historical backtest | Pre-registered backtest gate; oracle parity of trades and tables for `legacy_six_month_v1` |
 | 4 | Live paper trading with FYERS data, schedule, reliability, dashboard | Fault-injection tests pass; clean multi-day run |
 | 5 | Agent team fork (India data) + Paperclip + side-by-side forward paper | Agents run within free quotas with valid schemas |
 | 6 | Forward evaluation (≥ 3 months, ≥ 40 trades) and readiness review | Evidence report; live trading still OFF |
 
 ## 12. Open items for Phase 0 (not assumed)
 
-1. **FYERS:** auth flow, historical depth, **expired futures and options history availability**, WebSocket behaviour, reconnects, rate limits, symbol mapping.
+1. **FYERS:** auth flow, **token lifetime and refresh rules** (how long a token lasts, whether it can be refreshed without a manual login, what the engine sees when it expires), historical depth, **expired futures and options history availability**, WebSocket behaviour, reconnects, rate limits, symbol mapping.
 2. NSE archive coverage and format eras for F&O daily data, including OI. Confirm from real bhavcopy that futures (`STF`) rows carry usable OI; the current parser only reads stock-option rows.
    - The existing preflight code records `EXPIRED_OPTION_HISTORY_UNAVAILABLE` as a failure mode, so treat FYERS expired-contract history as unproven until tested.
    - Which tickers historical heat-map mode uses is unverified.
