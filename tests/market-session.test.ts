@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { describeLiveFeed, marketSession, previousTradingDate } from '@/lib/market-session';
+import { describeLiveFeed, lastCompletedSession, marketSession, previousTradingDate } from '@/lib/market-session';
 
 // 2026-09-25 is a Friday, 09-28 a Monday, 09-29 a Tuesday, 09-30 a Wednesday.
 describe('previousTradingDate', () => {
@@ -70,5 +70,33 @@ describe('describeLiveFeed', () => {
 
   it('reports the Friday close on a Monday before the open', () => {
     expect(describeLiveFeed(new Date('2026-09-28T02:30:00Z')).asOf).toBe('2026-09-25T15:30:00+05:30');
+  });
+});
+
+describe('lastCompletedSession', () => {
+  it('is the previous trading day while the market is open (today is still forming)', () => {
+    expect(lastCompletedSession(new Date('2026-09-29T04:30:00Z'))).toBe('2026-09-28');
+  });
+
+  it('is the previous trading day at 15:29 IST and today at 15:30 IST', () => {
+    expect(lastCompletedSession(new Date('2026-09-29T09:59:00Z'))).toBe('2026-09-28');
+    expect(lastCompletedSession(new Date('2026-09-29T10:00:00Z'))).toBe('2026-09-29');
+  });
+
+  it('is today after 15:30 IST on a trading day', () => {
+    expect(lastCompletedSession(new Date('2026-09-30T10:30:00Z'))).toBe('2026-09-30');
+  });
+
+  it('is the previous trading day just after midnight IST', () => {
+    expect(lastCompletedSession(new Date('2026-09-29T18:31:00Z'))).toBe('2026-09-29');
+  });
+
+  it('is Friday over a weekend, including a Saturday evening', () => {
+    expect(lastCompletedSession(new Date('2026-09-27T06:00:00Z'))).toBe('2026-09-25');
+    expect(lastCompletedSession(new Date('2026-09-26T14:00:00Z'))).toBe('2026-09-25');
+  });
+
+  it('skips a listed holiday even after the close', () => {
+    expect(lastCompletedSession(new Date('2026-09-30T10:30:00Z'), new Set(['2026-09-30']))).toBe('2026-09-29');
   });
 });

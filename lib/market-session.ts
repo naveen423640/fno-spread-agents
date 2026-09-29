@@ -35,10 +35,14 @@ export function marketSession(now: Date, holidays: ReadonlySet<string> = new Set
   return isTradingDay(istDate(now), holidays) && minute >= OPEN_MINUTE && minute < CLOSE_MINUTE ? 'open' : 'closed';
 }
 
-function lastCloseTimestamp(now: Date, holidays: ReadonlySet<string>) {
+// The latest session whose daily candle is final: today only once it is a trading day at or past 15:30 IST.
+export function lastCompletedSession(now: Date, holidays: ReadonlySet<string> = new Set()) {
   const today = istDate(now);
-  const closedToday = isTradingDay(today, holidays) && istMinuteOfDay(now) >= CLOSE_MINUTE;
-  return `${closedToday ? today : previousTradingDate(now, holidays)}T15:30:00+05:30`;
+  return isTradingDay(today, holidays) && istMinuteOfDay(now) >= CLOSE_MINUTE ? today : previousTradingDate(now, holidays);
+}
+
+function lastCloseTimestamp(now: Date, holidays: ReadonlySet<string>) {
+  return `${lastCompletedSession(now, holidays)}T15:30:00+05:30`;
 }
 
 export function describeLiveFeed(now: Date, holidays: ReadonlySet<string> = new Set()) {
