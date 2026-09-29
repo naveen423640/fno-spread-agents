@@ -239,7 +239,6 @@ Every verdict requires sourced reasons in a validated schema. The risk engine ca
 - Verdicts are written to our database, which is authoritative.
 - Bound to localhost, with telemetry disabled.
 - Our own cost log is kept as a backup.
-
 - Introduced only after the rules engine and paper trading work.
 
 **Existing OpenAI analyst:** the app's current AI analyst (`/api/market-assistant`, `/api/stock-assistant`) calls OpenAI directly and is not part of the agent team. During agent evaluation (Phases 5-6) it must be either (a) routed through the same AI-cost tracker with its model, tokens and cost logged, or (b) disabled. Until one of these is done, agent-versus-rules comparisons are not valid. The decision defaults to disabled.
