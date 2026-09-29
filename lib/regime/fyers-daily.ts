@@ -10,8 +10,8 @@ const isoDate = (ms: number) => new Date(ms).toISOString().slice(0, 10);
 export function chunkRanges(from: string, to: string, maxDays: number) {
   const chunks: { from: string; to: string }[] = [];
   const end = new Date(`${to}T00:00:00Z`).getTime();
-  for (let start = new Date(`${from}T00:00:00Z`).getTime(); start <= end; start += (maxDays + 1) * DAY_MS) {
-    chunks.push({ from: isoDate(start), to: isoDate(Math.min(start + maxDays * DAY_MS, end)) });
+  for (let start = new Date(`${from}T00:00:00Z`).getTime(); start <= end; start += maxDays * DAY_MS) {
+    chunks.push({ from: isoDate(start), to: isoDate(Math.min(start + (maxDays - 1) * DAY_MS, end)) });
   }
   return chunks;
 }

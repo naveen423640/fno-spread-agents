@@ -70,10 +70,13 @@ export function MarkovRegime({ initialTicker = 'TCS' }: { initialTicker?: string
     if (asOf) query.set('asOf', asOf);
     fetch(`/api/regime?${query}`, { cache: 'no-store', signal: controller.signal })
       .then(async (response) => {
-        const body = await response.json() as RegimeResponse | RegimeErrorResponse;
-        const outcome: Outcome = !response.ok || 'error' in body
-          ? { kind: 'error', message: 'error' in body ? body.error : 'Unable to load regime data.', code: 'code' in body ? body.code : undefined }
-          : { kind: 'data', data: body };
+        const body = await response.json().catch(() => null) as RegimeResponse | RegimeErrorResponse | null;
+        if (controller.signal.aborted) return;
+        const outcome: Outcome = !body
+          ? { kind: 'error', message: `The server returned an unexpected response (HTTP ${response.status}).` }
+          : !response.ok || 'error' in body
+            ? { kind: 'error', message: 'error' in body ? body.error : 'Unable to load regime data.', code: 'code' in body ? body.code : undefined }
+            : { kind: 'data', data: body };
         setResult({ key: requestKey, outcome });
       })
       .catch((error: unknown) => {

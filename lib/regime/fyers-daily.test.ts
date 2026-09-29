@@ -16,10 +16,10 @@ describe('chunkRanges', () => {
     }
   });
 
-  it('never makes a chunk longer than the limit', () => {
+  it('never makes a chunk that spans more calendar days (both ends included) than the limit', () => {
     for (const chunk of chunkRanges('2023-03-01', '2026-09-29', 360)) {
-      const days = (new Date(`${chunk.to}T00:00:00Z`).getTime() - new Date(`${chunk.from}T00:00:00Z`).getTime()) / 86_400_000;
-      expect(days).toBeLessThanOrEqual(360);
+      const inclusiveDays = (new Date(`${chunk.to}T00:00:00Z`).getTime() - new Date(`${chunk.from}T00:00:00Z`).getTime()) / 86_400_000 + 1;
+      expect(inclusiveDays).toBeLessThanOrEqual(360);
     }
   });
 

@@ -49,9 +49,24 @@ describe('no future data', () => {
     }
   });
 
-  it('an as-of date on a non-session day uses the last earlier session', () => {
+  it('an as-of date after the last candle uses the last session', () => {
     const result = analyzeRegime({ candles, asOf: '2099-01-01', window: 20, method: 'fixed', horizon: 1 });
     expect(result.asOf).toBe(last);
+  });
+
+  it('an as-of date on a weekend inside the data uses the previous session', () => {
+    // fixture dates are weekdays only: Sat 2025-03-01 has no candle, Fri 2025-02-28 does
+    const result = analyzeRegime({ candles, asOf: '2025-03-01', window: 10, method: 'fixed', horizon: 1 });
+    expect(result.asOf).toBe('2025-02-28');
+  });
+
+  it('an as-of date before every candle gives an empty, not-enough-history analysis without throwing', () => {
+    const result = analyzeRegime({ candles, asOf: '2000-01-01', window: 20, method: 'vol', horizon: 5 });
+    expect(result.asOf).toBeNull();
+    expect(result.sessions).toBe(0);
+    expect(result.current).toBeNull();
+    expect(result.insufficientHistory).toBe(true);
+    expect(result.decision).toBeNull();
   });
 });
 
