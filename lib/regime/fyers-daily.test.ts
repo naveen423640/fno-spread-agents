@@ -74,6 +74,21 @@ describe('fetchDailyCandles', () => {
     expect(await fetchDailyCandles(credentials, 'NSE:TCS-EQ', '2026-01-01', '2026-02-01', fetchImpl)).toMatchObject({ ok: false, status: 401 });
   });
 
+  it('maps an expired-token code (-22) to 401', async () => {
+    const fetchImpl = (async () => jsonResponse({ s: 'error', code: -22, message: 'Could not authenticate the user' }, 200)) as unknown as typeof fetch;
+    expect(await fetchDailyCandles(credentials, 'NSE:TCS-EQ', '2026-01-01', '2026-02-01', fetchImpl)).toMatchObject({ ok: false, status: 401 });
+  });
+
+  it('maps an unknown code to 401 when the message says the user could not be authenticated', async () => {
+    const fetchImpl = (async () => jsonResponse({ s: 'error', code: -999, message: 'Could not authenticate the user' }, 200)) as unknown as typeof fetch;
+    expect(await fetchDailyCandles(credentials, 'NSE:TCS-EQ', '2026-01-01', '2026-02-01', fetchImpl)).toMatchObject({ ok: false, status: 401 });
+  });
+
+  it('does not treat an unrelated FYERS error as a token problem', async () => {
+    const fetchImpl = (async () => jsonResponse({ s: 'error', code: -300, message: 'Invalid symbol' }, 200)) as unknown as typeof fetch;
+    expect(await fetchDailyCandles(credentials, 'NSE:TCS-EQ', '2026-01-01', '2026-02-01', fetchImpl)).toMatchObject({ ok: false, status: 502 });
+  });
+
   it('maps other failures to 502 and never returns partial candles', async () => {
     let call = 0;
     const fetchImpl = (async () => {
