@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { BacktestPanel } from '@/app/backtest-panel';
 import { HeatmapAssistant } from '@/app/heatmap-assistant';
+import { MarkovRegime } from '@/app/markov-regime';
 import { StockAssistant } from '@/app/stock-assistant';
 import { StrategyLab } from '@/app/strategy-lab';
 import { marketSnapshot, snapshotAsOf, type MarketStock } from '@/lib/market-snapshot';
@@ -229,7 +230,7 @@ function IntradayPriceChart({ stock, points, loading, error }: { stock: MarketSt
 }
 
 export default function Home() {
-  const [activeSurface, setActiveSurface] = useState<'heatmap' | 'backtest' | 'strategy-lab'>('heatmap');
+  const [activeSurface, setActiveSurface] = useState<'heatmap' | 'backtest' | 'strategy-lab' | 'markov-regime'>('heatmap');
   const [stocks, setStocks] = useState<MarketStock[]>(marketSnapshot);
   const [query, setQuery] = useState('');
   const [sector, setSector] = useState('All sectors');
@@ -406,11 +407,12 @@ export default function Home() {
           <Button size="sm" variant={activeSurface === 'heatmap' ? 'secondary' : 'ghost'} onClick={() => setActiveSurface('heatmap')}><LayoutGrid />Market heat map</Button>
           <Button size="sm" variant={activeSurface === 'strategy-lab' ? 'secondary' : 'ghost'} onClick={() => setActiveSurface('strategy-lab')}><TrendingUp />Options payoff test</Button>
           <Button size="sm" variant={activeSurface === 'backtest' ? 'secondary' : 'ghost'} onClick={() => setActiveSurface('backtest')}><FlaskConical />6-month strategy test</Button>
+          <Button size="sm" variant={activeSurface === 'markov-regime' ? 'secondary' : 'ghost'} onClick={() => setActiveSurface('markov-regime')}><Activity />Markov regime</Button>
         </div>
       </nav>
 
       <section className="mx-auto max-w-[1800px] space-y-4 px-4 py-5 lg:px-7">
-        {activeSurface === 'backtest' ? <BacktestPanel /> : activeSurface === 'strategy-lab' ? <StrategyLab /> : <>
+        {activeSurface === 'markov-regime' ? <MarkovRegime /> : activeSurface === 'backtest' ? <BacktestPanel /> : activeSurface === 'strategy-lab' ? <StrategyLab /> : <>
         <Card className="gap-3 py-3">
           <CardContent className="flex flex-wrap items-end gap-3 px-3">
             <div className="flex rounded-lg bg-muted p-1">
