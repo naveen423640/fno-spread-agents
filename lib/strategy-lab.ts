@@ -57,7 +57,7 @@ export type StrategyLabResult = {
   maxLoss: number | null;
   rewardRisk: number | null;
   breakevens: number[];
-  estimatedCapital: number;
+  estimatedCapital: number | null;
   legs: StrategyLabLeg[];
   days: StrategyLabDay[];
   skippedSessions: number;

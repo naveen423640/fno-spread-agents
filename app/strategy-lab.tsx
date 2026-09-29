@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
 import { marketSnapshot } from '@/lib/market-snapshot';
+import { capitalAtRiskText, money } from '@/lib/money';
 import { calculateRiskMetrics, type PayoffRiskMetrics } from '@/lib/strategy-payoff';
 
 type StrategyKey = 'long-call' | 'long-put' | 'bull-call' | 'bear-put' | 'long-straddle' | 'long-strangle' | 'bull-put' | 'bear-call' | 'butterfly' | 'iron-condor';
@@ -42,7 +43,7 @@ type StrategyResult = {
   maxLoss: number | null;
   rewardRisk: number | null;
   breakevens: number[];
-  estimatedCapital: number;
+  estimatedCapital: number | null;
   backendSync?: { ticker: string; expiryDate: string; sessionsStored: number; optionRowsStored: number; latestStoredDate: string; syncedAt: string; source: string };
   legs: StrategyLeg[];
   days: StrategyDay[];
@@ -99,11 +100,6 @@ function displayDate(value: string) {
   return new Date(`${value}T12:00:00`).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
-function money(value: number, showSign = false) {
-  const formatted = new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 }).format(Math.abs(value));
-  return `${showSign ? value >= 0 ? '+' : '−' : value < 0 ? '−' : ''}₹${formatted}`;
-}
-
 function compactNumber(value: number) {
   const absolute = Math.abs(value);
   if (absolute >= 10_000_000) return `${(value / 10_000_000).toFixed(2).replace(/\.00$/, '')}Cr`;
@@ -118,7 +114,7 @@ function RiskSummary({ metrics, compact = false }: { metrics: PayoffRiskMetrics;
     <div className="rounded-xl border border-red-200 bg-red-50/70 p-3"><span className="text-[11px] text-red-800">Max loss</span><strong className="mt-1 block text-base text-red-700">{metrics.maxLoss === null ? 'Unlimited' : money(metrics.maxLoss)}</strong></div>
     <div className="rounded-xl border p-3"><span className="text-[11px] text-muted-foreground">Reward / risk</span><strong className="mt-1 block text-base">{metrics.maxProfit === null && metrics.maxLoss !== null ? '∞' : metrics.rewardRisk === null ? '—' : `${metrics.rewardRisk.toFixed(2)}×`}</strong></div>
     <div className="rounded-xl border p-3"><span className="text-[11px] text-muted-foreground">Breakeven{metrics.breakevens.length === 1 ? '' : 's'}</span><strong className="mt-1 block text-sm">{metrics.breakevens.length ? metrics.breakevens.map((value) => `₹${new Intl.NumberFormat('en-IN', { maximumFractionDigits: 2 }).format(value)}`).join(' · ') : '—'}</strong></div>
-    <div className={`rounded-xl border p-3 ${compact ? 'col-span-2' : ''}`}><span className="text-[11px] text-muted-foreground">Est. capital at risk</span><strong className="mt-1 block text-base">{money(metrics.estimatedCapital)}</strong><span className="text-[10px] text-muted-foreground">Not broker margin</span></div>
+    <div className={`rounded-xl border p-3 ${compact ? 'col-span-2' : ''}`}><span className="text-[11px] text-muted-foreground">Est. capital at risk</span><strong className="mt-1 block text-base">{capitalAtRiskText(metrics.estimatedCapital)}</strong><span className="text-[10px] text-muted-foreground">Not broker margin</span></div>
   </div>;
 }
 
