@@ -27,7 +27,13 @@ export async function fetchDailyCandles(credentials: { clientId: string; accessT
   for (const range of chunkRanges(from, to, DAILY_CHUNK_DAYS)) {
     const url = new URL('https://api-t1.fyers.in/data/history');
     for (const [key, value] of Object.entries({ symbol, resolution: DAILY_RESOLUTION, date_format: '1', range_from: range.from, range_to: range.to, cont_flag: '1' })) url.searchParams.set(key, value);
-    const response = await fetchImpl(url, { headers: { Authorization: `${credentials.clientId}:${credentials.accessToken}`, Accept: 'application/json' }, cache: 'no-store' });
+    let response: Response;
+    try {
+      response = await fetchImpl(url, { headers: { Authorization: `${credentials.clientId}:${credentials.accessToken}`, Accept: 'application/json' }, cache: 'no-store' });
+    } catch {
+      // Fixed text on purpose: the underlying error can include request details, and the token must never be echoed.
+      return { ok: false, status: 502, message: 'Could not reach FYERS. Try again shortly.' };
+    }
     const payload = await response.json().catch(() => null) as { s?: string; code?: number; message?: string; candles?: number[][] } | null;
     if (payload?.code === -16 || response.status === 401) return { ok: false, status: 401, message: payload?.message ?? 'FYERS rejected the access token.' };
     if (!response.ok || payload?.s !== 'ok' || !Array.isArray(payload.candles)) return { ok: false, status: 502, message: payload?.message ?? `FYERS history failed (${response.status}).` };

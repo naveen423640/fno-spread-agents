@@ -85,6 +85,31 @@ describe('fetchDailyCandles', () => {
     expect('candles' in result).toBe(false);
   });
 
+  it('turns a network failure into a 502 with a readable message instead of throwing', async () => {
+    const fetchImpl = (async () => { throw new TypeError('fetch failed'); }) as unknown as typeof fetch;
+    const result = await fetchDailyCandles(credentials, 'NSE:TCS-EQ', '2026-01-01', '2026-02-01', fetchImpl);
+    expect(result).toMatchObject({ ok: false, status: 502 });
+    expect(result.ok === false && result.message).toMatch(/could not reach fyers/i);
+  });
+
+  it('turns a network failure in a later chunk into a 502 with no partial candles', async () => {
+    let call = 0;
+    const fetchImpl = (async () => {
+      call += 1;
+      if (call === 2) throw new Error('socket hang up');
+      return jsonResponse({ s: 'ok', candles: [[Date.parse('2026-01-04T18:30:00Z') / 1000, 1, 1, 1, 10, 1]] });
+    }) as unknown as typeof fetch;
+    const result = await fetchDailyCandles(credentials, 'NSE:TCS-EQ', '2024-01-01', '2026-01-01', fetchImpl);
+    expect(result).toMatchObject({ ok: false, status: 502 });
+    expect('candles' in result).toBe(false);
+  });
+
+  it('does not put the token in the error message', async () => {
+    const fetchImpl = (async () => { throw new Error('connect ECONNREFUSED client:token'); }) as unknown as typeof fetch;
+    const result = await fetchDailyCandles(credentials, 'NSE:TCS-EQ', '2026-01-01', '2026-02-01', fetchImpl);
+    expect(JSON.stringify(result)).not.toContain('token');
+  });
+
   it('treats a non-JSON response as a 502, not a crash', async () => {
     const fetchImpl = (async () => new Response('<html>gateway</html>', { status: 502 })) as unknown as typeof fetch;
     expect(await fetchDailyCandles(credentials, 'NSE:TCS-EQ', '2026-01-01', '2026-02-01', fetchImpl)).toMatchObject({ ok: false, status: 502 });
