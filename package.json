@@ -11,7 +11,8 @@
     "db:generate": "drizzle-kit generate",
     "start": "wrangler dev --config dist/server/wrangler.json",
     "lint": "oxlint",
-    "format": "oxfmt"
+    "format": "oxfmt",
+    "test": "vitest run"
   },
   "dependencies": {
     "@base-ui/react": "1.7.0",
@@ -53,6 +54,7 @@
     "tailwindcss": "4.2.1",
     "typescript": "5.9.3",
     "vite": "8.0.13",
+    "vitest": "5.0.2",
     "wrangler": "4.92.0"
   },
   "type": "module"

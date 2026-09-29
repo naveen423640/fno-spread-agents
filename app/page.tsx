@@ -15,6 +15,7 @@ import { HeatmapAssistant } from '@/app/heatmap-assistant';
 import { StockAssistant } from '@/app/stock-assistant';
 import { StrategyLab } from '@/app/strategy-lab';
 import { marketSnapshot, snapshotAsOf, type MarketStock } from '@/lib/market-snapshot';
+import { previousTradingDate } from '@/lib/market-session';
 
 const sectorSets: Record<string, Set<string>> = {
   Banks: new Set(['AUBANK','AXISBANK','BANDHANBNK','BANKBARODA','BANKINDIA','CANBK','FEDERALBNK','HDFCBANK','ICICIBANK','IDFCFIRSTB','INDIANB','INDUSINDBK','KOTAKBANK','MAHABANK','PNB','RBLBANK','SBIN','UNIONBANK','YESBANK']),
@@ -234,7 +235,7 @@ export default function Home() {
   const [sector, setSector] = useState('All sectors');
   const [sort, setSort] = useState('change-desc');
   const [mode, setMode] = useState<'live' | 'historical'>('live');
-  const [date, setDate] = useState('2026-08-31');
+  const [date, setDate] = useState(() => previousTradingDate(new Date()));
   const [selected, setSelected] = useState<MarketStock | null>(marketSnapshot[0] ?? null);
   const [chartOpen, setChartOpen] = useState(false);
   const [asOf, setAsOf] = useState(snapshotAsOf);
