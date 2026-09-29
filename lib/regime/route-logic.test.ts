@@ -56,6 +56,22 @@ describe('buildRegimeResponse', () => {
     expect(response.analysis.dates.at(-1)).toBe(fixture.dates[300]);
   });
 
+  it('is not stale for a historical as-of date, even though newer sessions exist', () => {
+    const response = ok(buildRegimeResponse({ candles, params: { ...params, asOf: fixture.dates[300] }, now: new Date('2027-01-01T04:30:00Z') }));
+    expect(response.dataSource.stale).toBe(false);
+    expect(response.dataSource.staleNote).toBeNull();
+  });
+
+  it('is still stale when the as-of date is today or later and the newest candle is old', () => {
+    const response = ok(buildRegimeResponse({ candles, params: { ...params, asOf: '2026-10-05' }, now: new Date('2026-10-05T04:30:00Z') }));
+    expect(response.dataSource.stale).toBe(true);
+  });
+
+  it('reports lastCandleDate as the newest candle at or before the as-of date', () => {
+    const response = ok(buildRegimeResponse({ candles, params: { ...params, asOf: fixture.dates[300] }, now: new Date('2027-01-01T04:30:00Z') }));
+    expect(response.dataSource.lastCandleDate).toBe(fixture.dates[300]);
+  });
+
   it('returns NO_DATA when there are no candles', () => {
     expect(buildRegimeResponse({ candles: [], params, now: new Date() })).toMatchObject({ code: 'NO_DATA' });
   });

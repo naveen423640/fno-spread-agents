@@ -17,8 +17,9 @@ export function buildRegimeResponse(input: { candles: Candle[]; params: RegimePa
   if (!completed.length) return { error: 'FYERS returned no completed daily candles for this stock.', code: 'NO_DATA' };
   const asOf = input.params.asOf ?? expected;
   const analysis = analyzeRegime({ candles: completed, asOf, window: input.params.window, method: input.params.method, horizon: input.params.horizon });
-  const lastCandleDate = completed.at(-1)!.date;
-  const stale = lastCandleDate < expected;
+  const lastCandleDate = analysis.asOf;
+  // Staleness only means something for "now"; a historical as-of date is expected to be older than today's session.
+  const stale = lastCandleDate !== null && asOf >= expected && lastCandleDate < expected;
   return {
     symbol: input.params.symbol,
     analysis,
