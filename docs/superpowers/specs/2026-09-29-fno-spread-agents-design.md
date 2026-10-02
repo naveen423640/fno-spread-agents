@@ -30,9 +30,9 @@ The system **extends the user's existing app, "NSE F&O Heat Map"** (source: `fno
 **Order paths:** none. The only FYERS calls are OAuth and data reads (`history`, `quotes`, `options-chain-v3`). `EXECUTION_MODE` and `LIVE_EXECUTION_ENABLED` do not exist yet and are added in Phase 0.
 
 **Checks resolved**
-1. *Universe:* the live heat map uses a static list, not point-in-time. The 6-month test builds a point-in-time universe per cycle. Which tickers historical heat-map mode uses is **not yet verified**.
-2. *"FYERS live" label:* confirmed bug. `app/api/market/route.ts` hardcodes `source: 'FYERS live'` and sets `asOf` to the fetch time, with no market-hours or quote-timestamp check.
-3. *Date mismatch:* confirmed cause. `app/page.tsx` hardcodes `useState('2026-08-31')` and the snapshot date is hardcoded to match.
+1. *Universe:* the live heat map uses a static list, not point-in-time. The 6-month test builds a point-in-time universe per cycle. **Resolved in Phase 0:** historical heat-map mode also filters by the static `marketSnapshot` list (`app/api/market/route.ts`, `fetchHistorical`); replacing it with a dated universe is Phase 1 (`docs/audit/phase0-gate.md`, 0.1).
+2. *"FYERS live" label:* confirmed bug. `app/api/market/route.ts` hardcodes `source: 'FYERS live'` and sets `asOf` to the fetch time, with no market-hours or quote-timestamp check. **Fixed** in commit `d085cbd` (`docs/audit/phase0-gate.md`, 0.2).
+3. *Date mismatch:* confirmed cause. `app/page.tsx` hardcodes `useState('2026-08-31')` and the snapshot date is hardcoded to match. **Fixed** in commit `a279b47` (`docs/audit/phase0-gate.md`, 0.3).
 4. *Real order paths:* none found.
 5. *Reuse:* see the classification below.
 
@@ -112,7 +112,7 @@ The app keeps the FYERS token in a browser cookie. The engine cannot use that, s
   - the dashboard shows "FYERS token needed";
   - exits are still evaluated with the last valid data and are flagged stale, never filled from fabricated prices.
 - **Scope:** the token is used only for data endpoints. The test in section 10 asserts the engine never references a FYERS order endpoint.
-- The exact token lifetime and refresh rules are unverified (section 12).
+- The token lifetime is documented as daily (2FA once per trading day; no unattended refresh) and has not been observed. See section 12 item 1 and `docs/audit/04-fyers.md`.
 
 ### 3.2 Oracle parity with the existing 6-month test
 
@@ -309,7 +309,7 @@ Each gate records a short CEO / CFO / CTO finding and a decision: continue, repa
 
 | Phase | Scope | Gate |
 |---|---|---|
-| 0 | **First step: `git init` and commit the untouched copy as the baseline** (done: `ed49b10`). Then: codebase audit (done, section 0); verification audit (section 12); add test runners and the no-order-endpoint test; add `EXECUTION_MODE` / `LIVE_EXECUTION_ENABLED`; fix the hardcoded "FYERS live" label and the hardcoded 2026-08-31 date; revise this spec | All assumptions classified: verified / documented-untested / needs adaptation / unsupported |
+| 0 | **Status: done pending user items (2026-10-03; see `docs/audit/phase0-gate.md`, section 8).** **First step: `git init` and commit the untouched copy as the baseline** (done: `ed49b10`). Then: codebase audit (done, section 0); verification audit (section 12); add test runners and the no-order-endpoint test; add `EXECUTION_MODE` / `LIVE_EXECUTION_ENABLED`; fix the hardcoded "FYERS live" label and the hardcoded 2026-08-31 date; revise this spec | All assumptions classified: verified / documented-untested / needs adaptation / unsupported |
 | 1 | Data foundation: NSE F&O history, point-in-time universe, lot sizes, ban list, calendar, corporate actions; replace the static 210-stock heat-map universe with a dated universe; engine-side FYERS auth (section 3.1) | Leakage and integrity tests pass; data-layer oracle parity (section 3.2) |
 | 2 | Strategy engine (config building blocks + plug-in interface + schema validation) and direction study for `trend_oi_v0.1` | Signal shows direction value, or stop/rethink |
 | 3 | Spread builder, costs, risk engine, paper broker, ledger, historical backtest | Pre-registered backtest gate; oracle parity of trades and tables for `legacy_six_month_v1` |
@@ -320,9 +320,11 @@ Each gate records a short CEO / CFO / CTO finding and a decision: continue, repa
 ## 12. Open items for Phase 0 (not assumed)
 
 1. **FYERS:** auth flow, **token lifetime and refresh rules** (how long a token lasts, whether it can be refreshed without a manual login, what the engine sees when it expires), historical depth, **expired futures and options history availability**, WebSocket behaviour, reconnects, rate limits, symbol mapping.
+   - **Phase 0 result** (`docs/audit/04-fyers.md`, documented, not observed; probe pending user): token valid for one trading day with a manual 2FA login each day (refresh-token sessions withdrawn from 2026-04-01); expiry codes -8, -15, -16, -17 and HTTP 401 (the "-22" in `lib/regime/fyers-daily.ts` appears in no source); daily history 366 days per request; limits 10/s, 200/min; expired-contract history undocumented.
 2. NSE archive coverage and format eras for F&O daily data, including OI. Confirm from real bhavcopy that futures (`STF`) rows carry usable OI; the current parser only reads stock-option rows.
    - The existing preflight code records `EXPIRED_OPTION_HISTORY_UNAVAILABLE` as a failure mode, so treat FYERS expired-contract history as unproven until tested.
-   - Which tickers historical heat-map mode uses is unverified.
+   - Which tickers historical heat-map mode uses: resolved, the static list (section 0).
+   - **Phase 0 result** (`docs/audit/01-nse-archives.md`): `STF` rows carry usable OI (verified); the UDiFF archive works from 2024-01-01; the bhavcopy publication-time rule is **22:30 IST** (measured file times, max 22:16 IST; the earlier 19:00 IST assumption was contradicted; pending user approval); the ban list is `fo_secban_{DDMMYYYY}.csv`, published the evening before the trade date (forward-looking, so the bhavcopy rule does not apply to it), with a one-line `NIL` form when no stock is banned.
 3. Current Indian cost rates and their change dates.
 4. Legally and reliably accessible Indian sources for news, filings, fundamentals and results calendars.
 5. ~~TradingAgents fork~~ (A2: no fork). Instead: which free LLM providers to use and their current terms and limits; the Apache-2.0 notice for any adapted prompt text; Indian data sources (item 4).
