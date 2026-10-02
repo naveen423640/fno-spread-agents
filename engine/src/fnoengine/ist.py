@@ -5,8 +5,9 @@ from zoneinfo import ZoneInfo
 
 IST = ZoneInfo("Asia/Kolkata")
 
-# Conservative assumption until the Phase 0 audit records the real publication time of the bhavcopy.
-BHAVCOPY_PUBLISHED_AFTER = time(19, 0)
+# Phase 0 audit (docs/audit/01-nse-archives.md): F&O bhavcopy Last-Modified ranged 18:38-22:16 IST over 15 trading days
+# (4 of 15 after 19:00 IST). 22:30 IST is later than every observation, so no data is treated as available early.
+BHAVCOPY_PUBLISHED_AFTER = time(22, 30)
 
 
 def require_aware(value: datetime) -> datetime:

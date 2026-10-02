@@ -18,4 +18,4 @@ def test_naive_input_is_rejected():
 
 
 def test_available_after_is_evening_ist_of_the_effective_date():
-    assert available_after(date(2026, 9, 29)) == datetime(2026, 9, 29, 13, 30, tzinfo=timezone.utc)
+    assert available_after(date(2026, 9, 29)) == datetime(2026, 9, 29, 17, 0, tzinfo=timezone.utc)
