@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Slider } from '@/components/ui/slider';
 import { marketSnapshot } from '@/lib/market-snapshot';
 import { capitalAtRiskText, money } from '@/lib/money';
+import { strategyLabRequest } from '@/lib/strategy-lab-request';
 import { calculateRiskMetrics, type PayoffRiskMetrics } from '@/lib/strategy-payoff';
 
 type StrategyKey = 'long-call' | 'long-put' | 'bull-call' | 'bear-put' | 'long-straddle' | 'long-strangle' | 'bull-put' | 'bear-call' | 'butterfly' | 'iron-condor';
@@ -187,7 +188,8 @@ export function StrategyLab() {
   }
 
   async function build(syncBackend = false) {
-    if (!setup || !editableLegs.length) return;
+    const request = strategyLabRequest(syncBackend ? 'sync' : 'build', { ticker, startDate, strategy, legs: editableLegs });
+    if (!request) return;
     setLoading(syncBackend ? 'sync' : 'build');
     setError('');
     try {
@@ -195,7 +197,7 @@ export function StrategyLab() {
         method: 'POST',
         cache: 'no-store',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: syncBackend ? 'sync' : 'build', ticker, startDate, strategy, legs: editableLegs.map(({ optionType, strike, side, quantity }) => ({ optionType, strike, side, quantity })) }),
+        body: JSON.stringify(request),
       });
       const payload = await response.json() as StrategyResult & { error?: string };
       if (!response.ok || !payload.days) throw new Error(payload.error ?? 'Unable to build the options payoff test.');
@@ -257,7 +259,7 @@ export function StrategyLab() {
         <h2 className="text-2xl font-semibold tracking-tight">Daily Payoff Backtest</h2>
         <p className="mt-1 text-sm text-muted-foreground">Select a stock, start date and ready-made strategy. Move through actual daily marks while Call/Put OI stays aligned to the payoff strikes.</p>
       </div>
-      <div className="flex flex-wrap items-center gap-2"><Badge variant="outline"><Database />Official NSE daily records</Badge>{setup && <Button size="sm" variant="outline" disabled={Boolean(loading)} onClick={() => void build(true)}>{loading === 'sync' ? <Loader2 className="animate-spin" /> : <RefreshCw />}{loading === 'sync' ? 'Updating backend…' : 'Update backend NSE data'}</Button>}</div>
+      <div className="flex flex-wrap items-center gap-2"><Badge variant="outline"><Database />Official NSE daily records</Badge><Button size="sm" variant="outline" disabled={Boolean(loading)} onClick={() => void build(true)} title="Download the latest NSE daily reports for the selected stock, start date and strategy into the backend, then rebuild the test">{loading === 'sync' ? <Loader2 className="animate-spin" /> : <RefreshCw />}{loading === 'sync' ? 'Updating backend…' : 'Update backend NSE data'}</Button></div>
     </div>
 
     <div className="grid items-start gap-4 xl:grid-cols-[520px_minmax(0,1fr)]">
