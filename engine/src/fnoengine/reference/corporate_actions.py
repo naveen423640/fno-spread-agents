@@ -86,7 +86,7 @@ def load_corporate_actions_csv(text: str) -> list[CorporateAction]:
             if action_type in ("SPLIT", "BONUS"):
                 if a is None or a <= 0:
                     raise ValueError(f"line {line_num}: {action_type} requires a > 0, got {a}")
-                if b is None or b < 0:
+                if b is None or b <= 0:
                     raise ValueError(f"line {line_num}: {action_type} requires b > 0, got {b}")
                 if not math.isfinite(a) or not math.isfinite(b):
                     raise ValueError(f"line {line_num}: {action_type} requires a and b to be finite")

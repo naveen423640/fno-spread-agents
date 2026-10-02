@@ -105,3 +105,20 @@ def test_physical_line_number_with_blank_lines():
     csv_with_blank = "ticker,ex_date,action_type,a,b,source,verified\nXYZ,2026-01-01,SPLIT,10,5,NSE,true\n\nABC,2026-02-01,SPLIT,abc,5,NSE,true\n"
     with pytest.raises(ValueError, match=r"line 4"):
         load_corporate_actions_csv(csv_with_blank)
+
+
+def test_split_with_b_zero_rejected_at_load_time():
+    with pytest.raises(ValueError, match=r"line 2.*b.*>.*0"):
+        load_corporate_actions_csv("ticker,ex_date,action_type,a,b,source,verified\nXYZ,2026-01-01,SPLIT,10,0,NSE,true\n")
+
+
+def test_bonus_with_b_zero_rejected_at_load_time():
+    with pytest.raises(ValueError, match=r"line 2.*b.*>.*0"):
+        load_corporate_actions_csv("ticker,ex_date,action_type,a,b,source,verified\nXYZ,2026-01-01,BONUS,1,0,NSE,true\n")
+
+
+def test_bonus_with_valid_a_and_b_computes_correct_factor():
+    actions = load_corporate_actions_csv("ticker,ex_date,action_type,a,b,source,verified\nXYZ,2026-01-01,BONUS,1,1,NSE,true\n")
+    assert len(actions) == 1
+    result = adjustment_factor(actions, "XYZ", date(2025, 12, 1))  # before ex_date
+    assert result.factor == pytest.approx(0.5)  # a/(a+b) = 1/(1+1) = 0.5
