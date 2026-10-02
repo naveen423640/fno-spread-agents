@@ -17,7 +17,7 @@ def test_a_day_with_no_banned_securities_is_an_empty_list():
 
 
 def test_handles_windows_line_endings_and_spaces():
-    assert parse_ban_list("Header\r\n1, ABC \r\n2 ,XYZ\r\n") == ["ABC", "XYZ"]
+    assert parse_ban_list("Securities in Ban For Trade Date 29-SEP-2026:\r\n1, ABC \r\n2 ,XYZ\r\n") == ["ABC", "XYZ"]
 
 
 def test_real_sample_parses_without_error():
@@ -33,3 +33,32 @@ def test_real_sample_parses_to_exact_tickers():
 def test_nil_sample_parses_to_empty_list():
     result = parse_ban_list(NIL.read_text(encoding="utf-8"))
     assert result == []
+
+
+def test_missing_title_line_raises_error():
+    import pytest
+    with pytest.raises(ValueError, match="unrecognised ban-list layout"):
+        parse_ban_list("1,ABC\n2,XYZ\n")
+
+
+def test_html_error_page_raises_error():
+    import pytest
+    html_text = "<html><body>404 Not Found</body></html>"
+    with pytest.raises(ValueError, match="unrecognised ban-list layout"):
+        parse_ban_list(html_text)
+
+
+def test_arbitrary_text_without_title_raises_error():
+    import pytest
+    with pytest.raises(ValueError, match="unrecognised ban-list layout"):
+        parse_ban_list("Some random text\nAnother line")
+
+
+def test_row_with_spaces_in_ticker_without_title_raises_error():
+    import pytest
+    with pytest.raises(ValueError, match="unrecognised ban-list layout"):
+        parse_ban_list("1,TICKER NAME\n")
+
+
+def test_empty_string_still_returns_empty_list():
+    assert parse_ban_list("") == []
