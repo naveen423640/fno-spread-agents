@@ -1,6 +1,8 @@
+import { assertPaperOnly } from '@/lib/execution-mode';
 import type { FyersHistory } from './types';
 
 export function fyersCredentials(request: Request) {
+  assertPaperOnly();
   const cookies = request.headers.get('cookie') ?? '';
   const cookie = cookies.split(';').map((part) => part.trim()).find((part) => part.startsWith('fyers_access_token='));
   const accessToken = cookie ? decodeURIComponent(cookie.slice('fyers_access_token='.length)) : process.env.FYERS_ACCESS_TOKEN;
