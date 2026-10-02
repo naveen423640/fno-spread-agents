@@ -16,7 +16,9 @@ class PointInTimeReader:
     def fo_rows(self, effective: date, as_of: datetime) -> list[FoRow] | None:
         cutoff = to_utc_naive(require_aware(as_of))
         cursor = self.store.conn.execute(
-            f"SELECT {', '.join(FO_COLUMNS[1:])} FROM fo_daily WHERE effective_date=? AND available_ts<=? ORDER BY row_number", [effective, cutoff])
+            f"SELECT {', '.join(FO_COLUMNS[1:])} FROM fo_daily WHERE effective_date=? AND available_ts<=? "
+            "AND revision=(SELECT max(revision) FROM fo_daily WHERE effective_date=? AND available_ts<=?) ORDER BY row_number",
+            [effective, cutoff, effective, cutoff])
         data = cursor.fetchall()
         if not data:
             return None

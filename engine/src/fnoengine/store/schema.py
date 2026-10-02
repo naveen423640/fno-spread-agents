@@ -1,7 +1,7 @@
 STATEMENTS = [
     """CREATE TABLE IF NOT EXISTS fo_daily (
         effective_date DATE NOT NULL, available_ts TIMESTAMP NOT NULL, retrieval_ts TIMESTAMP NOT NULL, source_sha256 VARCHAR NOT NULL,
-        row_number INTEGER NOT NULL, trading_date VARCHAR, instrument_type VARCHAR, ticker VARCHAR, expiry_date VARCHAR, strike DOUBLE,
+        revision INTEGER NOT NULL, row_number INTEGER NOT NULL, trading_date VARCHAR, instrument_type VARCHAR, ticker VARCHAR, expiry_date VARCHAR, strike DOUBLE,
         option_type VARCHAR, instrument_name VARCHAR, open DOUBLE, high DOUBLE, low DOUBLE, close DOUBLE, previous_close DOUBLE,
         underlying_price DOUBLE, settle_price DOUBLE, traded_volume DOUBLE, traded_value DOUBLE, lot_size INTEGER,
         open_interest DOUBLE, change_in_open_interest DOUBLE)""",

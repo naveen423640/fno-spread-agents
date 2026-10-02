@@ -35,16 +35,20 @@ class Store:
         outcome = "revised" if current else "inserted"
         self.conn.execute("BEGIN")
         try:
-            if current:
-                self.conn.execute("UPDATE ingest_files SET is_current=false WHERE kind='fo' AND effective_date=?", [effective])
-                self.conn.execute("DELETE FROM fo_daily WHERE effective_date=?", [effective])
             retrieval, available = to_utc_naive(retrieval_ts), to_utc_naive(available_ts)
+            revision = 0
+            if current:
+                # Superseded rows are kept. A revision cannot be visible before we first saw it.
+                available = max(available, retrieval)
+                revision = self.conn.execute("SELECT max(revision) FROM fo_daily WHERE effective_date=?", [effective]).fetchone()[0] + 1
+                self.conn.execute("UPDATE ingest_files SET is_current=false WHERE kind='fo' AND effective_date=?", [effective])
             columns = {name: [getattr(row, name) for row in rows] for name in FO_COLUMNS if name != "row_number"}
             table = pa.table({
                 "effective_date": pa.array([effective] * len(rows), pa.date32()),
                 "available_ts": pa.array([available] * len(rows), pa.timestamp("us")),
                 "retrieval_ts": pa.array([retrieval] * len(rows), pa.timestamp("us")),
                 "source_sha256": pa.array([sha256] * len(rows), pa.string()),
+                "revision": pa.array([revision] * len(rows), pa.int32()),
                 "row_number": pa.array(list(range(len(rows))), pa.int32()),
                 **{name: values for name, values in columns.items()},
             })
@@ -59,6 +63,7 @@ class Store:
         return outcome
 
     def fo_dates(self) -> list[date]:
+        """Stored dates regardless of availability. Never use for decisions; point-in-time code uses PointInTimeReader."""
         return [r[0] for r in self.conn.execute("SELECT DISTINCT effective_date FROM fo_daily ORDER BY 1").fetchall()]
 
     def _content_hash(self) -> tuple[str, dict]:
