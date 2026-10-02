@@ -37,3 +37,9 @@ next-env.d.ts
 /outputs/
 /work/
 *.tsbuildinfo
+
+engine/.venv/
+engine/data/
+engine/**/__pycache__/
+engine/**/*.egg-info/
+engine/.pytest_cache/
