@@ -19,12 +19,25 @@ def setup(tmp_path, responder):
 
 
 def zip_for(day: date, **overrides) -> HttpResult:
-    return HttpResult(200, make_fo_zip([dict(ROW, TradDt=day.isoformat(), **overrides)]))
+    return HttpResult(200, make_fo_zip([dict(ROW, TradDt=day.isoformat(), **{"XpryDt": "2026-10-29", **overrides})]))
+
+
+def _day_of(url: str) -> date:
+    stamp = url.split("_F_0000")[0][-8:]
+    return date(int(stamp[:4]), int(stamp[4:6]), int(stamp[6:]))
+
+
+def test_a_file_whose_trade_date_differs_from_its_day_is_rejected_and_recorded(tmp_path):
+    store, client, incidents = setup(tmp_path, lambda url: zip_for(date(2026, 9, 29)))
+    report = ingest_range(client, store, CAL, incidents, date(2026, 9, 25), date(2026, 9, 25), NOW)
+    assert report.inserted == [] and store.fo_dates() == []
+    assert report.errors and "TRADE_DATE_MISMATCH" in report.errors[0]
+    assert _kinds(incidents) == ["INTEGRITY_ERROR:2026-09-25"]
 
 
 def test_stores_published_days_and_records_a_gap_for_a_missing_trading_day(tmp_path):
     def responder(url):
-        return HttpResult(404, b"") if "20260930" in url else zip_for(date(2026, 9, 29))
+        return HttpResult(404, b"") if "20260930" in url else zip_for(_day_of(url))
 
     store, client, incidents = setup(tmp_path, responder)
     report = ingest_range(client, store, CAL, incidents, date(2026, 9, 25), date(2026, 9, 30), NOW)
@@ -41,7 +54,7 @@ def test_an_error_level_integrity_issue_is_not_stored(tmp_path):
 
 
 def test_rerunning_is_idempotent_and_never_duplicates_rows(tmp_path):
-    store, client, incidents = setup(tmp_path, lambda url: zip_for(date(2026, 9, 29)))
+    store, client, incidents = setup(tmp_path, lambda url: zip_for(_day_of(url)))
     ingest_range(client, store, CAL, incidents, date(2026, 9, 29), date(2026, 9, 29), NOW)
     again = ingest_range(client, store, CAL, incidents, date(2026, 9, 29), date(2026, 9, 29), NOW)
     assert again.unchanged == [date(2026, 9, 29)] and again.inserted == []
@@ -50,7 +63,7 @@ def test_rerunning_is_idempotent_and_never_duplicates_rows(tmp_path):
 
 def test_a_gap_incident_resolves_when_the_day_later_appears(tmp_path):
     state = {"published": False}
-    store, client, incidents = setup(tmp_path, lambda url: zip_for(date(2026, 9, 29)) if state["published"] else HttpResult(404, b""))
+    store, client, incidents = setup(tmp_path, lambda url: zip_for(_day_of(url)) if state["published"] else HttpResult(404, b""))
     ingest_range(client, store, CAL, incidents, date(2026, 9, 29), date(2026, 9, 29), NOW)
     assert incidents.open_incidents()
     state["published"] = True
@@ -68,7 +81,7 @@ def test_a_network_error_on_one_day_does_not_stop_the_run_and_resolves_later(tmp
     def responder(url):
         if "20260929" in url and state["fail"]:
             raise OSError("boom")
-        return zip_for(date(2026, 9, 29))
+        return zip_for(_day_of(url))
 
     store, client, incidents = setup(tmp_path, responder)
     report = ingest_range(client, store, CAL, incidents, date(2026, 9, 25), date(2026, 9, 30), NOW)
@@ -84,7 +97,7 @@ def test_a_network_error_on_one_day_does_not_stop_the_run_and_resolves_later(tmp
 
 def test_an_http_500_is_a_fetch_failure_not_a_crash(tmp_path):
     def responder(url):
-        return HttpResult(500, b"") if "20260929" in url else zip_for(date(2026, 9, 25))
+        return HttpResult(500, b"") if "20260929" in url else zip_for(_day_of(url))
 
     store, client, incidents = setup(tmp_path, responder)
     report = ingest_range(client, store, CAL, incidents, date(2026, 9, 25), date(2026, 9, 29), NOW)
@@ -104,7 +117,7 @@ def test_a_narrow_successful_run_does_not_resolve_a_gap_for_another_day(tmp_path
     state = {"published": False}
 
     def responder(url):
-        return HttpResult(404, b"") if "20260925" in url and not state["published"] else zip_for(date(2026, 9, 29))
+        return HttpResult(404, b"") if "20260925" in url and not state["published"] else zip_for(_day_of(url))
 
     store, client, incidents = setup(tmp_path, responder)
     ingest_range(client, store, CAL, incidents, date(2026, 9, 25), date(2026, 9, 25), NOW)

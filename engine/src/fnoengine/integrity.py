@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import date
 
 from .nse.rows import FoRow
 
@@ -12,8 +13,13 @@ class IntegrityIssue:
     detail: str
 
 
-def check_fo_rows(rows: list[FoRow]) -> list[IntegrityIssue]:
+def check_fo_rows(rows: list[FoRow], effective: date | None = None) -> list[IntegrityIssue]:
     issues: list[IntegrityIssue] = []
+    if effective is not None:
+        wanted = effective.isoformat()
+        wrong = sorted({r.trading_date for r in rows if r.trading_date != wanted})
+        if wrong:
+            issues.append(IntegrityIssue("ERROR", "TRADE_DATE_MISMATCH", f"filed under {wanted} but rows carry " + ", ".join(wrong[:3])))
     seen: set[str] = set()
     futures_with_volume = [r for r in rows if r.instrument_type == "STF" and r.traded_volume > 0]
     if futures_with_volume and all(r.open_interest == 0 and r.change_in_open_interest == 0 for r in futures_with_volume):

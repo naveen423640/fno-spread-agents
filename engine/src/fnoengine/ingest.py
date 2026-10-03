@@ -45,7 +45,7 @@ def ingest_range(client: NseArchiveClient, store: Store, calendar: TradingCalend
                 report.gaps.append(day)
                 incidents.record_once(f"DATA_GAP:{day.isoformat()}", f"No F&O archive for trading day {day.isoformat()}.", now)
             else:
-                problems = [i for i in check_fo_rows(fetched.rows) if i.severity == "ERROR"]
+                problems = [i for i in check_fo_rows(fetched.rows, effective=day) if i.severity == "ERROR"]
                 if problems:
                     detail = f"{day.isoformat()}: " + "; ".join(f"{p.code} {p.detail}" for p in problems[:5])
                     report.errors.append(detail)

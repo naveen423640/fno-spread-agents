@@ -40,3 +40,10 @@ def test_futures_with_volume_but_no_open_interest_anywhere_is_a_warning():
 
 def test_expiry_before_the_trading_date_is_an_error():
     assert ("ERROR", "EXPIRED_CONTRACT") in codes(check_fo_rows(rows(XpryDt="2026-09-01")))
+
+
+def test_trade_date_mismatch_is_an_error_only_when_an_effective_date_is_given():
+    from datetime import date
+
+    assert ("ERROR", "TRADE_DATE_MISMATCH") in codes(check_fo_rows(rows(), effective=date(2000, 1, 1)))
+    assert all(c != "TRADE_DATE_MISMATCH" for _, c in codes(check_fo_rows(rows())))
