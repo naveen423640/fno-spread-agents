@@ -120,6 +120,6 @@ describe('startAgentRun', () => {
     await settle();
     const run = await store.getRun('run-1');
     expect(run?.run.status).toBe('ai_unavailable');
-    expect(run?.steps.some((step) => step.role === 'run')).toBe(false);
+    expect(run?.steps.some((step) => step.role === 'run' && step.status === 'failed')).toBe(false);
   });
 });

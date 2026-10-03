@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Activity, AlertCircle, BarChart3, CalendarDays, FlaskConical, LayoutGrid, LineChart, Link2, Radio, RefreshCw, Search, SlidersHorizontal, Sparkles, TrendingUp } from 'lucide-react';
+import { Activity, AlertCircle, BarChart3, CalendarDays, FlaskConical, LayoutGrid, LineChart, Link2, Radio, RefreshCw, Search, SlidersHorizontal, Sparkles, TrendingUp, Users } from 'lucide-react';
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, ReferenceLine, XAxis, YAxis } from 'recharts';
 
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,7 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } f
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { AgentRunPanel } from '@/app/agent-run-panel';
 import { BacktestPanel } from '@/app/backtest-panel';
 import { HeatmapAssistant } from '@/app/heatmap-assistant';
 import { MarkovRegime } from '@/app/markov-regime';
@@ -250,6 +251,7 @@ export default function Home() {
   const [chartView, setChartView] = useState<'price' | 'oi'>('price');
   const [chartRange, setChartRange] = useState<ChartRange>('2d');
   const [assistantOpen, setAssistantOpen] = useState(false);
+  const [teamOpen, setTeamOpen] = useState(false);
   const [regimeTicker, setRegimeTicker] = useState<string | null>(null);
   const [marketAssistantOpen, setMarketAssistantOpen] = useState(false);
   const [openInterest, setOpenInterest] = useState<OpenInterestPayload | null>(null);
@@ -521,12 +523,14 @@ export default function Home() {
                   </div>}
                   <Button size="sm" variant={assistantOpen ? 'default' : 'outline'} aria-pressed={assistantOpen} onClick={() => setAssistantOpen((current) => !current)} title="Ask AI about this stock"><Sparkles />AI analyst</Button>
                   <Button size="sm" variant="outline" onClick={() => { setRegimeTicker(selected.ticker); setChartOpen(false); setActiveSurface('markov-regime'); }} title={`Open the Markov regime tab for ${selected.ticker}`}><Activity />Markov regime</Button>
+                  <Button size="sm" variant={teamOpen ? 'default' : 'outline'} aria-pressed={teamOpen} onClick={() => setTeamOpen((current) => !current)} title="Run the AI research team on this stock"><Users />Run research team</Button>
                 </div>
               </DialogHeader>
               <div className="min-h-0 min-w-0 space-y-4 overflow-x-hidden overflow-y-auto px-3 pb-6 sm:px-6">
                 {chartView === 'price'
                   ? <IntradayPriceChart stock={selected} points={chartPoints} loading={chartLoading} error={chartError} />
                   : <OpenInterestChart stock={selected} data={openInterest} loading={openInterestLoading} error={openInterestError} />}
+                {teamOpen && <AgentRunPanel key={selected.ticker} symbol={selected.symbol} />}
                 {assistantOpen && <StockAssistant key={selected.ticker} stock={selected} sector={sectorFor(selected.ticker)} points={chartPoints} range={chartRange.toUpperCase()} />}
                 <dl className="grid grid-cols-2 gap-3 rounded-xl border border-border p-4 text-sm sm:grid-cols-3">
                   <div><dt className="text-muted-foreground">Previous close</dt><dd className="tabular-nums">₹{formatPrice(selected.previousClose)}</dd></div>

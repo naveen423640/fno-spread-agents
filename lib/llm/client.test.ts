@@ -80,11 +80,11 @@ describe('createLlmClient', () => {
   });
 
   it('sends the key only in the Authorization header', async () => {
-    let seen: RequestInit | undefined;
-    const { client } = setup([provider('alpha')], (_url, init) => { seen = init; return new Response(okBody('x')); });
+    const seen: RequestInit[] = [];
+    const { client } = setup([provider('alpha')], (_url, init) => { seen.push(init); return new Response(okBody('x')); });
     await client.complete(request);
-    expect((seen?.headers as Record<string, string>).Authorization).toBe('Bearer key-for-alpha-9f3a');
-    expect(String(seen?.body)).not.toContain('key-for-alpha');
+    expect((seen[0].headers as Record<string, string>).Authorization).toBe('Bearer key-for-alpha-9f3a');
+    expect(JSON.stringify(seen[0].body)).not.toContain('key-for-alpha');
   });
 });
 

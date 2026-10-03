@@ -4,7 +4,7 @@ import type { ProviderConfig } from './types';
 
 const entrySchema = z.object({
   name: z.string().min(1),
-  baseUrl: z.string().url(),
+  baseUrl: z.url(),
   apiKeyEnv: z.string().min(1),
   model: z.string().min(1),
   requestsPerMinute: z.number().positive(),

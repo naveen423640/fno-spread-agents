@@ -67,6 +67,7 @@ describe('runAgentTeam', () => {
     expect(outcome.status).toBe('ai_unavailable');
     expect((await store.getRun('run-1'))?.verdict).toBeNull();
     expect((await store.getRun('run-1'))?.run.status).toBe('ai_unavailable');
+    expect((await store.getRun('run-1'))?.steps.find((step) => step.role === 'run')).toMatchObject({ status: 'unavailable', error: expect.stringContaining('invalid verdict') });
   });
 
   it('ends ai_unavailable when the verdict cites a source that does not exist', async () => {
