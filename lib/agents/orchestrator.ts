@@ -58,7 +58,8 @@ export async function runAgentTeam(deps: Deps, request: RunRequest): Promise<Run
   const { llm, store } = deps;
   const rounds = request.debateRounds ?? 1;
 
-  await store.createRun({ id: request.runId, symbol: request.symbol, asOf: request.asOf, tradingDate: request.tradingDate, candidate: { calculatedLots: request.calculatedLots }, promptSet: PROMPT_SET_ID });
+  // The service creates the row before returning 202; direct callers get it created here.
+  if (!(await store.getRun(request.runId))) await store.createRun({ id: request.runId, symbol: request.symbol, asOf: request.asOf, tradingDate: request.tradingDate, candidate: { calculatedLots: request.calculatedLots }, promptSet: PROMPT_SET_ID });
   const finish = async (reason: string): Promise<RunOutcome> => {
     await store.setRunStatus(request.runId, 'ai_unavailable', new Date().toISOString());
     return { status: 'ai_unavailable', reason };
