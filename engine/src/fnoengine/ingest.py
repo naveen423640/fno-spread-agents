@@ -32,34 +32,31 @@ def ingest_range(client: NseArchiveClient, store: Store, calendar: TradingCalend
             except (ArchiveError, OSError) as error:
                 # Class name and message only: never a URL, query string or header.
                 report.fetch_failures.append(day)
-                incidents.record_once("DATA_FETCH_ERROR", f"Could not fetch F&O archive for {day.isoformat()}: {type(error).__name__}: {error}", now)
+                incidents.record_once(f"DATA_FETCH_ERROR:{day.isoformat()}", f"Could not fetch F&O archive for {day.isoformat()}: {type(error).__name__}: {error}", now)
                 day += timedelta(days=1)
                 continue
             except ArchiveFormatError as error:
                 detail = f"{day.isoformat()}: corrupt archive: {error}"
                 report.errors.append(detail)
-                incidents.record_once("INTEGRITY_ERROR", detail, now)
+                incidents.record_once(f"INTEGRITY_ERROR:{day.isoformat()}", detail, now)
                 day += timedelta(days=1)
                 continue
             if fetched is None:
                 report.gaps.append(day)
-                incidents.record_once("DATA_GAP", f"No F&O archive for trading day {day.isoformat()}.", now)
+                incidents.record_once(f"DATA_GAP:{day.isoformat()}", f"No F&O archive for trading day {day.isoformat()}.", now)
             else:
                 problems = [i for i in check_fo_rows(fetched.rows) if i.severity == "ERROR"]
                 if problems:
                     detail = f"{day.isoformat()}: " + "; ".join(f"{p.code} {p.detail}" for p in problems[:5])
                     report.errors.append(detail)
-                    incidents.record_once("INTEGRITY_ERROR", detail, now)
+                    incidents.record_once(f"INTEGRITY_ERROR:{day.isoformat()}", detail, now)
                 else:
                     outcome = store.insert_fo(day, fetched.rows, sha256=fetched.sha256, size_bytes=fetched.size_bytes, retrieval_ts=fetched.retrieved_at, available_ts=fetched.available_at)
                     getattr(report, outcome).append(day)
+                    # A day's problems are resolved only when that same day is stored.
+                    for kind in ("DATA_GAP", "INTEGRITY_ERROR", "DATA_FETCH_ERROR"):
+                        incidents.resolve(f"{kind}:{day.isoformat()}", now)
         day += timedelta(days=1)
-    if not report.gaps:
-        incidents.resolve("DATA_GAP", now)
-    if not report.errors:
-        incidents.resolve("INTEGRITY_ERROR", now)
-    if not report.fetch_failures:
-        incidents.resolve("DATA_FETCH_ERROR", now)
     store.record_version(f"ingest {start.isoformat()}..{end.isoformat()}", now)
     return report
 
