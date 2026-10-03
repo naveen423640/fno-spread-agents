@@ -25,7 +25,7 @@ function numeric(value: unknown, fallback = 0) {
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
-async function loadQuote(credentials: { clientId: string; accessToken: string }, symbol: string) {
+export async function loadQuote(credentials: { clientId: string; accessToken: string }, symbol: string) {
   const url = new URL('https://api-t1.fyers.in/data/quotes');
   url.searchParams.set('symbols', symbol);
   const response = await fetch(url, {
@@ -52,7 +52,7 @@ async function loadQuote(credentials: { clientId: string; accessToken: string },
   };
 }
 
-async function loadOptionChain(credentials: { clientId: string; accessToken: string }, symbol: string) {
+export async function loadOptionChain(credentials: { clientId: string; accessToken: string }, symbol: string) {
   const url = new URL('https://api-t1.fyers.in/data/options-chain-v3');
   url.searchParams.set('symbol', symbol);
   url.searchParams.set('strikecount', '10');
