@@ -11,3 +11,10 @@ export function resolveUniverse(snapshot: MarketStock[], engine: EngineUniverse 
   const stocks = engine.entries.map(({ ticker }): MarketStock => known.get(ticker) ?? { symbol: `NSE:${ticker}-EQ`, ticker, name: ticker, price: 0, change: 0, changePct: 0, previousClose: 0 });
   return { stocks, source: 'engine', date: engine.date, note: `F&O universe from the engine, as of ${engine.date}.` };
 }
+
+// Newly listed tickers carry a zero placeholder quote that only a FYERS quote overwrites.
+// Without FYERS they would distort statistics, so the embedded-snapshot path hides them.
+export function withoutPlaceholders(stocks: MarketStock[]): { stocks: MarketStock[]; hidden: number } {
+  const real = stocks.filter((stock) => !(stock.price === 0 && stock.previousClose === 0));
+  return { stocks: real, hidden: stocks.length - real.length };
+}

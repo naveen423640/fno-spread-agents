@@ -266,13 +266,13 @@ export default function Home() {
         cache: 'no-store',
         signal: controller.signal,
       });
-      const payload = await response.json() as { stocks?: MarketStock[]; asOf?: string; source?: string; notice?: string; error?: string; universe?: { source: 'engine' | 'static'; date: string | null; count: number; note: string } };
+      const payload = await response.json() as { stocks?: MarketStock[]; asOf?: string; source?: string; notice?: string; error?: string; universe?: { source: 'engine' | 'static'; date: string | null; count: number; note: string; hidden?: number } };
       if (!response.ok || !payload.stocks) throw new Error(payload.error ?? 'Unable to load market data.');
       setStocks(payload.stocks);
       setAsOf(payload.asOf ?? new Date().toISOString());
       setSource(payload.source ?? 'Market data');
       setUniverse(payload.universe ?? null);
-      setMessage([payload.notice, payload.universe?.source === 'static' ? payload.universe.note : ''].filter(Boolean).join(' '));
+      setMessage([payload.notice, payload.universe?.source === 'static' || payload.universe?.hidden ? payload.universe.note : ''].filter(Boolean).join(' '));
       setSelected((current) => payload.stocks?.find((stock) => stock.ticker === current?.ticker) ?? payload.stocks?.[0] ?? null);
     } catch (error) {
       setMessage(error instanceof DOMException && error.name === 'AbortError'

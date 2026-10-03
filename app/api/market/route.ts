@@ -1,6 +1,6 @@
 import { fetchEngineUniverse } from '@/lib/engine-client';
 import { marketSnapshot, snapshotAsOf, type MarketStock, type SectorIndex } from '@/lib/market-snapshot';
-import { resolveUniverse } from '@/lib/universe';
+import { resolveUniverse, withoutPlaceholders } from '@/lib/universe';
 import { describeLiveFeed } from '@/lib/market-session';
 
 const FYERS_DATA_BASE = 'https://api-t1.fyers.in/data';
@@ -257,9 +257,13 @@ export async function GET(request: Request) {
         return json({ ...live, ...feed, universe: universeInfo, sectorSource: 'FYERS Nifty sector indices', ...(feed.live ? {} : { notice: 'Market closed. Showing the last close.' }) });
       }
 
+      const { stocks: shown, hidden } = withoutPlaceholders(resolved.stocks);
+      const embeddedUniverse = hidden > 0
+        ? { ...universeInfo, count: shown.length, hidden, note: `${universeInfo.note} ${hidden} newly listed F&O stock${hidden === 1 ? ' is' : 's are'} hidden until FYERS is connected.` }
+        : universeInfo;
       return json({
-        stocks: resolved.stocks,
-        universe: universeInfo,
+        stocks: shown,
+        universe: embeddedUniverse,
         asOf: snapshotAsOf,
         source: 'FYERS embedded snapshot',
         sectorIndices: [],
