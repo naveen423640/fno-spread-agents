@@ -1,4 +1,4 @@
-import { index, integer, real, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core';
+import { index, integer, primaryKey, real, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core';
 
 export const researchConfiguration = sqliteTable('research_configuration', {
   id: integer('id').primaryKey(),
@@ -156,3 +156,68 @@ export const strategyLabDailyReports = sqliteTable('strategy_lab_daily_reports',
   uniqueIndex('strategy_lab_report_contract_day').on(table.ticker, table.expiryDate, table.tradingDate),
   index('strategy_lab_report_coverage').on(table.ticker, table.expiryDate, table.tradingDate),
 ]);
+
+export const agentRuns = sqliteTable('agent_runs', {
+  id: text('id').primaryKey(),
+  symbol: text('symbol').notNull(),
+  asOf: text('as_of').notNull(),
+  tradingDate: text('trading_date').notNull(),
+  status: text('status').notNull(),
+  candidateJson: text('candidate_json').notNull(),
+  promptSet: text('prompt_set').notNull(),
+  modelNote: text('model_note').notNull(),
+  createdAt: text('created_at').notNull(),
+  completedAt: text('completed_at'),
+});
+
+export const agentSteps = sqliteTable('agent_steps', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  runId: text('run_id').notNull(),
+  role: text('role').notNull(),
+  status: text('status').notNull(),
+  outputJson: text('output_json'),
+  error: text('error'),
+  startedAt: text('started_at').notNull(),
+  completedAt: text('completed_at'),
+}, (table) => [index('agent_steps_run').on(table.runId)]);
+
+export const llmCalls = sqliteTable('llm_calls', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  runId: text('run_id').notNull(),
+  role: text('role').notNull(),
+  provider: text('provider').notNull(),
+  model: text('model').notNull(),
+  promptHash: text('prompt_hash').notNull(),
+  tokensIn: integer('tokens_in').notNull(),
+  tokensOut: integer('tokens_out').notNull(),
+  costInr: real('cost_inr').notNull(),
+  latencyMs: integer('latency_ms').notNull(),
+  status: text('status').notNull(),
+  createdAt: text('created_at').notNull(),
+}, (table) => [index('llm_calls_run').on(table.runId)]);
+
+export const agentSources = sqliteTable('agent_sources', {
+  id: text('id').notNull(),
+  runId: text('run_id').notNull(),
+  kind: text('kind').notNull(),
+  title: text('title').notNull(),
+  url: text('url'),
+  retrievedAt: text('retrieved_at').notNull(),
+}, (table) => [primaryKey({ columns: [table.runId, table.id] })]);
+
+export const verdicts = sqliteTable('verdicts', {
+  runId: text('run_id').primaryKey(),
+  verdict: text('verdict').notNull(),
+  reduceToLots: integer('reduce_to_lots'),
+  delayTo: text('delay_to'),
+  bodyJson: text('body_json').notNull(),
+  createdAt: text('created_at').notNull(),
+});
+
+export const analystReportCache = sqliteTable('analyst_report_cache', {
+  symbol: text('symbol').notNull(),
+  tradingDate: text('trading_date').notNull(),
+  role: text('role').notNull(),
+  reportJson: text('report_json').notNull(),
+  createdAt: text('created_at').notNull(),
+}, (table) => [primaryKey({ columns: [table.symbol, table.tradingDate, table.role] })]);
