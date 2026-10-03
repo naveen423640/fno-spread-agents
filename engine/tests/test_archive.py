@@ -75,3 +75,31 @@ def test_other_errors_raise_and_a_corrupt_archive_is_never_cached(tmp_path):
     with pytest.raises(Exception):
         c.fetch_fo(date(2026, 9, 29))
     assert not list((tmp_path / "fo").glob("*.zip")) if (tmp_path / "fo").exists() else True
+
+
+def test_a_cache_file_that_no_longer_matches_its_sha256_is_redownloaded(tmp_path):
+    good = make_fo_zip([ROW])
+    c, calls = client(tmp_path, [HttpResult(200, good), HttpResult(200, good)])
+    c.fetch_fo(date(2026, 9, 29))
+    (tmp_path / "fo" / "20260929.zip").write_bytes(b"corrupted on disk")
+    again = c.fetch_fo(date(2026, 9, 29))
+    assert len(calls) == 2 and again.from_cache is False and len(again.rows) == 1
+    assert (tmp_path / "fo" / "20260929.zip").read_bytes() == good
+
+
+def test_refresh_forces_a_redownload_so_a_revised_file_is_seen(tmp_path):
+    revised = make_fo_zip([dict(ROW, ClsPric="1.8")])
+    c, calls = client(tmp_path, [HttpResult(200, make_fo_zip([ROW])), HttpResult(200, revised)])
+    first = c.fetch_fo(date(2026, 9, 29))
+    second = c.fetch_fo(date(2026, 9, 29), refresh=True)
+    assert len(calls) == 2 and second.sha256 != first.sha256 and second.from_cache is False
+    third = c.fetch_fo(date(2026, 9, 29))
+    assert len(calls) == 2 and third.from_cache is True and third.sha256 == second.sha256
+
+
+def test_a_failed_refresh_keeps_the_existing_cache(tmp_path):
+    c, calls = client(tmp_path, [HttpResult(200, make_fo_zip([ROW])), HttpResult(500, b""), HttpResult(500, b""), HttpResult(500, b"")])
+    c.fetch_fo(date(2026, 9, 29))
+    with pytest.raises(ArchiveError):
+        c.fetch_fo(date(2026, 9, 29), refresh=True)
+    assert c.fetch_fo(date(2026, 9, 29)).from_cache is True

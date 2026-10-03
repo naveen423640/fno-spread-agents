@@ -23,12 +23,12 @@ class IngestReport:
     fetch_failures: list[date] = field(default_factory=list)
 
 
-def ingest_range(client: NseArchiveClient, store: Store, calendar: TradingCalendar, incidents: IncidentLog, start: date, end: date, now: datetime) -> IngestReport:
+def ingest_range(client: NseArchiveClient, store: Store, calendar: TradingCalendar, incidents: IncidentLog, start: date, end: date, now: datetime, refresh: bool = False) -> IngestReport:
     report, day = IngestReport(), start
     while day <= end:
         if calendar.is_trading_day(day):
             try:
-                fetched = client.fetch_fo(day)
+                fetched = client.fetch_fo(day, refresh=refresh)
             except (ArchiveError, OSError) as error:
                 # Class name and message only: never a URL, query string or header.
                 report.fetch_failures.append(day)
@@ -67,6 +67,7 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument("--to", dest="end", required=True)
     parser.add_argument("--data-dir", default=str(Path(__file__).resolve().parents[2] / "data"))
     parser.add_argument("--holidays", default=str(Path(__file__).resolve().parents[3] / "reference" / "nse_holidays.json"))
+    parser.add_argument("--refresh", action="store_true", help="Ignore the local cache and re-download each archive (so a revised file is noticed).")
     args = parser.parse_args(argv)
     from .safety import assert_paper_only
 
@@ -75,7 +76,7 @@ def main(argv: list[str] | None = None) -> None:
     store = Store(data_dir / "fno.duckdb")
     calendar = TradingCalendar.from_file(args.holidays, require_verified=True)
     now = datetime.now(timezone.utc)
-    report = ingest_range(NseArchiveClient(data_dir / "raw"), store, calendar, IncidentLog(store), date.fromisoformat(args.start), date.fromisoformat(args.end), now)
+    report = ingest_range(NseArchiveClient(data_dir / "raw"), store, calendar, IncidentLog(store), date.fromisoformat(args.start), date.fromisoformat(args.end), now, refresh=args.refresh)
     print(f"inserted={len(report.inserted)} unchanged={len(report.unchanged)} revised={len(report.revised)} gaps={len(report.gaps)} errors={len(report.errors)} fetch_failures={len(report.fetch_failures)}")
 
 

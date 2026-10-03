@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Callable, Mapping
 
 from ..ist import available_after
-from .parsers import parse_fo_bhavcopy_zip
+from .parsers import ArchiveFormatError, parse_fo_bhavcopy_zip
 from .rows import FoRow
 
 HEADERS = {"Accept": "application/zip,*/*", "Referer": "https://www.nseindia.com/", "User-Agent": "Mozilla/5.0 (compatible; FNOEnginePhase1/1.0)"}
@@ -81,15 +81,15 @@ class NseArchiveClient:
             result = self.transport(url, HEADERS)
         return result
 
-    def fetch_fo(self, day: date) -> FetchedReport | None:
+    def fetch_fo(self, day: date, refresh: bool = False) -> FetchedReport | None:
         if day.weekday() >= 5:
             return None
         zip_path, meta_path = self._paths(day)
         url = self.fo_url(day)
-        if zip_path.exists() and meta_path.exists():
-            meta = json.loads(meta_path.read_text(encoding="utf-8"))
-            body = zip_path.read_bytes()
-            return self._report(day, body, datetime.fromisoformat(meta["retrieved_at"]), url, True)
+        if not refresh and zip_path.exists() and meta_path.exists():
+            cached = self._read_cache(day, zip_path, meta_path, url)
+            if cached is not None:
+                return cached
         result = self._download(url)
         if result.status == 404:
             return None
@@ -101,6 +101,17 @@ class NseArchiveClient:
         zip_path.write_bytes(result.body)
         meta_path.write_text(json.dumps({"retrieved_at": retrieved_at.isoformat(), "sha256": report.sha256, "source_url": url}), encoding="utf-8")
         return report
+
+    def _read_cache(self, day: date, zip_path: Path, meta_path: Path, url: str) -> FetchedReport | None:
+        """The cached report, or None when the cache is unreadable or fails its sha256 check (treated as corrupt: re-download)."""
+        try:
+            meta = json.loads(meta_path.read_text(encoding="utf-8"))
+            body = zip_path.read_bytes()
+            if hashlib.sha256(body).hexdigest() != meta["sha256"]:
+                return None
+            return self._report(day, body, datetime.fromisoformat(meta["retrieved_at"]), url, True)
+        except (OSError, ValueError, KeyError, ArchiveFormatError):
+            return None
 
     def _report(self, day: date, body: bytes, retrieved_at: datetime, url: str, from_cache: bool) -> FetchedReport:
         return FetchedReport(effective_date=day, rows=parse_fo_bhavcopy_zip(body), sha256=hashlib.sha256(body).hexdigest(), size_bytes=len(body),
