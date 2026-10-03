@@ -114,6 +114,13 @@ describe('createLlmClient', () => {
     expect(body.messages).toEqual(request.messages);
   });
 
+  it('also scrubs masked key fragments that a provider echoes in an error body', async () => {
+    const { client, logs } = setup([provider('alpha')], () => new Response('{"error":{"message":"Authentication Fails, Your api key: ****72de is invalid"}}', { status: 401 }));
+    await client.complete(request);
+    expect(logs[0].status).toContain('http_401');
+    expect(logs[0].status).not.toContain('72de');
+  });
+
   it('sends the key only in the Authorization header', async () => {
     const seen: RequestInit[] = [];
     const { client } = setup([provider('alpha')], (_url, init) => { seen.push(init); return new Response(okBody('x')); });

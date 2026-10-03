@@ -7,7 +7,8 @@ export async function hashPrompt(messages: LlmMessage[]): Promise<string> {
   return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, '0')).join('');
 }
 
-const redact = (text: string, key: string) => (key ? text.split(key).join('[redacted]') : text);
+// Providers sometimes echo a masked key such as ****72de; scrub that along with the full key.
+const redact = (text: string, key: string) => (key ? text.split(key).join('[redacted]') : text).replace(/\*{2,}[A-Za-z0-9]{2,8}/g, '[redacted]');
 
 export function createLlmClient(options: { providers: ProviderConfig[]; limiter: Limiter; log: CallLogger; fetchImpl?: typeof fetch; now?: () => number; timeoutMs?: number }): LlmClient {
   const { providers, limiter, log } = options;

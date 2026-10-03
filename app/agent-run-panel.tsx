@@ -95,7 +95,7 @@ export function AgentRunPanel({ symbol }: { symbol: string }) {
         {view.phase === 'failed' && <p role="alert" className="text-red-500">The run failed{view.reason ? `: ${view.reason}` : '.'}</p>}
 
         {view.verdict && <div className="rounded-lg border-2 border-border p-3">
-          <div className="text-base font-semibold">Verdict: {describeVerdict(view.verdict, view.outcome)}</div>
+          <div className="text-base font-semibold">{describeVerdict(view.verdict, view.outcome)}</div>
           <ul className="mt-2 space-y-2">
             {view.verdict.reasons.map((reason, index) => (
               <li key={index}>
