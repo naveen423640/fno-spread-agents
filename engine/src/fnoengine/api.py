@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import threading
 from datetime import date, datetime, timezone
 from typing import Callable
 
@@ -20,13 +21,17 @@ def _utc_now() -> datetime:
 def create_app(store: Store, tokens: TokenStore, now: Callable[[], datetime] = _utc_now) -> FastAPI:
     app = FastAPI(title="fno-engine (read-only)", docs_url=None, redoc_url=None)
     reader = PointInTimeReader(store)
+    # A DuckDB connection is not safe for concurrent use, and FastAPI runs plain `def` endpoints in a threadpool.
+    # The API is local and single-user, so serialising all store and token access behind one lock is fine.
+    lock = threading.Lock()
 
-    def universe_for(day: date):
-        rows = reader.fo_rows(day, now())
-        if rows is None:
-            raise HTTPException(404, f"No published F&O data for {day.isoformat()}.")
-        return {"date": day.isoformat(), "source": "engine", "availableAsOf": now().isoformat(),
-                "entries": [{"ticker": e.ticker, "lotSize": e.lot_size} for e in fno_universe_on(rows)]}
+    def universe_for(day: date, as_of: datetime):
+        with lock:
+            rows = reader.fo_rows(day, as_of)
+            if rows is None:
+                raise HTTPException(404, f"No published F&O data for {day.isoformat()}.")
+            entries = [{"ticker": e.ticker, "lotSize": e.lot_size} for e in fno_universe_on(rows)]
+        return {"date": day.isoformat(), "source": "engine", "availableAsOf": as_of.isoformat(), "entries": entries}
 
     @app.get("/health")
     def health():
@@ -34,21 +39,27 @@ def create_app(store: Store, tokens: TokenStore, now: Callable[[], datetime] = _
 
     @app.get("/token/status")
     def token_status():
-        status = tokens.status(now())
-        decision = entry_gate(status)
-        return {"status": status.value, "allowEntries": decision.allow_entries, "reason": decision.reason, "note": tokens.expiry_note(now())}
+        moment = now()
+        with lock:
+            status = tokens.status(moment)
+            decision = entry_gate(status)
+            note = tokens.expiry_note(moment)
+        return {"status": status.value, "allowEntries": decision.allow_entries, "reason": decision.reason, "note": note}
 
     @app.get("/incidents")
     def incidents():
-        log = IncidentLog(store)
-        return {"open": [_json(i) for i in log.open_incidents()], "all": [_json(i) for i in log.all()]}
+        with lock:
+            log = IncidentLog(store)
+            return {"open": [_json(i) for i in log.open_incidents()], "all": [_json(i) for i in log.all()]}
 
     @app.get("/universe/latest")
     def universe_latest():
-        latest = reader.latest_available_date(now())
+        moment = now()
+        with lock:
+            latest = reader.latest_available_date(moment)
         if latest is None:
             raise HTTPException(404, "No published F&O data is stored yet.")
-        return universe_for(latest)
+        return universe_for(latest, moment)
 
     @app.get("/universe/{day}")
     def universe_on(day: str):
@@ -56,7 +67,7 @@ def create_app(store: Store, tokens: TokenStore, now: Callable[[], datetime] = _
             parsed = date.fromisoformat(day)
         except ValueError as error:
             raise HTTPException(400, "day must be YYYY-MM-DD or 'latest'.") from error
-        return universe_for(parsed)
+        return universe_for(parsed, now())
 
     return app
 

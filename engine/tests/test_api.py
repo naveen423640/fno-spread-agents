@@ -94,3 +94,51 @@ def test_serve_binds_localhost_only():
 
     from fnoengine import api
     assert '"127.0.0.1"' in inspect.getsource(api.serve)
+
+
+class _ProbeConnection:
+    """Delegates to the real connection but records how many threads are inside execute at once."""
+
+    def __init__(self, real):
+        import threading
+
+        self._real = real
+        self._guard = threading.Lock()
+        self.in_flight = 0
+        self.max_in_flight = 0
+
+    def execute(self, *args, **kwargs):
+        import time
+
+        with self._guard:
+            self.in_flight += 1
+            self.max_in_flight = max(self.max_in_flight, self.in_flight)
+        try:
+            time.sleep(0.02)
+            return self._real.execute(*args, **kwargs)
+        finally:
+            with self._guard:
+                self.in_flight -= 1
+
+    def __getattr__(self, name):
+        return getattr(self._real, name)
+
+
+def test_concurrent_requests_never_use_the_store_connection_at_the_same_time(tmp_path):
+    from concurrent.futures import ThreadPoolExecutor
+
+    store = Store(tmp_path / "s.duckdb")
+    for day in (date(2026, 9, 29), date(2026, 9, 30)):
+        rows = parse_fo_bhavcopy_zip(make_fo_zip(_rows_for(day, ["T1", "T2"])))
+        store.insert_fo(day, rows, sha256=day.isoformat(), size_bytes=1, retrieval_ts=NOW, available_ts=available_after(day))
+    IncidentLog(store).record_once("DATA_GAP:2026-09-25", "gap", NOW)
+    probe = _ProbeConnection(store.conn)
+    store.conn = probe
+    tokens = TokenStore(tmp_path / "t.json", repo_root=REPO)
+    tokens.save("CLIENT", "SECRET-TOKEN-VALUE", NOW)
+    client = TestClient(create_app(store, tokens, now=lambda: NOW))
+    paths = ["/universe/2026-09-29", "/incidents", "/universe/latest"] * 8
+    with ThreadPoolExecutor(max_workers=12) as pool:
+        statuses = list(pool.map(lambda p: client.get(p).status_code, paths))
+    assert statuses == [200] * len(paths)
+    assert probe.max_in_flight == 1
