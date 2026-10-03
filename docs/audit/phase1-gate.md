@@ -61,6 +61,7 @@ What the synthetic evidence DOES show (synthetic only): the Python universe, lot
 ## 4. Controller rulings that changed the plan during Phase 1
 
 
+
 Scope of approval (Ruling 8): the user's "continue with phase 1" approved starting Phase 1 only. The other Phase 0 gate items (a to f) remain open until the user answers them.
 | Ruling | Change |
 |---|---|
