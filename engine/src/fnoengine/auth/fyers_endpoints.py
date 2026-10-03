@@ -1,0 +1,5 @@
+BASE = "https://api-t1.fyers.in"
+VALIDATE_AUTHCODE = "https://api-t1.fyers.in/api/v3/validate-authcode"
+GENERATE_AUTHCODE = "https://api-t1.fyers.in/api/v3/generate-authcode"
+DATA_HISTORY = "https://api-t1.fyers.in/data/history"
+DATA_QUOTES = "https://api-t1.fyers.in/data/quotes"
