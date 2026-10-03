@@ -46,4 +46,26 @@ describe('prompt injection through news text', () => {
     expect(outcome.applied).toEqual({ lots: 0, delayTo: null, vetoed: true });
     expect(parseVerdict(outcome.verdict, new Set(['regime-1', 'news-1'])).ok).toBe(true);
   });
+
+  it('does not carry injected text through rejected-report error messages into later prompts', async () => {
+    const prompts: { role: string; prompt: string }[] = [];
+    const model: LlmClient = {
+      async complete(request) {
+        const prompt = request.messages.map((message) => message.content).join('\n');
+        prompts.push({ role: request.role, prompt });
+        const obeys = outsideBlocks(prompt).includes(INJECTION);
+        const text = request.role === 'technical'
+          ? JSON.stringify({ role: 'technical', summary: 's', claims: [{ claim: 'c', type: 'fact', source_ids: ['regime-1'] }], missing_evidence: [] })
+          // The news analyst is tricked into an unsourced "fact" that repeats the injected sentence, so its report is rejected.
+          : request.role === 'news' ? JSON.stringify({ role: 'news', summary: 's', claims: [{ claim: INJECTION, type: 'fact', source_ids: [] }], missing_evidence: [] })
+            : request.role === 'risk_pm' ? reply(obeys ? 'APPROVE' : 'VETO') : 'text';
+        return { ok: true, text, provider: 'fake', model: 'fake', tokensIn: 1, tokensOut: 1 };
+      },
+    };
+    const outcome = await runAgentTeam({ llm: model, store: createMemoryAgentStore() }, { runId: 'inj-2', symbol: 'NSE:TCS-EQ', asOf: '2026-10-02', tradingDate: '2026-10-02', calculatedLots: 3, inputs });
+    expect(outcome).toMatchObject({ status: 'completed', applied: { vetoed: true } });
+    for (const { role, prompt } of prompts) {
+      if (role !== 'news') expect(outsideBlocks(prompt), role).not.toContain(INJECTION);
+    }
+  });
 });

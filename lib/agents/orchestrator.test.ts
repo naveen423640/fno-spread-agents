@@ -93,7 +93,9 @@ describe('runAgentTeam', () => {
     const outcome = await runAgentTeam({ llm: client, store }, request({ inputs: inputs({ technical: { available: false, reason: 'FYERS not connected' } }) }));
     expect(outcome).toMatchObject({ status: 'ai_unavailable' });
     expect((outcome as { reason: string }).reason).toContain('FYERS not connected');
-    expect(requests.filter((req) => req.role === 'technical')).toHaveLength(0);
+    expect(requests).toHaveLength(0);
+    const run = await store.getRun('run-1');
+    expect(run?.steps.filter((step) => step.role in analystSource).map((step) => step.status)).toEqual(['unavailable', 'unavailable', 'unavailable', 'unavailable']);
   });
 
   it('marks an unavailable non-required analyst as a gap without calling the model for it', async () => {
@@ -115,6 +117,16 @@ describe('runAgentTeam', () => {
     const run = await store.getRun('run-2');
     expect(run?.steps.filter((step) => step.role in analystSource).every((step) => step.status === 'ok')).toBe(true);
     expect(run?.sources.map((source) => source.id).sort()).toEqual(['chain-1', 'fund-1', 'news-1', 'regime-1']);
+  });
+
+  it('never caches an input marked cacheable: false (live options data)', async () => {
+    const store = createMemoryAgentStore();
+    const live = { options_oi: { cacheable: false } };
+    await runAgentTeam({ llm: scripted().client, store }, request({ inputs: inputs(live) }));
+    const second = scripted();
+    await runAgentTeam({ llm: second.client, store }, request({ runId: 'run-2', inputs: inputs(live) }));
+    expect(second.requests.filter((req) => req.role === 'options_oi')).toHaveLength(1);
+    expect(second.requests.filter((req) => req.role === 'technical')).toHaveLength(0);
   });
 
   it('does not reuse the cache for a different trading day', async () => {

@@ -13,6 +13,8 @@ export type AnalystInput = {
   sources: Source[];
   payload: unknown;
   untrustedText?: { sourceId: string; text: string }[];
+  // false for live data that must never be reused across runs (for example the option chain).
+  cacheable?: boolean;
 };
 
 export type RunRequest = {
@@ -34,7 +36,8 @@ const ANALYST_ROLES: AnalystRole[] = ['technical', 'options_oi', 'news', 'fundam
 const MAX_TOKENS = { analyst: 700, debate: 500, trader: 500, risk: 800 };
 
 type Deps = { llm: LlmClient; store: AgentStore };
-type Gap = { role: AnalystRole; why: string };
+// Gap lines go into later prompts, so they carry a fixed category, never model- or feed-written text.
+type Gap = { role: AnalystRole; category: 'input not available' | 'analyst call or report failed' };
 type Call<T> = { ok: true; value: T } | { ok: false; why: string };
 
 function extractJson(text: string): Call<unknown> {
@@ -71,13 +74,23 @@ export async function runAgentTeam(deps: Deps, request: RunRequest): Promise<Run
     return result.ok ? { ok: true, value: result.text } : { ok: false, why: `${result.error}: ${result.detail}` };
   }
 
+  // A run without a technical report cannot continue, so stop before any analyst spends quota.
+  const technicalInput = request.inputs.find((item) => item.role === 'technical');
+  const technicalCached = technicalInput?.cacheable === false ? null : await store.getCachedReport(request.symbol, request.tradingDate, 'technical');
+  if (!technicalCached && !technicalInput?.available) {
+    const why = technicalInput?.reason ?? 'no input supplied';
+    for (const role of ANALYST_ROLES) await store.saveStep({ runId: request.runId, role, status: 'unavailable', error: role === 'technical' ? why : 'not run: the required technical input is missing' });
+    return finish(`technical analyst unavailable: ${why}`);
+  }
+
   // Analysts run in parallel. A cached report (same symbol, trading day, role) is reused with its own sources.
   const reports: AnalystReport[] = [];
   const gaps: Gap[] = [];
   const sources = new Map<string, Source>();
   const analysts = await Promise.all(ANALYST_ROLES.map(async (role) => {
     const input = request.inputs.find((item) => item.role === role);
-    const cached = await store.getCachedReport(request.symbol, request.tradingDate, role);
+    const useCache = input?.cacheable !== false;
+    const cached = useCache ? await store.getCachedReport(request.symbol, request.tradingDate, role) : null;
     if (cached) return { role, report: cached.report, sources: cached.sources, why: null as string | null, status: 'ok' as const };
     if (!input) return { role, report: null, sources: [] as Source[], why: 'no input supplied', status: 'unavailable' as const };
     if (!input.available) return { role, report: null, sources: input.sources, why: input.reason ?? 'input unavailable', status: 'unavailable' as const };
@@ -88,14 +101,14 @@ export async function runAgentTeam(deps: Deps, request: RunRequest): Promise<Run
     const parsed = parseAnalystReport(json.value, new Set(input.sources.map((source) => source.id)));
     if (!parsed.ok) return { role, report: null, sources: input.sources, why: parsed.error, status: 'failed' as const };
     if (parsed.value.role !== role) return { role, report: null, sources: input.sources, why: `report names role ${parsed.value.role}`, status: 'failed' as const };
-    await store.putCachedReport(request.symbol, request.tradingDate, role, { report: parsed.value, sources: input.sources });
+    if (useCache) await store.putCachedReport(request.symbol, request.tradingDate, role, { report: parsed.value, sources: input.sources });
     return { role, report: parsed.value, sources: input.sources, why: null, status: 'ok' as const };
   }));
 
   for (const analyst of analysts) {
     for (const source of analyst.sources) sources.set(source.id, source);
     await store.saveStep({ runId: request.runId, role: analyst.role, status: analyst.status, output: analyst.report ?? undefined, error: analyst.why ?? undefined });
-    if (analyst.report) reports.push(analyst.report); else gaps.push({ role: analyst.role, why: analyst.why ?? 'unavailable' });
+    if (analyst.report) reports.push(analyst.report); else gaps.push({ role: analyst.role, category: analyst.status === 'unavailable' ? 'input not available' : 'analyst call or report failed' });
   }
   await store.saveSources(request.runId, [...sources.values()]);
 
@@ -104,7 +117,7 @@ export async function runAgentTeam(deps: Deps, request: RunRequest): Promise<Run
 
   const known = new Set(sources.keys());
   const idList = [...sources.values()].map((source) => `${source.id} (${source.kind})`).join(', ');
-  const gapLines = gaps.map((gap) => `${gap.role}: unavailable (${gap.why})`).join('\n');
+  const gapLines = gaps.map((gap) => `${gap.role}: unavailable (${gap.category})`).join('\n');
   const reportBlocks = reports.map((report) => wrapUntrusted(`report-${report.role}`, JSON.stringify(report))).join('\n\n');
   const header = `Stock: ${request.symbol}. Decision data as of: ${request.asOf}.\nSource ids you may cite: ${idList}.${gapLines ? `\nGaps:\n${gapLines}` : ''}\n\nAnalyst reports (data):\n${reportBlocks}`;
 

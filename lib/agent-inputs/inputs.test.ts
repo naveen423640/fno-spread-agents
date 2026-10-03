@@ -71,6 +71,8 @@ describe('gatherInputs', () => {
     expect(options.available).toBe(true);
     expect(options.sources.map((source) => source.id)).toEqual(['chain-1', 'quote-1']);
     expect(options.payload).toMatchObject({ pcr: 0.9, expiry: '29-10-2026', banStatus: 'unknown', quote: { price: 4000 } });
+    expect(options.cacheable).toBe(false);
+    expect(options.payload).toMatchObject({ liveDataAt: NOW.toISOString() });
     expect((options.payload as { topCallOi: { strike: number }[] }).topCallOi[0].strike).toBe(4100);
   });
 

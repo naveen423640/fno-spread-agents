@@ -23,11 +23,13 @@ export async function gatherOptionsOi(args: GatherArgs, deps: GatherDeps): Promi
       role: 'options_oi',
       asOf,
       available: true,
+      cacheable: false,
       sources: [
         { id: 'chain-1', kind: 'option_chain', title: `Nearest-expiry option chain (${chain.expiry})`, url: null, retrieved_at: retrieved },
         { id: 'quote-1', kind: 'price_oi', title: 'Latest equity quote', url: null, retrieved_at: retrieved },
       ],
       payload: {
+        liveDataAt: retrieved,
         quote,
         expiry: chain.expiry,
         spot: chain.spot,
