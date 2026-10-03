@@ -16,6 +16,7 @@ const source: Source = { id: 'regime-1', kind: 'regime', title: 'Regime', url: n
 const verdict: Verdict = { verdict: 'REDUCE', reduce_to_lots: 2, reasons: [{ claim: 'c', type: 'fact', source_ids: ['regime-1'] }], missing_evidence: [], confidence_note: 'n' };
 const report: AnalystReport = { role: 'technical', summary: 's', claims: [], missing_evidence: [] };
 const cached = { report, sources: [source] };
+const outcome = { applied: { lots: 1, delayTo: null, vetoed: false }, counterfactual: { lots: 4, delayTo: null } } as const;
 
 describe.each(factories)('AgentStore (%s)', (_name, make) => {
   it('stores and reads back a whole run', async () => {
@@ -24,7 +25,7 @@ describe.each(factories)('AgentStore (%s)', (_name, make) => {
     await store.saveStep({ runId: 'r1', role: 'technical', status: 'ok', output: report });
     await store.saveStep({ runId: 'r1', role: 'news', status: 'unavailable', error: 'feed down' });
     await store.saveSources('r1', [source]);
-    await store.saveVerdict('r1', verdict);
+    await store.saveVerdict('r1', verdict, outcome);
     await store.setRunStatus('r1', 'completed', NOW.toISOString());
 
     const run = await store.getRun('r1');
@@ -34,6 +35,7 @@ describe.each(factories)('AgentStore (%s)', (_name, make) => {
     expect(run?.steps[1].error).toBe('feed down');
     expect(run?.sources).toEqual([source]);
     expect(run?.verdict).toEqual(verdict);
+    expect(run?.outcome).toEqual(outcome);
   });
 
   it('returns null for an unknown run and a null verdict before one is saved', async () => {
@@ -41,6 +43,7 @@ describe.each(factories)('AgentStore (%s)', (_name, make) => {
     expect(await store.getRun('missing')).toBeNull();
     await store.createRun({ id: 'r2', symbol: 'NSE:TCS-EQ', asOf: '2026-10-01', tradingDate: '2026-10-01', candidate: {}, promptSet: 'agents-v1' });
     expect((await store.getRun('r2'))?.verdict).toBeNull();
+    expect((await store.getRun('r2'))?.outcome).toBeNull();
     expect((await store.getRun('r2'))?.run.status).toBe('running');
   });
 

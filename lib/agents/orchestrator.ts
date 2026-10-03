@@ -2,7 +2,7 @@ import type { LlmClient } from '../llm/types';
 import { applyAuthority } from './clamp';
 import { ANALYST_JSON_INSTRUCTION, PROMPT_SET_ID, rolePrompt, VERDICT_JSON_INSTRUCTION, type AnalystRole, type Role } from './prompts';
 import { parseAnalystReport, parseVerdict, type AnalystReport, type Source, type Verdict } from './schemas';
-import type { AgentStore } from './store';
+import type { AgentStore, Applied } from './store';
 import { wrapUntrusted } from './untrusted';
 
 export type AnalystInput = {
@@ -27,7 +27,7 @@ export type RunRequest = {
   debateRounds?: number;
 };
 
-export type Applied = { lots: number | null; delayTo: '11:00' | null; vetoed: boolean };
+export type { Applied } from './store';
 export type RunOutcome =
   | { status: 'completed'; verdict: Verdict; applied: Applied; counterfactual: { lots: number | null; delayTo: null } }
   | { status: 'ai_unavailable'; reason: string };
@@ -149,11 +149,11 @@ export async function runAgentTeam(deps: Deps, request: RunRequest): Promise<Run
 
   const verdict = parsed.value;
   await store.saveStep({ runId: request.runId, role: 'risk_pm', status: 'ok', output: verdict });
-  await store.saveVerdict(request.runId, verdict);
-  await store.setRunStatus(request.runId, 'completed', new Date().toISOString());
-
   const applied: Applied = request.calculatedLots === null
     ? { lots: null, delayTo: verdict.verdict === 'DELAY' ? '11:00' : null, vetoed: verdict.verdict === 'VETO' }
     : applyAuthority(verdict, request.calculatedLots);
-  return { status: 'completed', verdict, applied, counterfactual: { lots: request.calculatedLots, delayTo: null } };
+  const counterfactual = { lots: request.calculatedLots, delayTo: null } as const;
+  await store.saveVerdict(request.runId, verdict, { applied, counterfactual });
+  await store.setRunStatus(request.runId, 'completed', new Date().toISOString());
+  return { status: 'completed', verdict, applied, counterfactual };
 }

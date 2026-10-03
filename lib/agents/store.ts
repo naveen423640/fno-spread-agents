@@ -8,15 +8,18 @@ export type NewRun = { id: string; symbol: string; asOf: string; tradingDate: st
 export type NewStep = { runId: string; role: string; status: StepStatus; output?: unknown; error?: string };
 export type RunRow = { id: string; symbol: string; asOf: string; tradingDate: string; status: RunStatus; candidate: unknown; promptSet: string; createdAt: string; completedAt: string | null };
 export type StepRow = { role: string; status: StepStatus; output: unknown; error: string | null; startedAt: string };
+export type Applied = { lots: number | null; delayTo: '11:00' | null; vetoed: boolean };
+// What the code actually applies after the authority clamp, and the full-size, on-time counterfactual.
+export type VerdictOutcome = { applied: Applied; counterfactual: { lots: number | null; delayTo: null } };
 export type CachedReport = { report: AnalystReport; sources: Source[] };
-export type RunDetail = { run: RunRow; steps: StepRow[]; sources: Source[]; verdict: Verdict | null };
+export type RunDetail = { run: RunRow; steps: StepRow[]; sources: Source[]; verdict: Verdict | null; outcome: VerdictOutcome | null };
 
 export type AgentStore = {
   createRun(run: NewRun): Promise<void>;
   setRunStatus(id: string, status: RunStatus, completedAt?: string): Promise<void>;
   saveStep(step: NewStep): Promise<void>;
   saveSources(runId: string, sources: Source[]): Promise<void>;
-  saveVerdict(runId: string, verdict: Verdict): Promise<void>;
+  saveVerdict(runId: string, verdict: Verdict, outcome: VerdictOutcome): Promise<void>;
   getRun(id: string): Promise<RunDetail | null>;
   getCachedReport(symbol: string, tradingDate: string, role: string): Promise<CachedReport | null>;
   putCachedReport(symbol: string, tradingDate: string, role: string, cached: CachedReport): Promise<void>;
@@ -55,21 +58,23 @@ export function createD1AgentStore(db: D1Like, now: () => Date = () => new Date(
           .bind(source.id, runId, source.kind, source.title, source.url, source.retrieved_at).run();
       }
     },
-    async saveVerdict(runId, verdict) {
+    async saveVerdict(runId, verdict, outcome) {
       await db.prepare('INSERT OR REPLACE INTO verdicts (run_id, verdict, reduce_to_lots, delay_to, body_json, created_at) VALUES (?, ?, ?, ?, ?, ?)')
-        .bind(runId, verdict.verdict, verdict.reduce_to_lots ?? null, verdict.delay_to ?? null, JSON.stringify(verdict), stamp()).run();
+        .bind(runId, verdict.verdict, verdict.reduce_to_lots ?? null, verdict.delay_to ?? null, JSON.stringify({ verdict, ...outcome }), stamp()).run();
     },
     async getRun(id) {
       const row = await db.prepare('SELECT * FROM agent_runs WHERE id = ?').bind(id).first<Record<string, string | null>>();
       if (!row) return null;
       const steps = await db.prepare('SELECT role, status, output_json, error, started_at FROM agent_steps WHERE run_id = ? ORDER BY id').bind(id).all<Record<string, string | null>>();
       const sources = await db.prepare('SELECT id, kind, title, url, retrieved_at FROM agent_sources WHERE run_id = ? ORDER BY rowid').bind(id).all<Source>();
-      const verdict = await db.prepare('SELECT body_json FROM verdicts WHERE run_id = ?').bind(id).first<{ body_json: string }>();
+      const stored = await db.prepare('SELECT body_json FROM verdicts WHERE run_id = ?').bind(id).first<{ body_json: string }>();
+      const body = stored ? (parse(stored.body_json) as { verdict: Verdict } & VerdictOutcome) : null;
       return {
         run: { id: row.id as string, symbol: row.symbol as string, asOf: row.as_of as string, tradingDate: row.trading_date as string, status: row.status as RunStatus, candidate: parse(row.candidate_json), promptSet: row.prompt_set as string, createdAt: row.created_at as string, completedAt: row.completed_at },
         steps: steps.results.map((step) => ({ role: step.role as string, status: step.status as StepStatus, output: parse(step.output_json), error: step.error, startedAt: step.started_at as string })),
         sources: sources.results,
-        verdict: verdict ? (parse(verdict.body_json) as Verdict) : null,
+        verdict: body?.verdict ?? null,
+        outcome: body ? { applied: body.applied, counterfactual: body.counterfactual } : null,
       };
     },
     async getCachedReport(symbol, tradingDate, role) {
@@ -91,7 +96,7 @@ export function createMemoryAgentStore(now: () => Date = () => new Date()): Agen
   const runs = new Map<string, RunRow>();
   const steps = new Map<string, StepRow[]>();
   const sources = new Map<string, Source[]>();
-  const verdicts = new Map<string, Verdict>();
+  const verdicts = new Map<string, { verdict: Verdict; outcome: VerdictOutcome }>();
   const cache = new Map<string, CachedReport>();
   const llmCalls: CallLogEntry[] = [];
   const stamp = () => now().toISOString();
@@ -114,11 +119,11 @@ export function createMemoryAgentStore(now: () => Date = () => new Date()): Agen
       for (const item of items) merged.set(item.id, item);
       sources.set(runId, [...merged.values()]);
     },
-    async saveVerdict(runId, verdict) { verdicts.set(runId, verdict); },
+    async saveVerdict(runId, verdict, outcome) { verdicts.set(runId, { verdict, outcome }); },
     async getRun(id) {
       const run = runs.get(id);
       if (!run) return null;
-      return { run, steps: steps.get(id) ?? [], sources: sources.get(id) ?? [], verdict: verdicts.get(id) ?? null };
+      return { run, steps: steps.get(id) ?? [], sources: sources.get(id) ?? [], verdict: verdicts.get(id)?.verdict ?? null, outcome: verdicts.get(id)?.outcome ?? null };
     },
     async getCachedReport(symbol, tradingDate, role) { return cache.get(`${symbol}|${tradingDate}|${role}`) ?? null; },
     async putCachedReport(symbol, tradingDate, role, cached) { cache.set(`${symbol}|${tradingDate}|${role}`, cached); },

@@ -1,5 +1,5 @@
 import type { ANALYST_ROLES, Source, Verdict } from './schemas';
-import type { RunDetail } from './store';
+import type { RunDetail, VerdictOutcome } from './store';
 
 export type RunResponse = RunDetail;
 export type Phase = 'starting' | 'analysts' | 'debate' | 'risk' | 'done' | 'unavailable' | 'failed';
@@ -10,6 +10,7 @@ export type RunView = {
   debate: { role: string; text: string }[];
   proposal: string | null;
   verdict: Verdict | null;
+  outcome: VerdictOutcome | null;
   sources: Source[];
   reason: string | null;
 };
@@ -19,7 +20,7 @@ const textOf = (output: unknown) => (output && typeof output === 'object' && 'te
 const summaryOf = (output: unknown) => (output && typeof output === 'object' && 'summary' in output && typeof output.summary === 'string' ? output.summary : undefined);
 
 export function summarizeRun(data: RunResponse | null): RunView {
-  if (!data) return { phase: 'starting', analystCards: ROLES.map((role) => ({ role, status: 'pending' })), debate: [], proposal: null, verdict: null, sources: [], reason: null };
+  if (!data) return { phase: 'starting', analystCards: ROLES.map((role) => ({ role, status: 'pending' })), debate: [], proposal: null, verdict: null, outcome: null, sources: [], reason: null };
 
   const { run, steps } = data;
   const analystCards: AnalystCard[] = ROLES.map((role) => {
@@ -39,5 +40,23 @@ export function summarizeRun(data: RunResponse | null): RunView {
   else if (analystCards.some((card) => card.status !== 'pending')) phase = 'debate';
   else phase = 'analysts';
 
-  return { phase, analystCards, debate, proposal: trader ? textOf(trader.output) || null : null, verdict: data.verdict, sources: data.sources, reason: runStep?.error ?? null };
+  return { phase, analystCards, debate, proposal: trader ? textOf(trader.output) || null : null, verdict: data.verdict, outcome: data.outcome, sources: data.sources, reason: runStep?.error ?? null };
+}
+
+// Shows what the code applies after the authority clamp; the model's own request is only mentioned.
+export function describeVerdict(verdict: Verdict, outcome: VerdictOutcome | null): string {
+  const lots = outcome?.applied.lots ?? null;
+  switch (verdict.verdict) {
+    case 'VETO':
+      return 'VETO: no trade';
+    case 'DELAY':
+      return `DELAY: enter at ${verdict.delay_to ?? '11:00'}${lots === null ? '' : ` with ${lots} lot(s)`}`;
+    case 'REDUCE': {
+      const asked = verdict.reduce_to_lots;
+      if (lots === null) return `REDUCE: requested ${asked} lot(s); no calculated size to apply it to`;
+      return `REDUCE to ${lots} lot(s)${asked !== undefined && asked !== lots ? ` (model asked for ${asked})` : ''}`;
+    }
+    default:
+      return lots === null ? 'APPROVE' : `APPROVE: ${lots} lot(s)`;
+  }
 }

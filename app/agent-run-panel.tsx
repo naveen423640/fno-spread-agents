@@ -5,7 +5,7 @@ import { AlertCircle, ExternalLink, Loader2, Users } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { summarizeRun, type Phase, type RunResponse } from '@/lib/agents/run-view';
+import { describeVerdict, summarizeRun, type Phase, type RunResponse } from '@/lib/agents/run-view';
 
 const ROLE_LABEL: Record<string, string> = { technical: 'Technical', options_oi: 'Options / OI', news: 'News', fundamentals: 'Fundamentals', bull: 'Bull researcher', bear: 'Bear researcher' };
 const PHASE_LABEL: Record<Phase, string> = {
@@ -95,7 +95,7 @@ export function AgentRunPanel({ symbol }: { symbol: string }) {
         {view.phase === 'failed' && <p role="alert" className="text-red-500">The run failed{view.reason ? `: ${view.reason}` : '.'}</p>}
 
         {view.verdict && <div className="rounded-lg border-2 border-border p-3">
-          <div className="text-base font-semibold">Verdict: {view.verdict.verdict}{view.verdict.reduce_to_lots ? ` to ${view.verdict.reduce_to_lots} lot(s)` : ''}{view.verdict.delay_to ? ` until ${view.verdict.delay_to}` : ''}</div>
+          <div className="text-base font-semibold">Verdict: {describeVerdict(view.verdict, view.outcome)}</div>
           <ul className="mt-2 space-y-2">
             {view.verdict.reasons.map((reason, index) => (
               <li key={index}>

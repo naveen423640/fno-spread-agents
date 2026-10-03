@@ -161,6 +161,9 @@ describe('runAgentTeam', () => {
     const { client } = scripted({ risk_pm: verdictReply({ verdict: 'REDUCE', reduce_to_lots: 9 }) });
     const outcome = await runAgentTeam({ llm: client, store }, request({ calculatedLots: 4 }));
     expect(outcome).toMatchObject({ status: 'completed', applied: { lots: 3 } });
+    const stored = await store.getRun('run-1');
+    expect(stored?.verdict?.reduce_to_lots).toBe(9);
+    expect(stored?.outcome).toEqual({ applied: { lots: 3, delayTo: null, vetoed: false }, counterfactual: { lots: 4, delayTo: null } });
   });
 
   it('skips the clamp when no code-calculated lots exist yet', async () => {
