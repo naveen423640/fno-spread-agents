@@ -21,7 +21,7 @@ Date: 2026-10-03. Branch `phase-0-1`. Spec section 11, Phase 1 gate: "Leakage an
 - Python: `engine/tests/test_no_order_endpoints.py::test_engine_source_references_no_order_endpoints` and `::test_scanner_catches_violations`.
 - TypeScript: `tests/safety/no-order-endpoints.test.ts`, `the application source references only allowed FYERS auth and data endpoints` and `the scanner itself catches an order endpoint (it can fail)`.
 
-(b) Live mode refuses to start. Python, run once with variables set only for that process:
+(b) Live mode is refused. In Python the engine refuses at its entry points (`serve`, `ingest`, `login`). In the TypeScript app, `assertPaperOnly()` is enforced per request on the backtest routes only (`lib/backtest/fyers-data.ts`); a startup assertion for the Next app is a Phase 2 prerequisite. Python check, run once with variables set only for that process:
 
 ```
 EXECUTION_MODE=live          -> LiveExecutionRefused EXECUTION_MODE must be "paper" (got "live"). Live execution is disabled in this system.
@@ -33,11 +33,11 @@ TypeScript `readExecutionSettings` is covered by the existing tests in `tests/ex
 (c) `git ls-files | grep -c "^\.env"` printed `0`.
 
 (d) Token and `.env` handling, by search over `engine/src`, `lib/engine-client.ts`, `lib/universe.ts`, `lib/execution-mode.ts`:
-- `FYERS_ACCESS_TOKEN`: no matches anywhere in those paths.
+- `FYERS_ACCESS_TOKEN`: no matches anywhere in those paths (the engine-side files searched). Outside them, `app/api/market/route.ts` (pre-existing: reads a cookie or the environment variable) and `scripts/probe-fyers.mjs` also read `FYERS_ACCESS_TOKEN`; neither prints it.
 - `access_token`: only `engine/src/fnoengine/auth/login.py` (reads it from the FYERS token-exchange response) and `engine/src/fnoengine/auth/token_store.py` (the stored record; its `repr` masks the token as `'***'`).
 - `.env` matches are all `os.environ` / `process.env` reads, not file reads: `auth/login.py` (`FYERS_CLIENT_ID`, `FYERS_SECRET_KEY`, `FYERS_REDIRECT_URI` from the process environment, and the token max age), `auth/token_store.py` (token path from the environment), `safety.py` (`EXECUTION_MODE`, `LIVE_EXECUTION_ENABLED`), `lib/engine-client.ts` (`FNO_ENGINE_URL`), `lib/execution-mode.ts` (the two safety flags). No code opens a `.env*` file.
 - Files that mention tokens without handling the secret: `engine/src/fnoengine/api.py` (reports token status only, via `TokenStore.status` / `expiry_note`) and `engine/src/fnoengine/gates.py` (acts on a `TokenStatus`, no token value).
-- So token handling exists only in `engine/src/fnoengine/auth/*`. Limit: this is a text search; the secret key and redirect URI are expected in the engine's process environment, which was never inspected. No `.env*` file or real token file was opened or printed in this task.
+- So engine-side token handling exists only in `engine/src/fnoengine/auth/*`. Limit: this is a text search; the secret key and redirect URI are expected in the engine's process environment, which was never inspected. No `.env*` file or real token file was opened or printed in this task.
 
 ## 3. Gate checklist (spec section 11, Phase 1, plus the plan's scope)
 
@@ -81,8 +81,8 @@ Earlier rulings (1 to 8, including the 22:30 IST publication rule and the Task 1
 3. The FYERS login flow has never been run end to end; the token file permission handling on Windows is only a code comment.
 4. The dev-server check of the dated universe was done by the implementer and not repeated for this gate.
 5. Known gaps in the code:
-   - The archive client cache never re-downloads a cached date: a corrected NSE file is never noticed unless the cache file is deleted; there is no self-heal and the stored sha256 is never verified.
-   - `engine/requirements.lock` has a UTF-8 BOM and a machine-specific editable-install line; it must be regenerated with `pip freeze --exclude-editable` as UTF-8 without BOM before merge.
+   - Fixed after this gate run: the archive client cache now verifies its stored sha256 (a mismatch is re-downloaded) and `refresh=True` / `ingest --refresh` forces a re-download, so a revised file reaches the revision path. Cached files are still not written atomically.
+   - Fixed after this gate run: `engine/requirements.lock` was regenerated with `pip freeze --exclude-editable`, UTF-8 without BOM.
    - The Markov tab's `lib/regime/fyers-daily.ts` treats code -22 as an auth failure, but the audit found no source for it (documented codes are -8, -15, -16, -17 and HTTP 401).
    - The Markov tab still uses the static universe.
    - There is no `ORACLE_REQUIRED` switch, so a missing node silently skips the parity test; this gate ran with `-rs` and confirmed 4 passed.
@@ -114,11 +114,11 @@ Earlier rulings (1 to 8, including the 22:30 IST publication rule and the Task 1
 
 - CEO: The data foundation the strategy depends on exists and is tested, but nothing has yet been shown on real NSE data, and the legal question on automated NSE collection is unanswered; no claim about strategy value can be made.
 - CFO: Phase 1 cost nothing in trading risk or data fees (paper only, free sources); the unresolved NSE Terms of Use question is the one potential cost or compliance exposure.
-- CTO: The engine is covered by synthetic-data tests (137 Python, 178 TypeScript passing, tsc and build clean, lint at the unchanged 29-error baseline) with safety rules intact, but the cache has no self-heal, the lock file must be regenerated and real-data parity is unrun.
+- CTO: The engine is covered by synthetic-data tests (137 Python, 178 TypeScript passing, tsc and build clean, lint at the unchanged 29-error baseline) with safety rules intact, and real-data parity is unrun (the cache self-heal and lock file issues found in review were fixed afterwards).
 
 ## 8. Recommended decision
 
-**Repair (finish Phase 1 on real data), then continue.** Not "continue" outright, because the gate's two exit criteria (leakage and integrity, and data-layer parity) are met only on synthetic data; not simplify or stop, because nothing found contradicts the approach. The repair is: the user decides the NSE terms question and confirms the holiday list, then Task 18 runs and its real-data results are added here, and the lock file and cache-refresh issues are fixed before merge. Phase 2 does not start before that and the user's decision.
+**Repair (finish Phase 1 on real data), then continue.** Not "continue" outright, because the gate's two exit criteria (leakage and integrity, and data-layer parity) are met only on synthetic data; not simplify or stop, because nothing found contradicts the approach. The repair is: the user decides the NSE terms question and confirms the holiday list, then Task 18 runs and its real-data results are added here, and the lock file and cache-refresh issues (now fixed: the lock file was regenerated, and the archive cache verifies its sha256 and supports a refresh option) no longer block merge. Phase 2 does not start before that and the user's decision.
 
 ## 9. Decisions needed from the user
 
