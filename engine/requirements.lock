@@ -1,4 +1,4 @@
-﻿annotated-doc==0.0.5
+annotated-doc==0.0.5
 annotated-types==0.8.0
 anyio==4.15.1
 certifi==2026.7.22
@@ -6,8 +6,6 @@ click==8.5.0
 colorama==0.4.6
 duckdb==1.5.6
 fastapi==0.129.1
-# Editable Git install with no remote (fnoengine==0.1.0)
--e c:\users\mnkre\documents\codex\2026-08-30\fyers-mcp-plugin-fyers-mcp-personal-6\fno-spread-agents\engine
 h11==0.16.0
 httpcore==1.0.9
 httpx==0.28.1
