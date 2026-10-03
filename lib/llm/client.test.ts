@@ -6,7 +6,7 @@ import type { CallLogEntry, LlmRequest, ProviderConfig } from './types';
 
 const provider = (name: string, extra: Partial<ProviderConfig> = {}): ProviderConfig => ({ name, baseUrl: `https://${name}.example/v1`, apiKey: `key-for-${name}-9f3a`, model: `${name}-model`, requestsPerMinute: 5, dailyTokenQuota: 100_000, costPer1kTokensInr: 0, ...extra });
 const request: LlmRequest = { role: 'technical', runId: 'r1', messages: [{ role: 'user', content: 'hello' }], maxTokens: 100 };
-const okBody = (text: string) => JSON.stringify({ choices: [{ message: { content: text } }], usage: { prompt_tokens: 12, completion_tokens: 8 } });
+const okBody = (text: string, finish?: string) => JSON.stringify({ choices: [{ message: { content: text }, finish_reason: finish }], usage: { prompt_tokens: 12, completion_tokens: 8 } });
 
 function setup(providers: ProviderConfig[], handler: (url: string, init: RequestInit) => Response | Promise<Response>) {
   const logs: CallLogEntry[] = [];
@@ -26,6 +26,20 @@ describe('createLlmClient', () => {
     expect(logs[0].promptHash).toMatch(/^[0-9a-f]{64}$/);
   });
 
+  it('returns the finish reason so a cut-off reply can be told apart', async () => {
+    const { client } = setup([provider('alpha')], () => new Response(okBody('{"a":', 'length')));
+    expect(await client.complete(request)).toMatchObject({ ok: true, finishReason: 'length' });
+    const stop = setup([provider('alpha')], () => new Response(okBody('{}', 'stop')));
+    expect(await stop.client.complete(request)).toMatchObject({ ok: true, finishReason: 'stop' });
+  });
+
+  it('gives every request a timeout signal so a hung provider falls back', async () => {
+    const seen: RequestInit[] = [];
+    const { client } = setup([provider('alpha')], (_url, init) => { seen.push(init); return new Response(okBody('x')); });
+    await client.complete(request);
+    expect(seen[0].signal).toBeInstanceOf(AbortSignal);
+  });
+
   it('computes cost from tokens for a paid provider', async () => {
     const { client, logs } = setup([provider('paid', { costPer1kTokensInr: 5 })], () => new Response(okBody('hi')));
     await client.complete(request);
@@ -37,7 +51,7 @@ describe('createLlmClient', () => {
     const result = await client.complete(request);
     expect(result).toMatchObject({ ok: true, text: 'from beta', provider: 'beta' });
     expect(calls).toHaveLength(2);
-    expect(logs.map((entry) => [entry.provider, entry.status])).toEqual([['alpha', 'http_429'], ['beta', 'ok']]);
+    expect(logs.map((entry) => [entry.provider, entry.status.split(' ')[0]])).toEqual([['alpha', 'http_429'], ['beta', 'ok']]);
   });
 
   it('falls back on a network error and on a body with no content', async () => {
@@ -77,6 +91,16 @@ describe('createLlmClient', () => {
     const result = await client.complete(request);
     expect(JSON.stringify(result)).not.toContain(key);
     expect(JSON.stringify(logs)).not.toContain(key);
+  });
+
+  it('logs a short, key-redacted head of an error body so a wrong model name can be diagnosed', async () => {
+    const key = provider('alpha').apiKey;
+    const { client, logs } = setup([provider('alpha')], () => new Response(`{"error":{"message":"The model does not exist","echo":"${key}","pad":"${'x'.repeat(500)}"}}`, { status: 404 }));
+    await client.complete(request);
+    expect(logs[0].status).toContain('http_404');
+    expect(logs[0].status).toContain('The model does not exist');
+    expect(logs[0].status).not.toContain(key);
+    expect(logs[0].status.length).toBeLessThanOrEqual(220);
   });
 
   it('sends the key only in the Authorization header', async () => {

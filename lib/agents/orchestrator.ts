@@ -1,6 +1,6 @@
 import type { LlmClient } from '../llm/types';
 import { applyAuthority } from './clamp';
-import { ANALYST_JSON_INSTRUCTION, PROMPT_SET_ID, rolePrompt, VERDICT_JSON_INSTRUCTION, type AnalystRole, type Role } from './prompts';
+import { analystJsonInstruction, PROMPT_SET_ID, rolePrompt, VERDICT_JSON_INSTRUCTION, type AnalystRole, type Role } from './prompts';
 import { parseAnalystReport, parseVerdict, type AnalystReport, type Source, type Verdict } from './schemas';
 import type { AgentStore, Applied } from './store';
 import { wrapUntrusted } from './untrusted';
@@ -33,12 +33,14 @@ export type RunOutcome =
   | { status: 'ai_unavailable'; reason: string };
 
 const ANALYST_ROLES: AnalystRole[] = ['technical', 'options_oi', 'news', 'fundamentals'];
-const MAX_TOKENS = { analyst: 700, debate: 500, trader: 500, risk: 800 };
+const MAX_TOKENS = { analyst: 1500, debate: 700, trader: 600, risk: 1200 };
+const CUT_OFF = 'reply was cut off at the token limit';
+const isCutOff = (finishReason?: string) => finishReason === 'length' || finishReason === 'max_tokens';
 
 type Deps = { llm: LlmClient; store: AgentStore };
 // Gap lines go into later prompts, so they carry a fixed category, never model- or feed-written text.
 type Gap = { role: AnalystRole; category: 'input not available' | 'analyst call or report failed' };
-type Call<T> = { ok: true; value: T } | { ok: false; why: string };
+type Call<T> = { ok: true; value: T; cutOff?: boolean } | { ok: false; why: string };
 
 function extractJson(text: string): Call<unknown> {
   const trimmed = text.trim();
@@ -71,7 +73,7 @@ export async function runAgentTeam(deps: Deps, request: RunRequest): Promise<Run
 
   async function ask(role: Role, system: string, user: string, maxTokens: number): Promise<Call<string>> {
     const result = await llm.complete({ role, runId: request.runId, messages: [{ role: 'system', content: system }, { role: 'user', content: user }], maxTokens });
-    return result.ok ? { ok: true, value: result.text } : { ok: false, why: `${result.error}: ${result.detail}` };
+    return result.ok ? { ok: true, value: result.text, cutOff: isCutOff(result.finishReason) } : { ok: false, why: `${result.error}: ${result.detail}` };
   }
 
   // A run without a technical report cannot continue, so stop before any analyst spends quota.
@@ -94,12 +96,16 @@ export async function runAgentTeam(deps: Deps, request: RunRequest): Promise<Run
     if (cached) return { role, report: cached.report, sources: cached.sources, why: null as string | null, status: 'ok' as const };
     if (!input) return { role, report: null, sources: [] as Source[], why: 'no input supplied', status: 'unavailable' as const };
     if (!input.available) return { role, report: null, sources: input.sources, why: input.reason ?? 'input unavailable', status: 'unavailable' as const };
-    const reply = await ask(role, `${rolePrompt(role)}\n${ANALYST_JSON_INSTRUCTION}`, analystContext(request, input), MAX_TOKENS.analyst);
+    const reply = await ask(role, `${rolePrompt(role)}
+${analystJsonInstruction(role)}`, analystContext(request, input), MAX_TOKENS.analyst);
     if (!reply.ok) return { role, report: null, sources: input.sources, why: reply.why, status: 'failed' as const };
+    const bad = (why: string) => ({ role, report: null, sources: input.sources, why, raw: reply.value, status: 'failed' as const });
+    if (reply.cutOff) return bad(CUT_OFF);
     const json = extractJson(reply.value);
-    if (!json.ok) return { role, report: null, sources: input.sources, why: json.why, status: 'failed' as const };
+    if (!json.ok) return bad(json.why);
     const parsed = parseAnalystReport(json.value, new Set(input.sources.map((source) => source.id)));
-    if (!parsed.ok) return { role, report: null, sources: input.sources, why: parsed.error, status: 'failed' as const };
+    if (!parsed.ok) return bad(parsed.error);
+    if (parsed.value.role !== role) return bad(`report names role ${parsed.value.role}`);
     if (parsed.value.role !== role) return { role, report: null, sources: input.sources, why: `report names role ${parsed.value.role}`, status: 'failed' as const };
     if (useCache) await store.putCachedReport(request.symbol, request.tradingDate, role, { report: parsed.value, sources: input.sources });
     return { role, report: parsed.value, sources: input.sources, why: null, status: 'ok' as const };
@@ -107,7 +113,8 @@ export async function runAgentTeam(deps: Deps, request: RunRequest): Promise<Run
 
   for (const analyst of analysts) {
     for (const source of analyst.sources) sources.set(source.id, source);
-    await store.saveStep({ runId: request.runId, role: analyst.role, status: analyst.status, output: analyst.report ?? undefined, error: analyst.why ?? undefined });
+    const raw = 'raw' in analyst ? analyst.raw : undefined;
+    await store.saveStep({ runId: request.runId, role: analyst.role, status: analyst.status, output: analyst.report ?? (raw === undefined ? undefined : { rawReplyHead: raw.slice(0, 400) }), error: analyst.why ?? undefined });
     if (analyst.report) reports.push(analyst.report); else gaps.push({ role: analyst.role, category: analyst.status === 'unavailable' ? 'input not available' : 'analyst call or report failed' });
   }
   await store.saveSources(request.runId, [...sources.values()]);
@@ -143,6 +150,7 @@ export async function runAgentTeam(deps: Deps, request: RunRequest): Promise<Run
   const lotsLine = request.calculatedLots === null ? 'No code-calculated size exists yet; judge the setup only.' : `Code-calculated size: ${request.calculatedLots} lot(s).`;
   const risk = await ask('risk_pm', `${rolePrompt('risk_pm')}\n${VERDICT_JSON_INSTRUCTION}`, `${header}\n\nDebate:\n${transcript}\n\nTrader proposal:\n${proposalBlock}\n\n${lotsLine}`, MAX_TOKENS.risk);
   if (!risk.ok) { await store.saveStep({ runId: request.runId, role: 'risk_pm', status: 'failed', error: risk.why }); return finish(`risk step failed: ${risk.why}`); }
+  if (risk.cutOff) { await store.saveStep({ runId: request.runId, role: 'risk_pm', status: 'failed', output: { rawReplyHead: risk.value.slice(0, 400) }, error: CUT_OFF }); return finish(`risk step ${CUT_OFF}`); }
   const json = extractJson(risk.value);
   const parsed = json.ok ? parseVerdict(json.value, known) : { ok: false as const, error: json.why };
   if (!parsed.ok) { await store.saveStep({ runId: request.runId, role: 'risk_pm', status: 'failed', error: parsed.error }); return finish(`risk step returned an invalid verdict: ${parsed.error}`); }

@@ -13,7 +13,7 @@ export type LlmRequest = { role: string; runId: string; messages: LlmMessage[]; 
 
 export type LlmError = 'QUOTA_EXHAUSTED' | 'RATE_LIMITED' | 'PROVIDER_ERROR' | 'REPLAY_MISS';
 export type LlmResult =
-  | { ok: true; text: string; provider: string; model: string; tokensIn: number; tokensOut: number }
+  | { ok: true; text: string; provider: string; model: string; tokensIn: number; tokensOut: number; finishReason?: string }
   | { ok: false; error: LlmError; detail: string };
 
 export type LlmClient = { complete(request: LlmRequest): Promise<LlmResult> };

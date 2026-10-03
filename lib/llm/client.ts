@@ -9,10 +9,11 @@ export async function hashPrompt(messages: LlmMessage[]): Promise<string> {
 
 const redact = (text: string, key: string) => (key ? text.split(key).join('[redacted]') : text);
 
-export function createLlmClient(options: { providers: ProviderConfig[]; limiter: Limiter; log: CallLogger; fetchImpl?: typeof fetch; now?: () => number }): LlmClient {
+export function createLlmClient(options: { providers: ProviderConfig[]; limiter: Limiter; log: CallLogger; fetchImpl?: typeof fetch; now?: () => number; timeoutMs?: number }): LlmClient {
   const { providers, limiter, log } = options;
   const fetchImpl = options.fetchImpl ?? fetch;
   const now = options.now ?? Date.now;
+  const timeoutMs = options.timeoutMs ?? 30_000;
 
   return {
     async complete(request) {
@@ -33,13 +34,15 @@ export function createLlmClient(options: { providers: ProviderConfig[]; limiter:
             method: 'POST',
             headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${provider.apiKey}` },
             body: JSON.stringify({ model: provider.model, messages: request.messages, max_tokens: request.maxTokens }),
+            signal: AbortSignal.timeout(timeoutMs),
           });
           if (!response.ok) {
             lastDetail = `${provider.name} answered HTTP ${response.status}`;
-            await log({ ...entry, latencyMs: now() - started, status: `http_${response.status}` });
+            const head = redact((await response.text().catch(() => '')).replace(/\s+/g, ' ').slice(0, 160), provider.apiKey);
+            await log({ ...entry, latencyMs: now() - started, status: head ? `http_${response.status} ${head}` : `http_${response.status}` });
             continue;
           }
-          const body = await response.json() as { choices?: { message?: { content?: unknown } }[]; usage?: { prompt_tokens?: number; completion_tokens?: number } };
+          const body = await response.json() as { choices?: { message?: { content?: unknown }; finish_reason?: unknown }[]; usage?: { prompt_tokens?: number; completion_tokens?: number } };
           const text = body.choices?.[0]?.message?.content;
           if (typeof text !== 'string' || !text) {
             lastDetail = `${provider.name} returned no content`;
@@ -51,7 +54,8 @@ export function createLlmClient(options: { providers: ProviderConfig[]; limiter:
           limiter.recordTokens(provider.name, tokensIn + tokensOut);
           const costInr = ((tokensIn + tokensOut) / 1000) * provider.costPer1kTokensInr;
           await log({ ...entry, tokensIn, tokensOut, costInr, latencyMs: now() - started, status: 'ok' });
-          return { ok: true, text, provider: provider.name, model: provider.model, tokensIn, tokensOut };
+          const finish = body.choices?.[0]?.finish_reason;
+          return { ok: true, text, provider: provider.name, model: provider.model, tokensIn, tokensOut, finishReason: typeof finish === 'string' ? finish : undefined };
         } catch (error) {
           lastDetail = redact(`${provider.name} failed: ${error instanceof Error ? error.message : String(error)}`, provider.apiKey);
           await log({ ...entry, latencyMs: now() - started, status: 'network_error' });

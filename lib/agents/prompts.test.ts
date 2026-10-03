@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { PROMPT_SET_ID, rolePrompt, type Role } from './prompts';
+import { analystJsonInstruction, PROMPT_SET_ID, rolePrompt, VERDICT_JSON_INSTRUCTION, type Role } from './prompts';
 
 const roles: Role[] = ['technical', 'options_oi', 'news', 'fundamentals', 'bull', 'bear', 'trader', 'risk_pm'];
 
@@ -24,5 +24,20 @@ describe('role prompts', () => {
 
   it('no prompt names an order-placement tool', () => {
     for (const role of roles) expect(rolePrompt(role)).not.toMatch(/place_?order|create_?order|cancel_?order|modify_?order/i);
+  });
+});
+
+describe('json instructions', () => {
+  it('tell each analyst its exact role value and ask for a short reply', () => {
+    for (const role of ['technical', 'options_oi', 'news', 'fundamentals'] as const) {
+      const text = analystJsonInstruction(role);
+      expect(text).toContain(`"role": "${role}"`);
+      expect(text).toMatch(/under 80 words/);
+      expect(text).toMatch(/at most 6 claims/);
+    }
+  });
+
+  it('asks the verdict step for a short reply too', () => {
+    expect(VERDICT_JSON_INSTRUCTION).toMatch(/at most 5 reasons/);
   });
 });

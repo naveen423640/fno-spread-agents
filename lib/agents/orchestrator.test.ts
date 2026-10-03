@@ -25,6 +25,8 @@ const analystSource = { technical: 'regime-1', options_oi: 'chain-1', news: 'new
 const analystReply = (role: keyof typeof analystSource) => JSON.stringify({ role, summary: `${role} summary`, claims: [{ claim: `${role} fact`, type: 'fact', source_ids: [analystSource[role]] }], missing_evidence: [] });
 const verdictReply = (verdict: Record<string, unknown> = { verdict: 'APPROVE' }) => JSON.stringify({ reasons: [{ claim: 'regime supports it', type: 'fact', source_ids: ['regime-1'] }], missing_evidence: [], confidence_note: 'ok', ...verdict });
 
+const cutOff = (text: string): LlmResult => ({ ok: true, text, provider: 'fake', model: 'fake', tokensIn: 1, tokensOut: 700, finishReason: 'length' });
+
 type Script = Partial<Record<string, string | LlmResult>>;
 function scripted(script: Script = {}) {
   const requests: LlmRequest[] = [];
@@ -85,6 +87,33 @@ describe('runAgentTeam', () => {
     expect(run?.steps.find((step) => step.role === 'news')?.status).toBe('failed');
     const risk = requests.find((req) => req.role === 'risk_pm');
     expect(prompt(risk as LlmRequest)).toContain('news: unavailable');
+  });
+
+  it('says a cut-off reply was truncated, keeps a short head of it for diagnosis, and never repairs it', async () => {
+    const store = createMemoryAgentStore();
+    const { client } = scripted({ technical: cutOff('{"role": "technical", "summary": "partial sentence that never') });
+    const outcome = await runAgentTeam({ llm: client, store }, request());
+    expect(outcome).toMatchObject({ status: 'ai_unavailable' });
+    expect((outcome as { reason: string }).reason).toContain('cut off at the token limit');
+    const step = (await store.getRun('run-1'))?.steps.find((item) => item.role === 'technical');
+    expect(step?.status).toBe('failed');
+    expect(step?.output).toEqual({ rawReplyHead: '{"role": "technical", "summary": "partial sentence that never' });
+  });
+
+  it('keeps only the first 400 characters of a bad reply', async () => {
+    const store = createMemoryAgentStore();
+    const { client } = scripted({ news: 'x'.repeat(2000) });
+    await runAgentTeam({ llm: client, store }, request());
+    const step = (await store.getRun('run-1'))?.steps.find((item) => item.role === 'news');
+    expect(step?.output).toEqual({ rawReplyHead: 'x'.repeat(400) });
+  });
+
+  it('asks for enough output tokens for a full report', async () => {
+    const store = createMemoryAgentStore();
+    const { client, requests } = scripted();
+    await runAgentTeam({ llm: client, store }, request());
+    expect(requests.filter((req) => req.role in analystSource).every((req) => req.maxTokens >= 1500)).toBe(true);
+    expect(requests.find((req) => req.role === 'risk_pm')?.maxTokens).toBeGreaterThanOrEqual(1200);
   });
 
   it('ends ai_unavailable without any LLM call when the technical input is unavailable', async () => {
