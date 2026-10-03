@@ -1,4 +1,6 @@
-import { marketSnapshot, snapshotAsOf, type SectorIndex } from '@/lib/market-snapshot';
+import { fetchEngineUniverse } from '@/lib/engine-client';
+import { marketSnapshot, snapshotAsOf, type MarketStock, type SectorIndex } from '@/lib/market-snapshot';
+import { resolveUniverse } from '@/lib/universe';
 import { describeLiveFeed } from '@/lib/market-session';
 
 const FYERS_DATA_BASE = 'https://api-t1.fyers.in/data';
@@ -73,10 +75,10 @@ function cookieValue(request: Request, name: string) {
   return match ? decodeURIComponent(match.slice(prefix.length)) : undefined;
 }
 
-async function loadFyersLive(clientId: string, accessToken: string): Promise<LiveMarketPayload> {
+async function loadFyersLive(clientId: string, accessToken: string, universe: MarketStock[]): Promise<LiveMarketPayload> {
   const batches: string[][] = [];
-  for (let index = 0; index < marketSnapshot.length; index += 50) {
-    batches.push(marketSnapshot.slice(index, index + 50).map((stock) => stock.symbol));
+  for (let index = 0; index < universe.length; index += 50) {
+    batches.push(universe.slice(index, index + 50).map((stock) => stock.symbol));
   }
 
   async function quotes(symbols: string[]) {
@@ -101,7 +103,7 @@ async function loadFyersLive(clientId: string, accessToken: string): Promise<Liv
     if (index < batches.length - 1) await new Promise((resolve) => setTimeout(resolve, 300));
   }
 
-  const names = new Map(marketSnapshot.map((stock) => [stock.symbol, stock]));
+  const names = new Map(universe.map((stock) => [stock.symbol, stock]));
   const stocks = responses.flatMap((payload) => payload.d ?? []).flatMap((quote) => {
     const reference = names.get(quote.n);
     const values = quote.v;
@@ -137,14 +139,14 @@ async function loadFyersLive(clientId: string, accessToken: string): Promise<Liv
   return { stocks, sectorIndices };
 }
 
-async function fetchFyersLive(request: Request) {
+async function fetchFyersLive(request: Request, universe: MarketStock[]) {
   const clientId = process.env.FYERS_CLIENT_ID;
   const accessToken = cookieValue(request, 'fyers_access_token') ?? process.env.FYERS_ACCESS_TOKEN;
   if (!clientId || !accessToken) return null;
 
-  const key = `${clientId}:${accessToken}`;
+  const key = `${clientId}:${accessToken}:${universe.map((stock) => stock.ticker).join(',')}`;
   if (fyersLiveCache?.key === key && fyersLiveCache.expiresAt > Date.now()) return fyersLiveCache.promise;
-  const promise = loadFyersLive(clientId, accessToken);
+  const promise = loadFyersLive(clientId, accessToken, universe);
   fyersLiveCache = { key, expiresAt: Date.now() + 180_000, promise };
   try {
     return await promise;
@@ -178,7 +180,7 @@ async function fetchHistoricalSectorIndices(date: string) {
   });
 }
 
-async function fetchHistorical(date: string) {
+async function fetchHistorical(date: string, stocksUniverse: MarketStock[]) {
   const archiveUrl = `${NSE_ARCHIVE_BASE}/sec_bhavdata_full_${dateStamp(date)}.csv`;
   const response = await fetch(archiveUrl, {
     headers: {
@@ -213,7 +215,7 @@ async function fetchHistorical(date: string) {
     throw new Error('NSE changed the historical report format.');
   }
 
-  const universe = new Map(marketSnapshot.map((stock) => [stock.ticker, stock]));
+  const universe = new Map(stocksUniverse.map((stock) => [stock.ticker, stock]));
   const stocks = lines.slice(1).flatMap((line) => {
     const cells = parseCsvLine(line);
     const ticker = cells[indexes.symbol]?.trim();
@@ -247,14 +249,17 @@ export async function GET(request: Request) {
 
   try {
     if (date === 'live') {
-      const live = await fetchFyersLive(request);
+      const resolved = resolveUniverse(marketSnapshot, await fetchEngineUniverse('latest'));
+      const universeInfo = { source: resolved.source, date: resolved.date, count: resolved.stocks.length, note: resolved.note };
+      const live = await fetchFyersLive(request, resolved.stocks);
       if (live) {
         const feed = describeLiveFeed(new Date());
-        return json({ ...live, ...feed, sectorSource: 'FYERS Nifty sector indices', ...(feed.live ? {} : { notice: 'Market closed. Showing the last close.' }) });
+        return json({ ...live, ...feed, universe: universeInfo, sectorSource: 'FYERS Nifty sector indices', ...(feed.live ? {} : { notice: 'Market closed. Showing the last close.' }) });
       }
 
       return json({
-        stocks: marketSnapshot,
+        stocks: resolved.stocks,
+        universe: universeInfo,
         asOf: snapshotAsOf,
         source: 'FYERS embedded snapshot',
         sectorIndices: [],
@@ -268,8 +273,10 @@ export async function GET(request: Request) {
       return json({ error: 'Choose a valid trading date.' }, { status: 400 });
     }
 
-    const [stocks, sectorIndices] = await Promise.all([fetchHistorical(date), fetchHistoricalSectorIndices(date)]);
-    return json({ stocks, sectorIndices, asOf: `${date}T15:30:00+05:30`, source: 'NSE official bhavcopy', sectorSource: 'NSE official index close', live: false });
+    const resolved = resolveUniverse(marketSnapshot, await fetchEngineUniverse(date));
+    const universeInfo = { source: resolved.source, date: resolved.date, count: resolved.stocks.length, note: resolved.note };
+    const [stocks, sectorIndices] = await Promise.all([fetchHistorical(date, resolved.stocks), fetchHistoricalSectorIndices(date)]);
+    return json({ stocks, universe: universeInfo, sectorIndices, asOf: `${date}T15:30:00+05:30`, source: 'NSE official bhavcopy', sectorSource: 'NSE official index close', live: false });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unable to load market data.';
     console.error(`[market] ${message}`);

@@ -243,6 +243,7 @@ export default function Home() {
   const [source, setSource] = useState('FYERS embedded snapshot');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
+  const [universe, setUniverse] = useState<{ source: 'engine' | 'static'; date: string | null; count: number; note: string } | null>(null);
   const [chartPoints, setChartPoints] = useState<IntradayPoint[]>([]);
   const [chartLoading, setChartLoading] = useState(false);
   const [chartError, setChartError] = useState('');
@@ -265,12 +266,13 @@ export default function Home() {
         cache: 'no-store',
         signal: controller.signal,
       });
-      const payload = await response.json() as { stocks?: MarketStock[]; asOf?: string; source?: string; notice?: string; error?: string };
+      const payload = await response.json() as { stocks?: MarketStock[]; asOf?: string; source?: string; notice?: string; error?: string; universe?: { source: 'engine' | 'static'; date: string | null; count: number; note: string } };
       if (!response.ok || !payload.stocks) throw new Error(payload.error ?? 'Unable to load market data.');
       setStocks(payload.stocks);
       setAsOf(payload.asOf ?? new Date().toISOString());
       setSource(payload.source ?? 'Market data');
-      setMessage(payload.notice ?? '');
+      setUniverse(payload.universe ?? null);
+      setMessage([payload.notice, payload.universe?.source === 'static' ? payload.universe.note : ''].filter(Boolean).join(' '));
       setSelected((current) => payload.stocks?.find((stock) => stock.ticker === current?.ticker) ?? payload.stocks?.[0] ?? null);
     } catch (error) {
       setMessage(error instanceof DOMException && error.name === 'AbortError'
@@ -391,7 +393,7 @@ export default function Home() {
         <div className="mx-auto flex max-w-[1800px] flex-wrap items-center justify-between gap-4 px-4 py-4 lg:px-7">
           <div className="flex items-center gap-3">
             <div className="flex size-10 items-center justify-center rounded-xl bg-primary text-primary-foreground"><Activity className="size-5" /></div>
-            <div><h1 className="text-lg font-semibold tracking-tight">NSE F&amp;O Heat Map</h1><p className="text-xs text-muted-foreground">210-stock FYERS universe</p></div>
+            <div><h1 className="text-lg font-semibold tracking-tight">NSE F&amp;O Heat Map</h1><p className="text-xs text-muted-foreground">{universe ? `${universe.count}-stock F&O universe · ${universe.source === 'engine' ? `engine, ${universe.date}` : 'static list'}` : '210-stock FYERS universe'}</p></div>
           </div>
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <span className="relative flex size-2">
