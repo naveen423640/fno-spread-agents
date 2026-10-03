@@ -15,6 +15,7 @@ const factories: [string, () => { store: AgentStore; db?: ReturnType<typeof crea
 const source: Source = { id: 'regime-1', kind: 'regime', title: 'Regime', url: null, retrieved_at: NOW.toISOString() };
 const verdict: Verdict = { verdict: 'REDUCE', reduce_to_lots: 2, reasons: [{ claim: 'c', type: 'fact', source_ids: ['regime-1'] }], missing_evidence: [], confidence_note: 'n' };
 const report: AnalystReport = { role: 'technical', summary: 's', claims: [], missing_evidence: [] };
+const cached = { report, sources: [source] };
 
 describe.each(factories)('AgentStore (%s)', (_name, make) => {
   it('stores and reads back a whole run', async () => {
@@ -46,12 +47,12 @@ describe.each(factories)('AgentStore (%s)', (_name, make) => {
   it('caches analyst reports per symbol, trading day and role', async () => {
     const { store } = make();
     expect(await store.getCachedReport('NSE:TCS-EQ', '2026-10-01', 'technical')).toBeNull();
-    await store.putCachedReport('NSE:TCS-EQ', '2026-10-01', 'technical', report);
-    expect(await store.getCachedReport('NSE:TCS-EQ', '2026-10-01', 'technical')).toEqual(report);
+    await store.putCachedReport('NSE:TCS-EQ', '2026-10-01', 'technical', cached);
+    expect(await store.getCachedReport('NSE:TCS-EQ', '2026-10-01', 'technical')).toEqual(cached);
     expect(await store.getCachedReport('NSE:TCS-EQ', '2026-10-02', 'technical')).toBeNull();
     expect(await store.getCachedReport('NSE:INFY-EQ', '2026-10-01', 'technical')).toBeNull();
-    await store.putCachedReport('NSE:TCS-EQ', '2026-10-01', 'technical', { ...report, summary: 'updated' });
-    expect((await store.getCachedReport('NSE:TCS-EQ', '2026-10-01', 'technical'))?.summary).toBe('updated');
+    await store.putCachedReport('NSE:TCS-EQ', '2026-10-01', 'technical', { report: { ...report, summary: 'updated' }, sources: [] });
+    expect((await store.getCachedReport('NSE:TCS-EQ', '2026-10-01', 'technical'))?.report.summary).toBe('updated');
   });
 });
 

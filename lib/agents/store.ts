@@ -8,6 +8,7 @@ export type NewRun = { id: string; symbol: string; asOf: string; tradingDate: st
 export type NewStep = { runId: string; role: string; status: StepStatus; output?: unknown; error?: string };
 export type RunRow = { id: string; symbol: string; asOf: string; tradingDate: string; status: RunStatus; candidate: unknown; promptSet: string; createdAt: string; completedAt: string | null };
 export type StepRow = { role: string; status: StepStatus; output: unknown; error: string | null; startedAt: string };
+export type CachedReport = { report: AnalystReport; sources: Source[] };
 export type RunDetail = { run: RunRow; steps: StepRow[]; sources: Source[]; verdict: Verdict | null };
 
 export type AgentStore = {
@@ -17,8 +18,8 @@ export type AgentStore = {
   saveSources(runId: string, sources: Source[]): Promise<void>;
   saveVerdict(runId: string, verdict: Verdict): Promise<void>;
   getRun(id: string): Promise<RunDetail | null>;
-  getCachedReport(symbol: string, tradingDate: string, role: string): Promise<AnalystReport | null>;
-  putCachedReport(symbol: string, tradingDate: string, role: string, report: AnalystReport): Promise<void>;
+  getCachedReport(symbol: string, tradingDate: string, role: string): Promise<CachedReport | null>;
+  putCachedReport(symbol: string, tradingDate: string, role: string, cached: CachedReport): Promise<void>;
   logLlmCall: CallLogger;
 };
 
@@ -73,11 +74,11 @@ export function createD1AgentStore(db: D1Like, now: () => Date = () => new Date(
     },
     async getCachedReport(symbol, tradingDate, role) {
       const row = await db.prepare('SELECT report_json FROM analyst_report_cache WHERE symbol = ? AND trading_date = ? AND role = ?').bind(symbol, tradingDate, role).first<{ report_json: string }>();
-      return row ? (parse(row.report_json) as AnalystReport) : null;
+      return row ? (parse(row.report_json) as CachedReport) : null;
     },
-    async putCachedReport(symbol, tradingDate, role, report) {
+    async putCachedReport(symbol, tradingDate, role, cached) {
       await db.prepare('INSERT INTO analyst_report_cache (symbol, trading_date, role, report_json, created_at) VALUES (?, ?, ?, ?, ?) ON CONFLICT(symbol, trading_date, role) DO UPDATE SET report_json = excluded.report_json, created_at = excluded.created_at')
-        .bind(symbol, tradingDate, role, JSON.stringify(report), stamp()).run();
+        .bind(symbol, tradingDate, role, JSON.stringify(cached), stamp()).run();
     },
     async logLlmCall(entry: CallLogEntry) {
       await db.prepare('INSERT INTO llm_calls (run_id, role, provider, model, prompt_hash, tokens_in, tokens_out, cost_inr, latency_ms, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
@@ -91,7 +92,7 @@ export function createMemoryAgentStore(now: () => Date = () => new Date()): Agen
   const steps = new Map<string, StepRow[]>();
   const sources = new Map<string, Source[]>();
   const verdicts = new Map<string, Verdict>();
-  const cache = new Map<string, AnalystReport>();
+  const cache = new Map<string, CachedReport>();
   const llmCalls: CallLogEntry[] = [];
   const stamp = () => now().toISOString();
   return {
@@ -120,7 +121,7 @@ export function createMemoryAgentStore(now: () => Date = () => new Date()): Agen
       return { run, steps: steps.get(id) ?? [], sources: sources.get(id) ?? [], verdict: verdicts.get(id) ?? null };
     },
     async getCachedReport(symbol, tradingDate, role) { return cache.get(`${symbol}|${tradingDate}|${role}`) ?? null; },
-    async putCachedReport(symbol, tradingDate, role, report) { cache.set(`${symbol}|${tradingDate}|${role}`, report); },
+    async putCachedReport(symbol, tradingDate, role, cached) { cache.set(`${symbol}|${tradingDate}|${role}`, cached); },
     async logLlmCall(entry) { llmCalls.push(entry); },
   };
 }
