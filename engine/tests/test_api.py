@@ -70,6 +70,7 @@ def test_open_per_date_incident_is_listed(tmp_path):
     body = build(tmp_path, incident=True).get("/incidents").json()
     assert [(i["kind"], i["message"]) for i in body["open"]] == [("DATA_GAP:2026-09-25", "No bhavcopy for 2026-09-25")]
     assert len(body["all"]) == 1
+    assert body["open"][0]["opened_ts"] == "2026-09-30T06:00:00+00:00"  # timezone-aware, like availableAsOf
 
 
 def test_missing_token_reports_blocked_entries_but_the_api_stays_up(tmp_path):

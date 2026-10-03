@@ -9,6 +9,7 @@ from fastapi import FastAPI, HTTPException
 from .auth.token_store import TokenStore
 from .gates import entry_gate
 from .incidents import IncidentLog
+from .ist import from_utc_naive
 from .store.reader import PointInTimeReader
 from .store.store import Store
 from .universe import fno_universe_on
@@ -73,7 +74,8 @@ def create_app(store: Store, tokens: TokenStore, now: Callable[[], datetime] = _
 
 
 def _json(row: dict) -> dict:
-    return {k: (v.isoformat() if isinstance(v, datetime) else v) for k, v in row.items()}
+    # The store keeps naive UTC datetimes; emit them timezone-aware, like availableAsOf.
+    return {k: ((from_utc_naive(v) if v.tzinfo is None else v).isoformat() if isinstance(v, datetime) else v) for k, v in row.items()}
 
 
 def serve() -> None:
