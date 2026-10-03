@@ -1,4 +1,5 @@
-import { describeProviders, keyVariableNames } from '@/lib/llm/config';
+import { keyVariableNames } from '@/lib/agent-service/key-names';
+import { describeProviders } from '@/lib/llm/config';
 
 // Reports which configured LLM providers have a key loaded (true or false only) and the names, never the values, of key-style variables the server loaded.
 export async function GET() {

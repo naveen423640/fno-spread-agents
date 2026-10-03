@@ -7,6 +7,7 @@ import type { ProviderEntry } from './config';
 // shows ₹0 for these calls. Order is the fallback order (free-friendly first).
 export const DEFAULT_PROVIDERS: ProviderEntry[] = [
   { name: 'google', baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai', apiKeyEnv: ['GEMINI_API_KEY', 'GOOGLE_API_KEY', 'GOOGLE_GENERATIVE_AI_API_KEY'], model: 'gemini-2.5-flash', requestsPerMinute: 10, dailyTokenQuota: 250_000 },
+  { name: 'groq', baseUrl: 'https://api.groq.com/openai/v1', apiKeyEnv: ['GROQ_API_KEY'], model: 'llama-3.3-70b-versatile', requestsPerMinute: 25, dailyTokenQuota: 200_000 },
   { name: 'deepseek', baseUrl: 'https://api.deepseek.com', apiKeyEnv: ['DEEPSEEK_API_KEY'], model: 'deepseek-chat', requestsPerMinute: 30, dailyTokenQuota: 200_000 },
   { name: 'xai', baseUrl: 'https://api.x.ai/v1', apiKeyEnv: ['XAI_API_KEY', 'GROK_API_KEY'], model: 'grok-4', requestsPerMinute: 30, dailyTokenQuota: 100_000 },
   { name: 'anthropic', baseUrl: 'https://api.anthropic.com/v1', apiKeyEnv: ['ANTHROPIC_API_KEY'], model: 'claude-haiku-4-5-20251001', requestsPerMinute: 30, dailyTokenQuota: 100_000 },
