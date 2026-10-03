@@ -430,7 +430,7 @@ Rules:
 
 **Order:**
 1. Markov regime tab.
-2. Agent team v1 (on-demand, single stock).
+2. Agent team v1 (on-demand, single stock). *(Built 2026-10-03 on branch `agent-team-v1` with fakes only, no live LLM call; see `docs/audit/agents-v1-gate.md`.)*
 3. Daily batch on regime candidates.
 4. Agents tab and scoreboard.
 
