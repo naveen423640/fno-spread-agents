@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest';
 const ALLOWED_FYERS_PATHS = new Set(['', '/api/v3/generate-authcode', '/api/v3/validate-authcode', '/data', '/data/history', '/data/quotes', '/data/options-chain-v3']);
 const ALLOWED_DATA_SUFFIXES = new Set(['quotes', 'history', 'options-chain-v3']);
 const DENY_TERMS = /place_?order|create_?order|cancel_?order|modify_?order|exit_?positions|multi_?order|convert_?position|\bgtt\b/i;
-const SCAN_DIRS = ['app', 'lib', 'db', 'components', 'hooks'];
+const SCAN_DIRS = ['app', 'lib', 'db', 'components', 'hooks', 'scripts'];
 
 function sourceFiles(directory: string): string[] {
   return readdirSync(directory).flatMap((name) => {
