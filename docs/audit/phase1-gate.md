@@ -51,7 +51,7 @@ Status: done / done with limits / NOT RUN.
 | Ban list and corporate actions (strict layout and validation, Ruling 12) | `engine/tests/test_banlist.py`, `engine/tests/test_corporate_actions.py` | done with limits: ban list tested against the committed real sample; no real corporate-actions data was loaded in this gate. |
 | Engine FYERS auth, token store, incidents, entry gate, ingest | `engine/tests/test_token_store.py`, `test_login.py`, `test_gates.py`, `test_incidents.py`, `test_ingest.py` | done with limits: tested with fake transports. The live FYERS login flow and the token lifetime have never been run (probe pending the user). Real-data ingest counts: NOT RUN: held pending user decisions. |
 | Read-only local API, including the concurrency lock (Ruling 14) | `engine/tests/test_api.py` | done |
-| Dated universe in the dashboard with a visible fallback | `tests/universe.test.ts`, `tests/engine-client.test.ts` (passed in the vitest run above); live behaviour was verified in the dev server by the implementer, not by this task | done with limits: dev-server check not repeated here; the Markov tab still uses the static universe |
+| Dated universe in the dashboard with a visible fallback | `tests/universe.test.ts`, `tests/engine-client.test.ts` (passed in the vitest run above); the implementer reported a dev-server check; no evidence file backs it and it is unverified here | done with limits: dev-server check not repeated here; the Markov tab still uses the static universe |
 | Oracle parity, synthetic | `engine/tests/test_oracle_parity.py` (4 passed, section 1), `docs/audit/oracle-parity-data.md` | done: Python data layer matches the TypeScript oracle on the synthetic homogeneous and rich archives. |
 | Oracle parity, real data | none | NOT RUN: held pending user decisions |
 | No-order-endpoint tests and live-mode refusal, both languages | section 2 | done |
@@ -60,6 +60,8 @@ What the synthetic evidence DOES show (synthetic only): the Python universe, lot
 
 ## 4. Controller rulings that changed the plan during Phase 1
 
+
+Scope of approval (Ruling 8): the user's "continue with phase 1" approved starting Phase 1 only. The other Phase 0 gate items (a to f) remain open until the user answers them.
 | Ruling | Change |
 |---|---|
 | 9 | Ingest treats a network error or archive error from the client as a per-day fetch failure: records one `DATA_FETCH_ERROR` incident and continues. |
@@ -112,7 +114,7 @@ Earlier rulings (1 to 8, including the 22:30 IST publication rule and the Task 1
 
 - CEO: The data foundation the strategy depends on exists and is tested, but nothing has yet been shown on real NSE data, and the legal question on automated NSE collection is unanswered; no claim about strategy value can be made.
 - CFO: Phase 1 cost nothing in trading risk or data fees (paper only, free sources); the unresolved NSE Terms of Use question is the one potential cost or compliance exposure.
-- CTO: The engine is well covered by tests (137 Python, 178 TypeScript passing, tsc and build clean, lint at the unchanged 29-error baseline) with safety rules intact, but the cache has no self-heal, the lock file must be regenerated and real-data parity is unrun.
+- CTO: The engine is covered by synthetic-data tests (137 Python, 178 TypeScript passing, tsc and build clean, lint at the unchanged 29-error baseline) with safety rules intact, but the cache has no self-heal, the lock file must be regenerated and real-data parity is unrun.
 
 ## 8. Recommended decision
 
