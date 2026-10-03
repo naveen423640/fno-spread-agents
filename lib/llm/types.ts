@@ -6,6 +6,8 @@ export type ProviderConfig = {
   requestsPerMinute: number;
   dailyTokenQuota: number;
   costPer1kTokensInr: number;
+  // Extra fields merged into the request body (for example a provider's reasoning setting). Cannot override model, messages or max_tokens.
+  extraBody?: Record<string, unknown>;
 };
 
 export type LlmMessage = { role: 'system' | 'user' | 'assistant'; content: string };

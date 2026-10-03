@@ -33,7 +33,7 @@ export function createLlmClient(options: { providers: ProviderConfig[]; limiter:
           const response = await fetchImpl(`${provider.baseUrl}/chat/completions`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${provider.apiKey}` },
-            body: JSON.stringify({ model: provider.model, messages: request.messages, max_tokens: request.maxTokens }),
+            body: JSON.stringify({ ...provider.extraBody, model: provider.model, messages: request.messages, max_tokens: request.maxTokens }),
             signal: AbortSignal.timeout(timeoutMs),
           });
           if (!response.ok) {

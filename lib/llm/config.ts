@@ -11,6 +11,7 @@ const entrySchema = z.object({
   requestsPerMinute: z.number().positive(),
   dailyTokenQuota: z.number().positive(),
   costPer1kTokensInr: z.number().nonnegative().optional(),
+  extraBody: z.record(z.string(), z.unknown()).optional(),
 });
 
 export type ProviderEntry = z.infer<typeof entrySchema>;
@@ -38,7 +39,7 @@ export function parseProviders(env: Record<string, string | undefined>): Provide
   for (const entry of entries(env)) {
     const apiKey = keyOf(entry, env);
     if (!apiKey) continue;
-    providers.push({ name: entry.name, baseUrl: entry.baseUrl, apiKey, model: entry.model, requestsPerMinute: entry.requestsPerMinute, dailyTokenQuota: entry.dailyTokenQuota, costPer1kTokensInr: entry.costPer1kTokensInr ?? 0 });
+    providers.push({ name: entry.name, baseUrl: entry.baseUrl, apiKey, model: entry.model, requestsPerMinute: entry.requestsPerMinute, dailyTokenQuota: entry.dailyTokenQuota, costPer1kTokensInr: entry.costPer1kTokensInr ?? 0, extraBody: entry.extraBody });
   }
   return providers;
 }

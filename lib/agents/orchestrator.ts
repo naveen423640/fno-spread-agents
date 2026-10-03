@@ -33,7 +33,7 @@ export type RunOutcome =
   | { status: 'ai_unavailable'; reason: string };
 
 const ANALYST_ROLES: AnalystRole[] = ['technical', 'options_oi', 'news', 'fundamentals'];
-const MAX_TOKENS = { analyst: 1500, debate: 700, trader: 600, risk: 1200 };
+const MAX_TOKENS = { analyst: 2500, debate: 1000, trader: 800, risk: 2000 };
 const CUT_OFF = 'reply was cut off at the token limit';
 const isCutOff = (finishReason?: string) => finishReason === 'length' || finishReason === 'max_tokens';
 

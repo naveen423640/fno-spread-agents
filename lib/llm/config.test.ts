@@ -37,6 +37,12 @@ describe('parseProviders', () => {
     expect(parseProviders({ LLM_PROVIDERS: JSON.stringify([entry2]), ALPHA_KEY: 'first', ALPHA_KEY_ALT: 'alt-value' })[0].apiKey).toBe('first');
   });
 
+  it('passes an optional extraBody through to the provider config', () => {
+    const withExtra = { ...entry, extraBody: { reasoning_effort: 'none' } };
+    expect(parseProviders({ LLM_PROVIDERS: JSON.stringify([withExtra]), ALPHA_KEY: 'k' })[0].extraBody).toEqual({ reasoning_effort: 'none' });
+    expect(parseProviders({ LLM_PROVIDERS: JSON.stringify([entry]), ALPHA_KEY: 'k' })[0].extraBody).toBeUndefined();
+  });
+
   it('falls back to the committed default provider list when LLM_PROVIDERS is unset', () => {
     const providers = parseProviders({ GEMINI_API_KEY: 'g', GROQ_API_KEY: 'q', XAI_API_KEY: 'x', DEEPSEEK_API_KEY: 'd', ANTHROPIC_API_KEY: 'a' });
     expect(providers.map((p) => p.name)).toEqual(['google', 'groq', 'deepseek', 'xai', 'anthropic']);

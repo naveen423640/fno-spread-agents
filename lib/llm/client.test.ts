@@ -103,6 +103,17 @@ describe('createLlmClient', () => {
     expect(logs[0].status.length).toBeLessThanOrEqual(220);
   });
 
+  it('merges a provider extraBody into the request but never lets it override model, messages or max_tokens', async () => {
+    const seen: RequestInit[] = [];
+    const { client } = setup([provider('alpha', { extraBody: { reasoning_effort: 'none', model: 'hijacked', max_tokens: 1 } })], (_url, init) => { seen.push(init); return new Response(okBody('x')); });
+    await client.complete(request);
+    const body = JSON.parse(seen[0].body as string) as Record<string, unknown>;
+    expect(body.reasoning_effort).toBe('none');
+    expect(body.model).toBe('alpha-model');
+    expect(body.max_tokens).toBe(100);
+    expect(body.messages).toEqual(request.messages);
+  });
+
   it('sends the key only in the Authorization header', async () => {
     const seen: RequestInit[] = [];
     const { client } = setup([provider('alpha')], (_url, init) => { seen.push(init); return new Response(okBody('x')); });

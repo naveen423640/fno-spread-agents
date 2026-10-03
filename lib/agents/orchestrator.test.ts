@@ -112,8 +112,8 @@ describe('runAgentTeam', () => {
     const store = createMemoryAgentStore();
     const { client, requests } = scripted();
     await runAgentTeam({ llm: client, store }, request());
-    expect(requests.filter((req) => req.role in analystSource).every((req) => req.maxTokens >= 1500)).toBe(true);
-    expect(requests.find((req) => req.role === 'risk_pm')?.maxTokens).toBeGreaterThanOrEqual(1200);
+    expect(requests.filter((req) => req.role in analystSource).every((req) => req.maxTokens >= 2500)).toBe(true);
+    expect(requests.find((req) => req.role === 'risk_pm')?.maxTokens).toBeGreaterThanOrEqual(2000);
   });
 
   it('ends ai_unavailable without any LLM call when the technical input is unavailable', async () => {
