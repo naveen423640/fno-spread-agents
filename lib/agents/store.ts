@@ -16,6 +16,7 @@ export type RunDetail = { run: RunRow; steps: StepRow[]; sources: Source[]; verd
 
 export type AgentStore = {
   createRun(run: NewRun): Promise<void>;
+  countRunsSince(isoTime: string): Promise<number>;
   setRunStatus(id: string, status: RunStatus, completedAt?: string): Promise<void>;
   saveStep(step: NewStep): Promise<void>;
   saveSources(runId: string, sources: Source[]): Promise<void>;
@@ -43,6 +44,10 @@ export function createD1AgentStore(db: D1Like, now: () => Date = () => new Date(
     async createRun(run) {
       await db.prepare('INSERT INTO agent_runs (id, symbol, as_of, trading_date, status, candidate_json, prompt_set, model_note, created_at, completed_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
         .bind(run.id, run.symbol, run.asOf, run.tradingDate, 'running', JSON.stringify(run.candidate), run.promptSet, '', stamp(), null).run();
+    },
+    async countRunsSince(isoTime) {
+      const row = await db.prepare('SELECT COUNT(*) AS n FROM agent_runs WHERE created_at >= ?').bind(isoTime).first<{ n: number }>();
+      return row?.n ?? 0;
     },
     async setRunStatus(id, status, completedAt) {
       await db.prepare('UPDATE agent_runs SET status = ?, completed_at = COALESCE(?, completed_at) WHERE id = ?').bind(status, completedAt ?? null, id).run();
@@ -105,6 +110,7 @@ export function createMemoryAgentStore(now: () => Date = () => new Date()): Agen
     async createRun(run) {
       runs.set(run.id, { id: run.id, symbol: run.symbol, asOf: run.asOf, tradingDate: run.tradingDate, status: 'running', candidate: run.candidate, promptSet: run.promptSet, createdAt: stamp(), completedAt: null });
     },
+    async countRunsSince(isoTime) { return [...runs.values()].filter((run) => run.createdAt >= isoTime).length; },
     async setRunStatus(id, status, completedAt) {
       const run = runs.get(id);
       if (run) runs.set(id, { ...run, status, completedAt: completedAt ?? run.completedAt });

@@ -47,6 +47,13 @@ describe.each(factories)('AgentStore (%s)', (_name, make) => {
     expect((await store.getRun('r2'))?.run.status).toBe('running');
   });
 
+  it('counts runs created since a time', async () => {
+    const { store } = make();
+    for (const id of ['a', 'b', 'c']) await store.createRun({ id, symbol: 'NSE:TCS-EQ', asOf: '2026-10-01', tradingDate: '2026-10-01', candidate: {}, promptSet: 'agents-v1' });
+    expect(await store.countRunsSince('2026-10-03T09:00:00.000Z')).toBe(3);
+    expect(await store.countRunsSince('2026-10-03T10:00:01.000Z')).toBe(0);
+  });
+
   it('caches analyst reports per symbol, trading day and role', async () => {
     const { store } = make();
     expect(await store.getCachedReport('NSE:TCS-EQ', '2026-10-01', 'technical')).toBeNull();

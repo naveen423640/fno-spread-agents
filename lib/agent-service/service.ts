@@ -14,9 +14,10 @@ export type StartDeps = {
   now: () => Date;
   newId: () => string;
   universe: ReadonlySet<string>;
+  maxRunsPerDay: number;
 };
 
-export type StartResult = { runId: string } | { error: string; status: 400 };
+export type StartResult = { runId: string } | { error: string; status: 400 | 429 };
 
 function validDate(value: string) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
@@ -43,6 +44,9 @@ export async function startAgentRun(deps: StartDeps, body: unknown, credentials:
     return { error: 'calculatedLots must be a whole number of at least 1.', status: 400 };
   }
   const lots = typeof calculatedLots === 'number' ? calculatedLots : null;
+
+  const since = new Date(now.getTime() - 86_400_000).toISOString();
+  if ((await deps.store.countRunsSince(since)) >= deps.maxRunsPerDay) return { error: 'The daily research-run limit has been reached. Try again tomorrow.', status: 429 };
 
   const runId = deps.newId();
   await deps.store.createRun({ id: runId, symbol, asOf, tradingDate: asOf, candidate: { calculatedLots: lots }, promptSet: PROMPT_SET_ID });

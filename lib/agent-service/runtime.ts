@@ -34,6 +34,7 @@ export async function buildStartDeps(): Promise<StartDeps> {
     now: () => new Date(),
     newId: () => crypto.randomUUID(),
     universe,
+    maxRunsPerDay: Number(process.env.AGENT_RUNS_PER_DAY) || 50,
   };
 }
 

@@ -32,6 +32,7 @@ function setup(extra: Partial<StartDeps> = {}) {
     now: () => NOW,
     newId: () => `run-${(counter += 1)}`,
     universe,
+    maxRunsPerDay: 50,
     ...extra,
   };
   return { deps, store, settle: () => Promise.all(scheduled) };
@@ -54,6 +55,15 @@ describe('startAgentRun', () => {
   ])('rejects %s', async (_label, body) => {
     const { deps } = setup();
     expect(await startAgentRun(deps, body, credentials)).toMatchObject({ status: 400 });
+  });
+
+  it('refuses with 429 and creates no run once the daily cap is reached', async () => {
+    const { deps, store, settle } = setup({ maxRunsPerDay: 2 });
+    expect(await startAgentRun(deps, { symbol: 'NSE:TCS-EQ' }, credentials)).toEqual({ runId: 'run-1' });
+    expect(await startAgentRun(deps, { symbol: 'NSE:TCS-EQ' }, credentials)).toEqual({ runId: 'run-2' });
+    await settle();
+    expect(await startAgentRun(deps, { symbol: 'NSE:TCS-EQ' }, credentials)).toMatchObject({ status: 429 });
+    expect(await store.getRun('run-3')).toBeNull();
   });
 
   it('returns before the scheduled work finishes, with the run already visible as running', async () => {

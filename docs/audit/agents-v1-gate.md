@@ -13,7 +13,7 @@ Agent team v1 is built and unit-tested with **fakes and recorded-style scripted 
 
 | Check | Result |
 |---|---|
-| `npx vitest run` | 290 passed, 1 skipped (the oracle dump helper, skipped by design on a plain run) |
+| `npx vitest run` | 302 passed, 1 skipped (the oracle dump helper, skipped by design on a plain run) |
 | `engine/.venv/Scripts/python -m pytest engine/tests -q` | 142 passed |
 | `npx tsc --noEmit` | exit 0 |
 | `npm run build` | "Build complete" |
@@ -29,10 +29,10 @@ Agent team v1 is built and unit-tested with **fakes and recorded-style scripted 
 | Schema validation | `lib/agents/schemas.test.ts` |
 | Provider fallback | `lib/llm/client.test.ts` |
 | Quota exhaustion | `lib/llm/limits.test.ts`, `lib/llm/client.test.ts`, orchestrator test "every call hits the quota" |
-| Authority clamp (REDUCE cannot grow, DELAY only to 11:00) | `lib/agents/clamp.test.ts`, `schemas.test.ts`, orchestrator clamp test |
-| Prompt injection | `lib/agents/untrusted.test.ts`, orchestrator injection test, `tests/agents-injection.test.ts` (a deliberately gullible model), `lib/agent-inputs/inputs.test.ts` |
-| Caching | orchestrator tests (reuse for same symbol and day, no reuse for another day) |
-| Partial analyst failure | orchestrator tests (bad JSON from one analyst, unavailable fundamentals, required technical input missing) |
+| Authority clamp (REDUCE cannot grow, DELAY only to 11:00) | `lib/agents/clamp.test.ts`, `schemas.test.ts`, orchestrator clamp test (also checks the stored outcome), `run-view.test.ts` (`describeVerdict` shows the clamped lots, not the model request) |
+| Prompt injection | `lib/agents/untrusted.test.ts`, orchestrator injection test, `tests/agents-injection.test.ts` (a deliberately gullible model, including a case where a rejected report would otherwise carry the injected text into later prompts), `lib/agent-inputs/inputs.test.ts` |
+| Caching | orchestrator tests (reuse for same symbol and day, no reuse for another day, live options data is never cached) |
+| Partial analyst failure | orchestrator tests (bad JSON from one analyst, unavailable fundamentals). A missing required technical input stops the run before any analyst call (zero LLM requests asserted) |
 | No token or env reachable from `lib/agents` | `tests/safety/agents-isolation.test.ts` |
 | No LLM calls in unit tests | all LLM use is a fake `LlmClient` or a fake `fetch` |
 
@@ -53,7 +53,9 @@ Two guard tests were mutation-checked: adding `process.env` to a `lib/agents` fi
 11. **No daily batch, no Agents tab or verdict scoreboard, no button on tiles or the Regime tab, no "Team mode" in the existing chat.** Only the drill-down button and run view exist.
 12. **Legacy OpenAI analyst** (`/api/market-assistant`, `/api/stock-assistant`) still calls OpenAI directly, outside the new cost log. Until it is routed through `lib/llm` or disabled, agent-versus-rules comparisons are not valid.
 13. **Technical input and past dates.** The option chain is live only, so `options_oi` is unavailable for a past as-of date. News for a past date only includes items the feed still returns.
-14. **Paper capital and slippage** answers are still pending, so there is no code-calculated lot size; runs use `calculatedLots` only if the caller supplies it.
+14. **The start route has no authentication.** It requires an `application/json` body and rejects cross-site browser fetches, and runs are capped per 24 hours from D1 (default 50, `AGENT_RUNS_PER_DAY`). Anyone who can reach the server can still start capped runs, and a run without a FYERS cookie falls back to the server's `FYERS_ACCESS_TOKEN` (the same behaviour as the existing routes). Put it behind the deployment's access control before any cloud deploy. `GET /api/agents/runs/:id` is also unauthenticated (ids are random UUIDs).
+15. **Deferred review minors** (not fixed, listed in the ledger): a logging failure can re-spend on the next provider; no bounded wait for a rate-limit slot, so one run (about 8 calls) will fail on a provider limited to about 5 requests per minute; two simultaneous runs both miss the cache; quota can overshoot with parallel calls and a provider that omits usage records 0 tokens; the run view polls forever for a stuck run; 500 responses return raw error text; a few weak tests (`tests/migrate-local.test.ts` second case, `lib/llm/config.test.ts` key-leak case).
+16. **Paper capital and slippage** answers are still pending, so there is no code-calculated lot size; runs use `calculatedLots` only if the caller supplies it.
 
 ## 5. Status of the A2.9 consistency points
 
@@ -75,6 +77,10 @@ Two guard tests were mutation-checked: adding `process.env` to a `lib/agents` fi
 - The service creates the run row before returning 202; the orchestrator creates it only if missing.
 - The run view has no separate "trader" phase because debate rounds are configurable.
 - An `AI_UNAVAILABLE` run stores its reason as a `run` step so the UI can show it.
+- The authority clamp result (applied lots, counterfactual) is stored with the verdict and shown instead of the model's own request.
+- The option chain is never cached (live data cannot be reused across as-of dates) and its payload carries the live retrieval time.
+- Gap lines in later prompts carry fixed categories only, never model- or feed-written text.
+- The start route has a same-origin/JSON guard and a per-day run cap, but no authentication (item 14 above).
 
 ## 7. Recommendation
 
