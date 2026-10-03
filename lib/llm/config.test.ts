@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { describeProviders, parseProviders } from './config';
+import { describeProviders, keyVariableNames, parseProviders } from './config';
 
 const entry = { name: 'alpha', baseUrl: 'https://alpha.example/v1', apiKeyEnv: 'ALPHA_KEY', model: 'm1', requestsPerMinute: 10, dailyTokenQuota: 100_000 };
 
@@ -55,5 +55,13 @@ describe('describeProviders', () => {
     expect(report.find((p) => p.name === 'google')).toMatchObject({ keyPresent: true });
     expect(report.find((p) => p.name === 'deepseek')).toMatchObject({ keyPresent: false });
     expect(JSON.stringify(report)).not.toContain('super-secret');
+  });
+});
+
+describe('keyVariableNames', () => {
+  it('lists only the names of API-key-style variables that have a value, never the values', () => {
+    const names = keyVariableNames({ GEMINI_API_KEY: 'secret-1', DEEPSEEK_KEY: 'secret-2', EMPTY_API_KEY: '', PATH: '/usr/bin', FYERS_SECRET_KEY: 'secret-3', OPENAI_API_KEY: 'secret-4' });
+    expect(names).toEqual(['DEEPSEEK_KEY', 'GEMINI_API_KEY', 'OPENAI_API_KEY']);
+    expect(JSON.stringify(names)).not.toMatch(/secret/);
   });
 });

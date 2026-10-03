@@ -47,3 +47,8 @@ export function parseProviders(env: Record<string, string | undefined>): Provide
 export function describeProviders(env: Record<string, string | undefined>): { name: string; model: string; keyPresent: boolean }[] {
   return entries(env).map((entry) => ({ name: entry.name, model: entry.model, keyPresent: keyOf(entry, env) !== undefined }));
 }
+
+// For diagnosing a missing key: the names (never the values) of API-key-style variables that have a value. FYERS variables are left out.
+export function keyVariableNames(env: Record<string, string | undefined>): string[] {
+  return Object.keys(env).filter((name) => env[name] && /(API_?KEY|_KEY)$/i.test(name) && !/^FYERS_/i.test(name)).sort();
+}
