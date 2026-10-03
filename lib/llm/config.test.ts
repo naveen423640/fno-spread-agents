@@ -45,21 +45,25 @@ describe('parseProviders', () => {
 
   it('falls back to the committed default provider list when LLM_PROVIDERS is unset', () => {
     const providers = parseProviders({ GEMINI_API_KEY: 'g', GROQ_API_KEY: 'q', XAI_API_KEY: 'x', DEEPSEEK_API_KEY: 'd', ANTHROPIC_API_KEY: 'a' });
-    expect(providers.map((p) => p.name)).toEqual(['google', 'groq', 'deepseek', 'xai', 'anthropic']);
+    expect(providers.map((p) => p.name)).toEqual(['xai', 'anthropic']);
     expect(providers.every((p) => p.baseUrl.startsWith('https://') && p.model && p.requestsPerMinute > 0 && p.dailyTokenQuota > 0)).toBe(true);
   });
 
   it('uses only the defaults whose key is present, and an explicit LLM_PROVIDERS replaces the defaults', () => {
-    expect(parseProviders({ DEEPSEEK_API_KEY: 'd' }).map((p) => p.name)).toEqual(['deepseek']);
-    expect(parseProviders({ LLM_PROVIDERS: '[]', DEEPSEEK_API_KEY: 'd' })).toEqual([]);
+    expect(parseProviders({ ANTHROPIC_API_KEY: 'a' }).map((p) => p.name)).toEqual(['anthropic']);
+    expect(parseProviders({ LLM_PROVIDERS: '[]', ANTHROPIC_API_KEY: 'a' })).toEqual([]);
+  });
+
+  it('does not use paused providers (Google, Groq, DeepSeek) even when their keys are present', () => {
+    expect(parseProviders({ GEMINI_API_KEY: 'g', GROQ_API_KEY: 'q', DEEPSEEK_API_KEY: 'd' })).toEqual([]);
   });
 });
 
 describe('describeProviders', () => {
   it('reports each configured provider with whether a key is present, never the key', () => {
-    const report = describeProviders({ GEMINI_API_KEY: 'super-secret' });
-    expect(report.find((p) => p.name === 'google')).toMatchObject({ keyPresent: true });
-    expect(report.find((p) => p.name === 'deepseek')).toMatchObject({ keyPresent: false });
+    const report = describeProviders({ ANTHROPIC_API_KEY: 'super-secret' });
+    expect(report.find((p) => p.name === 'anthropic')).toMatchObject({ keyPresent: true });
+    expect(report.find((p) => p.name === 'xai')).toMatchObject({ keyPresent: false });
     expect(JSON.stringify(report)).not.toContain('super-secret');
   });
 });
