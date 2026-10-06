@@ -113,6 +113,48 @@ describe('refreshCandles', () => {
   });
 });
 
+describe('cache revalidation (splits, bonuses and a weekly full refresh)', () => {
+  const NEXT_DAY = () => new Date('2026-10-07T11:00:00Z');
+  const scaled = (candles: Candle[], k: number): Candle[] => candles.map((c) => ({ ...c, open: c.open * k, high: c.high * k, low: c.low * k, close: c.close * k }));
+
+  async function seeded(k: number) {
+    const base = mockBroker('2026-10-07', 4, 401);
+    const { deps, store } = makeDeps({ now: NEXT_DAY });
+    for (const t of tickers) await store.saveCandles('fyers', t, scaled(base.data[t].slice(0, -1), k), addDays('2026-10-07', -730));
+    await store.saveCandles('fyers', '^NSEI', scaled(base.bench.slice(0, -1), k), addDays('2026-10-07', -730));
+    return { base, deps, store };
+  }
+
+  it('refetches the full history when the overlap no longer matches the cache (a split or bonus)', async () => {
+    const { base, deps, store } = await seeded(2); // cached prices are double what the broker now reports
+    const broker = spy(base.adapter);
+    const result = await refreshCandles(deps, broker, 'fyers', tickers, 2);
+    const first = broker.calls.filter((c) => c.method === 'history' && c.args[0] === 'NSE:RELIANCE-EQ').map((c) => c.args[1]);
+    expect(first).toEqual([{ from: '2026-09-29', to: '2026-10-07' }, { from: addDays('2026-10-07', -730), to: '2026-10-07' }]);
+    expect(result.data.RELIANCE).toEqual(base.data.RELIANCE);
+    expect((await store.getCandles('fyers', 'RELIANCE'))?.candles).toEqual(base.data.RELIANCE);
+  });
+
+  it('keeps the incremental fetch when prices agree within half a percent', async () => {
+    const { base, deps } = await seeded(1.001);
+    const broker = spy(base.adapter);
+    await refreshCandles(deps, broker, 'fyers', tickers, 2);
+    expect(broker.calls.filter((c) => c.method === 'history')).toHaveLength(tickers.length + 1);
+  });
+
+  it('goes straight to a full refetch when the cache has not had one for a week', async () => {
+    const base = mockBroker('2026-10-15', 4, 405);
+    const old = makeDeps({ now: () => AFTER_CLOSE });
+    for (const t of tickers) await old.store.saveCandles('fyers', t, base.data[t].filter((c) => c.date <= '2026-10-06'), addDays('2026-10-15', -730));
+    await old.store.saveCandles('fyers', '^NSEI', base.bench.filter((c) => c.date <= '2026-10-06'), addDays('2026-10-15', -730));
+    const later = { ...old.deps, now: () => new Date('2026-10-15T11:00:00Z') };
+    const broker = spy(base.adapter);
+    await refreshCandles(later, broker, 'fyers', tickers, 2);
+    const calls = broker.calls.filter((c) => c.method === 'history' && c.args[0] === 'NSE:RELIANCE-EQ');
+    expect(calls.map((c) => c.args[1])).toEqual([{ from: addDays('2026-10-15', -730), to: '2026-10-15' }]);
+  });
+});
+
 describe('clock', () => {
   it('the fixed test clocks fall where the tests assume', () => {
     expect(AFTER_CLOSE.toISOString()).toBe('2026-10-06T11:00:00.000Z');

@@ -20,6 +20,8 @@ export const BENCH = '^NSEI';
 export const MIN_TRADES = 100;
 export const BACKTEST_BANNER = 'Options modelled with Black-Scholes and an IV proxy (1.1 x 20-day realised volatility, no skew, no real option prices), indicative only.';
 const SCAN_YEARS = 2;
+const FULL_REFRESH_DAYS = 7;
+const SPLIT_TOLERANCE = 0.005;
 const BACKTEST_YEARS = 5;
 
 export type ScreenerDeps = {
@@ -37,6 +39,17 @@ export type ScreenerDeps = {
 const isSource = (value: unknown): value is Source => (SOURCES as readonly unknown[]).includes(value);
 
 // ---------------------------------------------------------------- candle refresh
+
+const daysBetween = (fromIso: string, toIso: string) => Math.round((Date.parse(`${toIso}T00:00:00Z`) - Date.parse(`${fromIso}T00:00:00Z`)) / 86_400_000);
+
+// True when a freshly fetched candle disagrees with the cached one for the same date by more than half a percent.
+function overlapMismatch(cached: Candle[], fetched: Candle[]): boolean {
+  const byDate = new Map(cached.map((c) => [c.date, c.close]));
+  return fetched.some((c) => {
+    const old = byDate.get(c.date);
+    return old !== undefined && old > 0 && Math.abs(c.close / old - 1) > SPLIT_TOLERANCE;
+  });
+}
 
 export type RefreshResult = {
   data: Record<string, Candle[]>;
@@ -66,14 +79,21 @@ export async function refreshCandles(deps: ScreenerDeps, broker: BrokerAdapter, 
     if (cached && reaches && cached.lastDate >= completed) {
       candles = cached.candles;
     } else {
-      const incremental = cached !== null && reaches;
-      const range = incremental ? { from: addDays(cached.lastDate, -7), to: today } : { from: needFrom, to: today };
-      const fetched = await broker.history(item.symbol, range);
+      // A week without a full refresh, or an overlap that disagrees with the cache (a split or bonus), means the cached
+      // history may be unadjusted, so it is replaced by a full download.
+      const weeklyStale = cached !== null && daysBetween(istDate(new Date(cached.refreshedAt)), today) >= FULL_REFRESH_DAYS;
+      // `base` is the cache we may extend; null means a full download.
+      let base = cached !== null && reaches && !weeklyStale ? cached : null;
+      let fetched = await broker.history(item.symbol, base ? { from: addDays(base.lastDate, -7), to: today } : { from: needFrom, to: today });
+      if (fetched.ok && base && overlapMismatch(base.candles, fetched.value)) {
+        base = null;
+        fetched = await broker.history(item.symbol, { from: needFrom, to: today });
+      }
       if (fetched.ok) {
-        const merged = new Map((incremental ? cached.candles : []).map((c) => [c.date, c]));
+        const merged = new Map((base ? base.candles : []).map((c) => [c.date, c]));
         for (const c of fetched.value) merged.set(c.date, c);
         candles = [...merged.values()].filter((c) => c.date <= completed).sort((a, b) => a.date.localeCompare(b.date));
-        if (useCache && candles.length) await deps.store.saveCandles(source, item.key, candles, incremental ? cached.coversFrom : needFrom);
+        if (useCache && candles.length) await deps.store.saveCandles(source, item.key, candles, base ? base.coversFrom : needFrom);
       } else if (fetched.code === 'LOGIN_REQUIRED') {
         result.loginRequired = true;
         return result;
