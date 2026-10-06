@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { UNIVERSE } from '../../lib/screener/config';
+import { DEFAULT_RULES, referenceRules, type RuleSet } from '../../lib/screener/rules';
 import { candidateDetail, runScreenerCheck, startScreenerJob } from '../../lib/screener/service';
 import type { ScanRow } from '../../lib/screener/types';
 import { createScreenerStore } from '../../lib/screener/store';
@@ -86,6 +87,58 @@ describe('scan job (synthetic source)', () => {
     await settle();
     const job = await store.getJob('job-1');
     expect((job as { params: { holdDays: number } }).params.holdDays).toBe(25);
+  });
+});
+
+describe('jobs with custom rules', () => {
+  const bullRules: RuleSet = { enabled: true, bull: [{ left: 'rsi', op: '>', right: { kind: 'value', value: 0 }, role: 'filter' }], bear: [] };
+
+  it.each([
+    ['not an object', 'rules'],
+    ['enabled without any rule', { enabled: true, bull: [], bear: [] }],
+    ['an unknown field', { enabled: true, bull: [{ left: 'macd', op: '>', right: { kind: 'value', value: 0 }, role: 'filter' }], bear: [] }],
+  ])('rejects %s with 400 and creates no job', async (_label, rules) => {
+    const { deps, store } = makeDeps({ universe: SIX, synthetic });
+    expect(await startScreenerJob(deps, { kind: 'scan', source: 'synthetic', rules })).toMatchObject({ status: 400 });
+    expect(await store.getJob('job-1')).toBeNull();
+  });
+
+  it('a scan on custom rules scans only the side with rules and records the rules it used', async () => {
+    const { deps, store, settle } = makeDeps({ universe: SIX, synthetic });
+    await startScreenerJob(deps, { kind: 'scan', source: 'synthetic', rules: bullRules });
+    await settle();
+    const result = (await store.getJob('job-1'))?.result as { rules: RuleSet; rows: ScanRow[]; counts: { symbols: number } };
+    expect(result.rules).toEqual(bullRules);
+    expect(result.rows.length).toBeGreaterThan(0);
+    expect(result.rows.every((row) => row.side === 'BULL CALL')).toBe(true);
+  });
+
+  it('without rules the result records the disabled default and uses the built-in rules', async () => {
+    const { deps, store, settle } = makeDeps({ universe: SIX, synthetic });
+    await startScreenerJob(deps, { kind: 'scan', source: 'synthetic' });
+    await settle();
+    expect(((await store.getJob('job-1'))?.result as { rules: RuleSet }).rules).toEqual(DEFAULT_RULES);
+  });
+
+  it('the reference rules entered as custom rules give the same scan as the built-in rules', async () => {
+    const preset: RuleSet = { enabled: true, ...referenceRules({ rsiBull: [35, 48], rsiBear: [52, 65], nearMaUp: 1.01, nearMaLo: 0.97, hvPctMax: 0.6, holdDays: 20, timeExitLeft: 8, takeProfit: 0.6, stopLoss: 0.5, slippage: 0.02 }) };
+    const built = makeDeps({ universe: SIX, synthetic });
+    await startScreenerJob(built.deps, { kind: 'scan', source: 'synthetic' });
+    await built.settle();
+    const custom = makeDeps({ universe: SIX, synthetic });
+    await startScreenerJob(custom.deps, { kind: 'scan', source: 'synthetic', rules: preset });
+    await custom.settle();
+    const rowsOf = async (d: typeof built) => ((await d.store.getJob('job-1'))?.result as { rows: ScanRow[] }).rows;
+    expect(await rowsOf(custom)).toEqual(await rowsOf(built));
+  });
+
+  it('a backtest on custom rules adds custom variants and records the rules', async () => {
+    const { deps, store, settle } = makeDeps({ universe: SIX, synthetic });
+    await startScreenerJob(deps, { kind: 'backtest', source: 'synthetic', rules: bullRules });
+    await settle();
+    const result = (await store.getJob('job-1'))?.result as { rules: RuleSet; variants: { name: string; side: number }[] };
+    expect(result.variants.map((v) => v.name)).toEqual(['bull_full', 'bull_no_trigger', 'oversold_only (RSI<30)', 'oversold_in_uptrend', 'uptrend_baseline', 'bear_full', 'custom_bull']);
+    expect(result.rules).toEqual(bullRules);
   });
 });
 

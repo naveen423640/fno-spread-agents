@@ -4,6 +4,7 @@ import { createMockAdapter } from './broker/mock';
 import { addDays, type BrokerAdapter } from './broker/types';
 import { DEFAULT_PARAMS, UNIVERSE, validateParams, type ScreenerParams } from './config';
 import { addIndicators } from './indicators';
+import { validateRules, type RuleSet } from './rules';
 import { runScan } from './scan';
 import { buildActionPlan, spreadCheck, supportResistance, type ActionPlan, type SpreadCheck } from './spread';
 import { isJobStale, type JobKind, type ScreenerStore } from './store';
@@ -134,18 +135,20 @@ function brokerAndTickers(deps: ScreenerDeps, source: Source): { broker: BrokerA
 
 // ---------------------------------------------------------------- jobs
 
-export type ScanResult = { kind: 'scan'; asOf: string; generatedAt: string; source: Source; expiry: string; params: ScreenerParams; rows: ScanRow[]; skipped: RefreshResult['skipped']; counts: { symbols: number; signal: number; watch: number } };
+export type ScanResult = { kind: 'scan'; asOf: string; generatedAt: string; source: Source; expiry: string; params: ScreenerParams; rules: RuleSet; rows: ScanRow[]; skipped: RefreshResult['skipped']; counts: { symbols: number; signal: number; watch: number } };
 export type VariantView = { name: string; side: Side; stats: TradeStats; firstHalf?: TradeStats; secondHalf?: TradeStats; tradeCount: number; lowSample: boolean };
-export type BacktestResult = { kind: 'backtest'; asOf: string; generatedAt: string; source: Source; params: ScreenerParams; variants: VariantView[]; skipped: RefreshResult['skipped']; minTrades: number; banner: string };
+export type BacktestResult = { kind: 'backtest'; asOf: string; generatedAt: string; source: Source; params: ScreenerParams; rules: RuleSet; variants: VariantView[]; skipped: RefreshResult['skipped']; minTrades: number; banner: string };
 
 export type StartResult = { jobId: string } | { error: string; status: 400 | 401 | 429 };
 
-export async function startScreenerJob(deps: ScreenerDeps, request: { kind?: unknown; source?: unknown; params?: unknown }): Promise<StartResult> {
+export async function startScreenerJob(deps: ScreenerDeps, request: { kind?: unknown; source?: unknown; params?: unknown; rules?: unknown }): Promise<StartResult> {
   const { kind, source } = request;
   if (kind !== 'scan' && kind !== 'backtest') return { error: 'kind must be "scan" or "backtest".', status: 400 };
   if (!isSource(source)) return { error: 'source must be "fyers", "kite" or "synthetic".', status: 400 };
   const params = validateParams(request.params ?? {});
   if (!params.ok) return { error: params.error, status: 400 };
+  const rules = validateRules(request.rules);
+  if (!rules.ok) return { error: rules.error, status: 400 };
   const setup = brokerAndTickers(deps, source);
   if (!setup) return { error: `Sign in to ${source === 'kite' ? 'Kite' : 'FYERS'} first (the broker connection is missing or has expired).`, status: 401 };
   // One running job per kind and source: asking again returns the one in progress instead of doubling the broker requests.
@@ -156,11 +159,11 @@ export async function startScreenerJob(deps: ScreenerDeps, request: { kind?: unk
 
   const id = deps.newId();
   await deps.store.createJob({ id, kind, source, params: params.value });
-  deps.schedule(runJob(deps, id, kind, source, params.value, setup.broker, setup.tickers));
+  deps.schedule(runJob(deps, id, kind, source, params.value, rules.value, setup.broker, setup.tickers));
   return { jobId: id };
 }
 
-async function runJob(deps: ScreenerDeps, id: string, kind: JobKind, source: Source, params: ScreenerParams, broker: BrokerAdapter, tickers: string[]) {
+async function runJob(deps: ScreenerDeps, id: string, kind: JobKind, source: Source, params: ScreenerParams, rules: RuleSet, broker: BrokerAdapter, tickers: string[]) {
   let lastPercent = -1;
   const progress = (percent: number, message: string) => {
     const rounded = Math.round(percent);
@@ -181,7 +184,7 @@ async function runJob(deps: ScreenerDeps, id: string, kind: JobKind, source: Sou
 
     if (kind === 'scan') {
       const expiry = monthlyExpiry(istDate(deps.now()));
-      const rows = runScan(refreshed.data, refreshed.bench, params, { expiry, universe: deps.universe });
+      const rows = runScan(refreshed.data, refreshed.bench, params, { expiry, universe: deps.universe, rules });
       const lots = new Map<string, number | null>();
       let index = 0;
       for (const row of rows) {
@@ -195,17 +198,17 @@ async function runJob(deps: ScreenerDeps, id: string, kind: JobKind, source: Sou
       }
       const finalRows = rows.map((row) => ({ ...row, lotSize: lots.get(row.symbol) ?? null }));
       const result: ScanResult = {
-        kind: 'scan', asOf: refreshed.asOf, generatedAt, source, expiry, params, rows: finalRows, skipped: refreshed.skipped,
+        kind: 'scan', asOf: refreshed.asOf, generatedAt, source, expiry, params, rules, rows: finalRows, skipped: refreshed.skipped,
         counts: { symbols: Object.keys(refreshed.data).length, signal: finalRows.filter((r) => r.status === 'SIGNAL').length, watch: finalRows.filter((r) => r.status === 'WATCH').length },
       };
       await deps.store.updateJob(id, { status: 'done', progress: 100, message: `Scan complete: ${result.counts.signal} signal, ${result.counts.watch} watch`, result });
       return;
     }
 
-    const variants = runBacktest(refreshed.data, refreshed.bench, params, (done, total) => { pending.push(progress(50 + (done / total) * 49, `Backtesting variant ${done}/${total}`)); });
+    const variants = runBacktest(refreshed.data, refreshed.bench, params, (done, total) => { pending.push(progress(50 + (done / total) * 49, `Backtesting variant ${done}/${total}`)); }, rules);
     await Promise.all(pending);
     const result: BacktestResult = {
-      kind: 'backtest', asOf: refreshed.asOf, generatedAt, source, params, skipped: refreshed.skipped, minTrades: MIN_TRADES, banner: BACKTEST_BANNER,
+      kind: 'backtest', asOf: refreshed.asOf, generatedAt, source, params, rules, skipped: refreshed.skipped, minTrades: MIN_TRADES, banner: BACKTEST_BANNER,
       variants: variants.map((v) => ({ name: v.name, side: v.side, stats: v.stats, firstHalf: v.firstHalf, secondHalf: v.secondHalf, tradeCount: v.trades.length, lowSample: v.trades.length < MIN_TRADES })),
     };
     await deps.store.updateJob(id, { status: 'done', progress: 100, message: 'Backtest complete', result });
