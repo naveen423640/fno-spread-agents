@@ -12,7 +12,7 @@ import type { StartDeps } from './service';
 const limiter = createLimiter(() => Date.now());
 const universe = new Set(marketSnapshot.map((stock) => stock.symbol));
 
-async function scheduler(): Promise<StartDeps['schedule']> {
+export async function scheduler(): Promise<StartDeps['schedule']> {
   try {
     const workers = (await import('cloudflare:workers')) as { waitUntil?: (work: Promise<unknown>) => void };
     if (typeof workers.waitUntil === 'function') return (work) => workers.waitUntil?.(work);
