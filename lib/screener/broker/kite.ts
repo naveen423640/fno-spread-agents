@@ -92,7 +92,8 @@ export function createKiteAdapter(deps: KiteDeps): BrokerAdapter {
       const candles = (result.value.data as { candles?: [string, number, number, number, number, number][] } | undefined)?.candles;
       if (!Array.isArray(candles)) return { ok: false, code: 'UPSTREAM', message: `Kite returned no candle list for ${symbol}.` };
       for (const row of candles) byDate.set(row[0].slice(0, 10), { date: row[0].slice(0, 10), open: row[1], high: row[2], low: row[3], close: row[4], volume: row[5] });
-      if (k < chunks.length - 1) await sleep(HISTORY_THROTTLE_MS);
+      // Pause after every call, including the last, so consecutive symbols also stay under Kite's request limit.
+      await sleep(HISTORY_THROTTLE_MS);
     }
     if (!byDate.size) return { ok: false, code: 'UPSTREAM', message: `Kite returned no candles for ${symbol}.` };
     return { ok: true, value: [...byDate.values()].sort((a, b) => a.date.localeCompare(b.date)) };

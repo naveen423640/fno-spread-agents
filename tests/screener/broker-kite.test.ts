@@ -75,11 +75,17 @@ describe('history', () => {
     expect(urls.filter((u) => u.includes('/historical/'))).toHaveLength(1);
   });
 
-  it('chunks ranges longer than 2000 days and throttles between requests', async () => {
+  it('chunks ranges longer than 2000 days and pauses after each request', async () => {
     const { adapter, urls, sleeps } = setup(route);
     await adapter.history('NSE:RELIANCE', { from: '2018-01-01', to: '2026-10-01' });
     expect(urls.filter((u) => u.includes('/historical/')).length).toBe(2);
-    expect(sleeps.length).toBeGreaterThanOrEqual(1);
+    expect(sleeps).toEqual([350, 350]);
+  });
+
+  it('pauses after every history call, so consecutive symbols stay under the roughly 3 requests per second limit', async () => {
+    const { adapter, sleeps } = setup(route);
+    await adapter.history('NSE:RELIANCE', { from: '2026-09-01', to: '2026-10-01' });
+    expect(sleeps).toEqual([350]);
   });
 
   it('a network error is UPSTREAM with fixed text', async () => {
