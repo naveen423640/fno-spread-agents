@@ -123,7 +123,7 @@ def main():
     ind = {s: ref.add_indicators(df, bench) for s, df in data.items() if s != "^NSEI"}
     names = list(ind)
 
-    golden = {"params": clean(ref.P), "n_stocks": N_STOCKS, "n_rows": N_ROWS, "seed": SEED,
+    golden = {"universe": dict(ref.UNIVERSE), "params": clean(ref.P), "n_stocks": N_STOCKS, "n_rows": N_ROWS, "seed": SEED,
               "data": {s: series(df) for s, df in data.items()}}
 
     cols = ["sma20", "sma50", "sma200", "rsi", "rs63", "vol_ratio", "hv20", "hv_pct", "prev_high", "prev_low"]
