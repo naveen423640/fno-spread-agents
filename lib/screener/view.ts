@@ -1,4 +1,5 @@
 import { DEFAULT_PARAMS, validateParams, type ScreenerParams } from './config';
+import { DEFAULT_RULES, validateRules, type RuleSet } from './rules';
 import type { VariantView } from './service';
 import type { ScanRow } from './types';
 
@@ -57,4 +58,35 @@ export function variantNotes(variant: VariantView, minTrades: number): string[] 
   if (variant.lowSample) notes.push(`Fewer than ${minTrades} trades (${variant.tradeCount}): too few to trust.`);
   if (variant.stats.expectancyR !== undefined && variant.stats.expectancyR <= 0) notes.push('No positive edge in this variant.');
   return notes;
+}
+
+export const RULES_KEY = 'fno-screener-rules-v1';
+
+// Custom rules are kept in this browser only; anything missing, blocked or invalid falls back to the disabled default.
+export function loadRules(storage: Pick<Storage, 'getItem'> | null): RuleSet {
+  try {
+    const raw = storage?.getItem(RULES_KEY);
+    if (!raw) return DEFAULT_RULES;
+    const checked = validateRules(JSON.parse(raw));
+    return checked.ok ? checked.value : DEFAULT_RULES;
+  } catch {
+    return DEFAULT_RULES;
+  }
+}
+
+export function saveRules(storage: Pick<Storage, 'setItem'> | null, rules: RuleSet): boolean {
+  try {
+    if (!storage) return false;
+    storage.setItem(RULES_KEY, JSON.stringify(rules));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// A result from before custom rules existed has no rules; that means the reference rules.
+export const rulesEqual = (a: RuleSet | undefined, b: RuleSet | undefined) => JSON.stringify(a ?? DEFAULT_RULES) === JSON.stringify(b ?? DEFAULT_RULES);
+
+export function rulesLabel(rules: RuleSet | undefined): string {
+  return rules?.enabled ? `Your rules (${rules.bull.length} bull, ${rules.bear.length} bear)` : 'Reference rules';
 }

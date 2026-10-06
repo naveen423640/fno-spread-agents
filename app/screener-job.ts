@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import type { ScreenerParams } from '@/lib/screener/config';
+import type { RuleSet } from '@/lib/screener/rules';
 import { jobPhase, type JobPhase } from '@/lib/screener/view';
 
 export type JobData<R> = {
@@ -66,13 +67,13 @@ export function useScreenerJob<R>(kind: 'scan' | 'backtest', source: string | nu
     return () => { clearInterval(timer); controller.abort(); };
   }, [activeId]);
 
-  const start = useCallback(async (params: ScreenerParams) => {
+  const start = useCallback(async (params: ScreenerParams, rules: RuleSet) => {
     if (!source) return;
     setStarting(true);
     setError('');
     setLoginNeeded(false);
     try {
-      const response = await fetch('/api/screener/jobs', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ kind, source, params }) });
+      const response = await fetch('/api/screener/jobs', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ kind, source, params, rules }) });
       const body = (await response.json().catch(() => null)) as { jobId?: string; error?: string } | null;
       if (response.status === 401) { setLoginNeeded(true); setError(body?.error ?? 'Sign in first.'); return; }
       if (!response.ok || !body?.jobId) throw new Error(body?.error ?? `The job could not start (${response.status}).`);

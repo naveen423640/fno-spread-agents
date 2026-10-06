@@ -6,10 +6,11 @@ import { Link2, ScanSearch } from 'lucide-react';
 import { ScreenerBacktest } from '@/app/screener-backtest';
 import { ScreenerScan } from '@/app/screener-scan';
 import { ScreenerSettings } from '@/app/screener-settings';
+import { validateRules, type RuleSet } from '@/lib/screener/rules';
 import { Button } from '@/components/ui/button';
 import type { ConfigView } from '@/lib/screener/api';
 import { DEFAULT_PARAMS, type ScreenerParams } from '@/lib/screener/config';
-import { loadSettings, saveSettings } from '@/lib/screener/view';
+import { loadRules, loadSettings, saveRules, saveSettings } from '@/lib/screener/view';
 
 type Panel = 'scan' | 'backtest' | 'settings';
 const PANELS: { id: Panel; label: string }[] = [{ id: 'scan', label: 'Scan' }, { id: 'backtest', label: 'Backtest' }, { id: 'settings', label: 'Settings' }];
@@ -25,6 +26,7 @@ export function ScreenerTab() {
   const [panel, setPanel] = useState<Panel>('scan');
   // Settings are per browser. This tab only mounts on the client, so reading storage in the initialiser is safe.
   const [params, setParams] = useState<ScreenerParams>(() => loadSettings(browserStorage()));
+  const [rules, setRules] = useState<RuleSet>(() => loadRules(browserStorage()));
   const [loginNeeded, setLoginNeeded] = useState(false);
 
   useEffect(() => {
@@ -42,6 +44,8 @@ export function ScreenerTab() {
   }, []);
 
   const changeParams = (next: ScreenerParams) => { setParams(next); saveSettings(browserStorage(), next); };
+  const changeRules = (next: RuleSet) => { setRules(next); saveRules(browserStorage(), next); };
+  const rulesError = validateRules(rules).ok ? '' : (validateRules(rules) as { error: string }).error;
   const live = source !== 'synthetic';
 
   return (
@@ -76,9 +80,9 @@ export function ScreenerTab() {
         ))}
       </div>
 
-      {panel === 'scan' && <ScreenerScan key={`scan-${source}`} source={source} params={params} config={config} onLogin={() => setLoginNeeded(true)} />}
-      {panel === 'backtest' && <ScreenerBacktest key={`backtest-${source}`} source={source} params={params} minTrades={config?.minTrades ?? 100} onLogin={() => setLoginNeeded(true)} />}
-      {panel === 'settings' && <ScreenerSettings params={params} defaults={config?.defaults ?? DEFAULT_PARAMS} onChange={changeParams} />}
+      {panel === 'scan' && <ScreenerScan key={`scan-${source}`} source={source} params={params} rules={rules} rulesError={rulesError} config={config} onLogin={() => setLoginNeeded(true)} />}
+      {panel === 'backtest' && <ScreenerBacktest key={`backtest-${source}`} source={source} params={params} rules={rules} rulesError={rulesError} minTrades={config?.minTrades ?? 100} onLogin={() => setLoginNeeded(true)} />}
+      {panel === 'settings' && <ScreenerSettings params={params} defaults={config?.defaults ?? DEFAULT_PARAMS} onChange={changeParams} rules={rules} onRulesChange={changeRules} />}
 
       <footer className="border-t border-border pt-3 text-xs text-muted-foreground">
         Analysis, not advice. Screens and backtests are not recommendations; options are risky and a debit spread can lose its whole debit. Always check earnings and news dates manually, and confirm the expiry, lot size and prices with your broker before trading.

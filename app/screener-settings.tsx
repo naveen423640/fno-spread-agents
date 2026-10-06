@@ -2,8 +2,10 @@
 
 import { useState } from 'react';
 
+import { ScreenerRules } from '@/app/screener-rules';
 import { Button } from '@/components/ui/button';
 import { validateParams, type ScreenerParams } from '@/lib/screener/config';
+import type { RuleSet } from '@/lib/screener/rules';
 import { paramsEqual } from '@/lib/screener/view';
 
 type NumberKey = 'nearMaUp' | 'nearMaLo' | 'hvPctMax' | 'holdDays' | 'timeExitLeft' | 'takeProfit' | 'stopLoss' | 'slippage';
@@ -18,7 +20,7 @@ const NUMBER_FIELDS: { key: NumberKey; label: string; hint: string; step: number
   { key: 'slippage', label: 'Slippage per fill (backtest)', hint: '0.02 = 2%', step: 0.005 },
 ];
 
-export function ScreenerSettings({ params, defaults, onChange }: { params: ScreenerParams; defaults: ScreenerParams; onChange: (next: ScreenerParams) => void }) {
+export function ScreenerSettings({ params, defaults, onChange, rules, onRulesChange }: { params: ScreenerParams; defaults: ScreenerParams; onChange: (next: ScreenerParams) => void; rules: RuleSet; onRulesChange: (next: RuleSet) => void }) {
   const [draft, setDraft] = useState<Record<string, string>>({});
   const [error, setError] = useState('');
 
@@ -49,6 +51,8 @@ export function ScreenerSettings({ params, defaults, onChange }: { params: Scree
   const field = 'h-9 w-24 rounded-lg border border-border bg-background px-2 text-right text-sm tabular-nums';
   return (
     <div className="space-y-4">
+      <ScreenerRules rules={rules} params={params} onChange={onRulesChange} />
+      <h3 className="pt-2 font-semibold">Reference rule parameters and exit settings</h3>
       <p className="rounded-xl border border-border bg-muted p-3 text-sm text-muted-foreground">These are the rule parameters from the reference script (dict P). Changes are saved in this browser and apply to the next scan or backtest. The defaults are the tested rules: change one parameter at a time, and do not tune until a result looks good, because that is overfitting.</p>
       {error && <p role="alert" className="rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">{error}</p>}
       <div className="grid gap-4 md:grid-cols-2">

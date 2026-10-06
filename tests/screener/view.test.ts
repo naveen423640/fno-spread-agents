@@ -3,7 +3,8 @@ import { describe, expect, it } from 'vitest';
 import { DEFAULT_PARAMS } from '../../lib/screener/config';
 import type { VariantView } from '../../lib/screener/service';
 import type { ScanRow } from '../../lib/screener/types';
-import { DEFAULT_FILTERS, filterRows, halvesVerdict, jobPhase, loadSettings, paramsEqual, saveSettings, sectorsOf, SETTINGS_KEY, variantNotes } from '../../lib/screener/view';
+import { DEFAULT_RULES, type RuleSet } from '../../lib/screener/rules';
+import { DEFAULT_FILTERS, filterRows, halvesVerdict, jobPhase, loadRules, loadSettings, paramsEqual, rulesEqual, rulesLabel, RULES_KEY, saveRules, saveSettings, sectorsOf, SETTINGS_KEY, variantNotes } from '../../lib/screener/view';
 
 const row = (symbol: string, sector: string, side: ScanRow['side'], status: ScanRow['status']): ScanRow => ({
   symbol, sector, side, status, close: 100, rsi: 40, rs63Pct: 5, volX: 1, hvPctile: 0.4, longStrikeApprox: 100, shortStrikeApprox: 110, expiry: '2026-10-27', lotSize: 100,
@@ -101,5 +102,52 @@ describe('variantNotes', () => {
 
   it('flags a non-positive expectancy', () => {
     expect(variantNotes(variant({ stats: { n: 150, expectancyR: -0.02 } }), 100).join(' ')).toMatch(/no positive edge/i);
+  });
+});
+
+const someRules: RuleSet = {
+  enabled: true,
+  bull: [{ left: 'rsi', op: 'between', right: { kind: 'between', low: 35, high: 48 }, role: 'filter' }, { left: 'close', op: '>', right: { kind: 'field', field: 'prevHigh', multiplier: 1 }, role: 'trigger' }],
+  bear: [{ left: 'rsi', op: '>', right: { kind: 'value', value: 60 }, role: 'filter' }],
+};
+
+describe('rules storage', () => {
+  const fake = (value: string | null) => ({ getItem: (key: string) => (key === RULES_KEY ? value : null) });
+
+  it('falls back to the disabled default without storage, with nothing saved, bad JSON or invalid rules', () => {
+    expect(loadRules(null)).toEqual(DEFAULT_RULES);
+    expect(loadRules(fake(null))).toEqual(DEFAULT_RULES);
+    expect(loadRules(fake('{nope'))).toEqual(DEFAULT_RULES);
+    expect(loadRules(fake(JSON.stringify({ enabled: true, bull: [], bear: [] })))).toEqual(DEFAULT_RULES);
+    expect(loadRules({ getItem: () => { throw new Error('blocked'); } })).toEqual(DEFAULT_RULES);
+  });
+
+  it('restores valid saved rules unchanged', () => {
+    expect(loadRules(fake(JSON.stringify(someRules)))).toEqual(someRules);
+  });
+
+  it('saves JSON under the key and reports failure instead of throwing', () => {
+    const written: Record<string, string> = {};
+    expect(saveRules({ setItem: (k, v) => { written[k] = v; } }, someRules)).toBe(true);
+    expect(JSON.parse(written[RULES_KEY])).toEqual(someRules);
+    expect(saveRules({ setItem: () => { throw new Error('quota'); } }, someRules)).toBe(false);
+    expect(saveRules(null, someRules)).toBe(false);
+  });
+});
+
+describe('rulesEqual and rulesLabel', () => {
+  it('compares rules by value, treating a missing set (an older result) as the disabled default', () => {
+    expect(rulesEqual(someRules, JSON.parse(JSON.stringify(someRules)))).toBe(true);
+    expect(rulesEqual(someRules, { ...someRules, bear: [] })).toBe(false);
+    expect(rulesEqual(undefined, DEFAULT_RULES)).toBe(true);
+    expect(rulesEqual(DEFAULT_RULES, someRules)).toBe(false);
+  });
+
+  it('names the rules a result used', () => {
+    expect(rulesLabel(undefined)).toBe('Reference rules');
+    expect(rulesLabel(DEFAULT_RULES)).toBe('Reference rules');
+    expect(rulesLabel({ ...someRules, enabled: false })).toBe('Reference rules');
+    expect(rulesLabel(someRules)).toBe('Your rules (2 bull, 1 bear)');
+    expect(rulesLabel({ ...someRules, bear: [] })).toBe('Your rules (2 bull, 0 bear)');
   });
 });

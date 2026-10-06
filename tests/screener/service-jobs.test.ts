@@ -117,7 +117,8 @@ describe('jobs with custom rules', () => {
     const { deps, store, settle } = makeDeps({ universe: SIX, synthetic });
     await startScreenerJob(deps, { kind: 'scan', source: 'synthetic' });
     await settle();
-    expect(((await store.getJob('job-1'))?.result as { rules: RuleSet }).rules).toEqual(DEFAULT_RULES);
+    const job = await store.getJob('job-1');
+    expect((job as { result: { rules: RuleSet } }).result.rules).toEqual(DEFAULT_RULES);
   });
 
   it('the reference rules entered as custom rules give the same scan as the built-in rules', async () => {
@@ -128,7 +129,7 @@ describe('jobs with custom rules', () => {
     const custom = makeDeps({ universe: SIX, synthetic });
     await startScreenerJob(custom.deps, { kind: 'scan', source: 'synthetic', rules: preset });
     await custom.settle();
-    const rowsOf = async (d: typeof built) => ((await d.store.getJob('job-1'))?.result as { rows: ScanRow[] }).rows;
+    const rowsOf = async (d: typeof built) => ((await d.store.getJob('job-1')) as { result: { rows: ScanRow[] } }).result.rows;
     expect(await rowsOf(custom)).toEqual(await rowsOf(built));
   });
 
