@@ -95,6 +95,9 @@ export type ActionPlan = {
   manualChecks: string[];
 };
 
+// Two decimals at most, without trailing zeros, so floating-point noise never reaches the screen.
+const fmt = (n: number) => String(Number(n.toFixed(2)));
+
 export function buildActionPlan(input: ActionPlanInput): ActionPlan {
   const { side, debit, kLong, kShort, lot, expiry, params, sma20, swing, holidays } = input;
   const width = Math.abs(kShort - kLong);
@@ -102,7 +105,7 @@ export function buildActionPlan(input: ActionPlanInput): ActionPlan {
   const premiumStop = (1 - params.stopLoss) * debit;
   const direction = side > 0 ? 'below' : 'above';
   const timeStopDate = tradingDaysBefore(expiry, params.timeExitLeft, holidays);
-  const levelText = `${swing} (recent swing ${side > 0 ? 'low' : 'high'}) or ${sma20} (20-DMA)`;
+  const levelText = `${fmt(swing)} (recent swing ${side > 0 ? 'low' : 'high'}) or ${fmt(sma20)} (20-DMA)`;
   return {
     profitTarget: { spreadValue: target, profitRsPerLot: params.takeProfit * (width - debit) * lot, pctOfMaxProfit: params.takeProfit * 100 },
     premiumStop: { spreadValue: premiumStop, lossRsPerLot: params.stopLoss * debit * lot },
@@ -112,11 +115,11 @@ export function buildActionPlan(input: ActionPlanInput): ActionPlan {
       note: `Exit if the underlying closes ${direction} the level the thesis relied on: the swing level or the 20-DMA.`,
     },
     timeStop: { date: timeStopDate, tradingDaysBeforeExpiry: params.timeExitLeft, note: `Close on or before ${timeStopDate} (${params.timeExitLeft} trading days before expiry) if it has not worked; decay accelerates.` },
-    trail: `Once the spread is worth about ${params.takeProfit * 100}% of its maximum profit, move the stop to breakeven (the debit paid).`,
+    trail: `Once the spread is worth about ${fmt(params.takeProfit * 100)}% of its maximum profit, move the stop to breakeven (the debit paid).`,
     gapRules: [
       `If the underlying opens ${direction} ${levelText}, exit at the open; do not wait for the close.`,
-      `If the spread is quoted at or below ${premiumStop} at the open (${params.stopLoss * 100}% of the debit lost), exit at the open.`,
-      `If it gaps up to the profit target (${target.toFixed(0)}) or beyond, take the profit at the open rather than waiting for it again.`,
+      `If the spread is quoted at or below ${fmt(premiumStop)} at the open (${fmt(params.stopLoss * 100)}% of the debit lost), exit at the open.`,
+      `If it gaps up to the profit target (${fmt(target)}) or beyond, take the profit at the open rather than waiting for it again.`,
       'A gap against you that stays inside the stops: wait for the trend to confirm, and never average down.',
     ],
     exitOrder: ['Buy back the short leg first.', 'Then sell the long leg.', 'Close before expiry day: stock options are physically settled.'],

@@ -252,7 +252,7 @@ export type DetailFailure = { ok: false; code: 'BAD_REQUEST' | 'NO_DATA'; messag
 
 const finite = (value: number) => (Number.isFinite(value) ? value : null);
 
-export async function candidateDetail(deps: ScreenerDeps, input: SpreadRequest & { debit?: unknown }): Promise<DetailSuccess | DetailFailure> {
+export async function candidateDetail(deps: ScreenerDeps, input: SpreadRequest & { debit?: unknown; lot?: unknown }): Promise<DetailSuccess | DetailFailure> {
   const request = parseSpreadRequest(deps, input);
   if (!request.ok) return { ok: false, code: 'BAD_REQUEST', message: request.message };
 
@@ -293,7 +293,7 @@ export async function candidateDetail(deps: ScreenerDeps, input: SpreadRequest &
     lastClose: last.close,
     series,
     levels: supportResistance(rows),
-    plan: sensible ? buildActionPlan({ side: request.side, debit, kLong: request.kLong, kShort: request.kShort, lot: 1, expiry: request.expiry, params, lastClose: last.close, sma20: last.sma20, swing, holidays: deps.holidays }) : null,
+    plan: sensible ? buildActionPlan({ side: request.side, debit, kLong: request.kLong, kShort: request.kShort, lot: positive(input.lot) ? input.lot : 1, expiry: request.expiry, params, lastClose: last.close, sma20: last.sma20, swing, holidays: deps.holidays }) : null,
     planBasis: liveDebit === null ? 'modelled' : 'live quote',
     planNote: sensible ? null : 'The debit is not between zero and the spread width, so no plan can be built for these strikes.',
   };

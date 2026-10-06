@@ -124,6 +124,14 @@ describe('buildActionPlan', () => {
     expect(text).toMatch(/never average down/i);
   });
 
+  it('prints levels and spread values rounded to two decimals, never raw floating-point noise', () => {
+    const text = buildActionPlan({ ...base, debit: 17.4318225865, swing: 89.3612, sma20: 96.397995 + 0.00000000000001 }).gapRules.join(' ');
+    expect(text).toContain('89.36');
+    expect(text).toContain('96.4');
+    expect(text).toContain('8.72');
+    expect(text).not.toMatch(/\d\.\d{5,}/);
+  });
+
   it('always carries the manual earnings and news reminder', () => {
     expect(buildActionPlan(base).manualChecks.join(' ')).toMatch(/earnings\/news dates manually/i);
   });

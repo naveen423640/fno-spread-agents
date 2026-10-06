@@ -230,6 +230,15 @@ describe('candidateDetail (chart series, levels and action plan)', () => {
     expect(modelled.ok && modelled.planBasis).toBe('modelled');
   });
 
+  it('scales the plan rupee amounts by the lot size when one is given', async () => {
+    const { deps } = makeDeps({ universe: SIX, synthetic });
+    const one = await candidateDetail(deps, input({ kLong: 100, kShort: 140, debit: 12 }));
+    const fifty = await candidateDetail(deps, input({ kLong: 100, kShort: 140, debit: 12, lot: 50 }));
+    expect(one.ok && one.plan?.profitTarget.profitRsPerLot).toBeCloseTo(0.6 * 28, 9);
+    expect(fifty.ok && fifty.plan?.profitTarget.profitRsPerLot).toBeCloseTo(0.6 * 28 * 50, 9);
+    expect(fifty.ok && fifty.plan?.premiumStop.lossRsPerLot).toBeCloseTo(0.5 * 12 * 50, 9);
+  });
+
   it('has no plan when the debit cannot make sense (live debit not inside the width)', async () => {
     const { deps } = makeDeps({ universe: SIX, synthetic });
     const result = await candidateDetail(deps, input({ kLong: 100, kShort: 110, debit: 50 }));

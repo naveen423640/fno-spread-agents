@@ -27,7 +27,7 @@ export function parseCheckQuery(params: URLSearchParams) {
     const value = params.get(key);
     return value === null || value === '' ? undefined : Number(value);
   };
-  return { source: text('source'), symbol: text('symbol'), side: text('side'), kLong: num('kLong'), kShort: num('kShort'), expiry: text('expiry'), debit: num('debit') };
+  return { source: text('source'), symbol: text('symbol'), side: text('side'), kLong: num('kLong'), kShort: num('kShort'), expiry: text('expiry'), debit: num('debit'), lot: num('lot') };
 }
 
 export function failureStatus(code: string): number {
