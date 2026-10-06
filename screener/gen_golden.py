@@ -71,6 +71,9 @@ def trade_rows(t):
     return clean(rows)
 
 
+IND_CACHE = {}  # full-history indicators; every indicator is causal, so a truncated scan can slice them
+
+
 def scan_rows(data, fixed_order):
     """Rows exactly as run_scan builds them, optionally ordered SIGNAL-first (the port's Decision 3)."""
     bench = data["^NSEI"]
@@ -78,7 +81,7 @@ def scan_rows(data, fixed_order):
     for s, df in data.items():
         if s == "^NSEI" or len(df) < 260:
             continue
-        d = ref.add_indicators(df, bench)
+        d = IND_CACHE[s].iloc[: len(df)] if s in IND_CACHE else ref.add_indicators(df, bench)
         last = d.iloc[-1]
         for side, parts in ((+1, ref.parts_bull), (-1, ref.parts_bear)):
             t, r, p, g, v = [x.iloc[-1] for x in parts(d)]
@@ -122,6 +125,7 @@ def main():
     bench = data["^NSEI"]
     ind = {s: ref.add_indicators(df, bench) for s, df in data.items() if s != "^NSEI"}
     names = list(ind)
+    IND_CACHE.update(ind)
 
     golden = {"universe": dict(ref.UNIVERSE), "params": clean(ref.P), "n_stocks": N_STOCKS, "n_rows": N_ROWS, "seed": SEED,
               "data": {s: series(df) for s, df in data.items()}}
@@ -169,9 +173,8 @@ def main():
     assert ref_syms == shortlist_syms, f"copied scan logic differs from run_scan: {ref_syms} vs {shortlist_syms}"
 
     scans = []
-    # Scan at regular points and at every index where a full-rule variant fires, so SIGNAL rows are covered.
-    fire = {i + 1 for v in ("bull_full", "bear_full") for lst in masks[v].values() for i in lst if i >= 260}
-    ends = sorted({N_ROWS - 1} | set(range(300, N_ROWS, 20)) | {e for e in fire if e < N_ROWS})
+    # Scan as of every session from 260 on (indicators are causal, so this is cheap), which yields mixed SIGNAL and WATCH cases.
+    ends = list(range(260, N_ROWS))
     for end in ends:
         cut = {s: df.iloc[: end + 1] for s, df in data.items()}
         raw, fixed = scan_rows(cut, fixed_order=True)
