@@ -1,6 +1,8 @@
 import { DEFAULT_PARAMS, UNIVERSE, type ScreenerParams } from './config';
 import { MIN_TRADES, SOURCES, type ScreenerDeps } from './service';
-import type { JobKind, JobRow } from './store';
+import { isJobStale, JOB_STALE_MS, type JobKind, type JobRow } from './store';
+
+export { JOB_STALE_MS };
 
 // Pure helpers behind the /api/screener routes, kept out of the route files so they can be tested.
 
@@ -8,17 +10,22 @@ export const NO_STORE = { 'Cache-Control': 'no-store' } as const;
 
 export type JobView = Pick<JobRow, 'id' | 'kind' | 'source' | 'params' | 'status' | 'progress' | 'message' | 'result' | 'createdAt' | 'completedAt'>;
 
-export function jobView(job: JobRow): JobView {
-  return { id: job.id, kind: job.kind, source: job.source, params: job.params, status: job.status, progress: job.progress, message: job.message, result: job.result, createdAt: job.createdAt, completedAt: job.completedAt };
+// A running job whose heartbeat is old is reported as failed, so a stopped server does not leave the page waiting forever.
+export function jobView(job: JobRow, now: Date = new Date()): JobView {
+  const stale = isJobStale(job, now);
+  return { id: job.id, kind: job.kind, source: job.source, params: job.params, status: stale ? 'failed' : job.status, progress: job.progress, message: stale ? 'The job stopped responding (the server may have restarted). Run it again.' : job.message, result: job.result, createdAt: job.createdAt, completedAt: job.completedAt };
 }
 
-export type LatestView = { status: 'none' } | { status: 'ok'; job: JobView } | { status: 'error'; error: string; httpStatus: 400 };
+export type LatestView = { status: 'none'; running: JobView | null } | { status: 'ok'; job: JobView; running: JobView | null } | { status: 'error'; error: string; httpStatus: 400 };
 
 // The newest finished job of a kind for a source. Reading this never starts any work.
 export async function latestView(deps: ScreenerDeps, kind: JobKind, source: unknown): Promise<LatestView> {
   if (typeof source !== 'string' || !(SOURCES as readonly string[]).includes(source)) return { status: 'error', error: 'source must be "fyers", "kite" or "synthetic".', httpStatus: 400 };
+  const now = deps.now();
+  const runningRow = await deps.store.runningJob(kind, source);
+  const running = runningRow && !isJobStale(runningRow, now) ? jobView(runningRow, now) : null;
   const job = await deps.store.latestDone(kind, source);
-  return job ? { status: 'ok', job: jobView(job) } : { status: 'none' };
+  return job ? { status: 'ok', job: jobView(job, now), running } : { status: 'none', running };
 }
 
 export function parseCheckQuery(params: URLSearchParams) {

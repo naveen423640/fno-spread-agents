@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS screener_jobs (
   message TEXT NOT NULL,
   result_json TEXT,
   created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
   completed_at TEXT
 );
 CREATE INDEX IF NOT EXISTS screener_jobs_kind ON screener_jobs(kind, source, created_at);

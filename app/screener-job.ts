@@ -19,6 +19,7 @@ export type JobData<R> = {
 };
 
 const POLL_MS = 1_500;
+const POLL_DEADLINE_MS = 20 * 60_000; // stop waiting after this long, whatever the server says
 
 // Loads the newest finished job for a source on mount, starts a new one on request and polls it until it ends.
 // A login failure becomes the 'login' phase; nothing here retries on its own.
@@ -37,8 +38,11 @@ export function useScreenerJob<R>(kind: 'scan' | 'backtest', source: string | nu
     if (!source) return;
     const controller = new AbortController();
     fetch(`/api/screener/${kind}?source=${encodeURIComponent(source)}`, { cache: 'no-store', signal: controller.signal })
-      .then((response) => response.json() as Promise<{ status: string; job?: JobData<R> }>)
-      .then((body) => { if (body.status === 'ok' && body.job) setJob(body.job); })
+      .then((response) => response.json() as Promise<{ status: string; job?: JobData<R>; running?: JobData<R> | null }>)
+      .then((body) => {
+        // A job still running (the page was reopened or the source switched back) is followed again instead of started twice.
+        if (body.running) { setJob(body.running); setActiveId(body.running.id); } else if (body.status === 'ok' && body.job) setJob(body.job);
+      })
       .catch(() => undefined);
     return () => controller.abort();
   }, [kind, source]);
@@ -46,7 +50,9 @@ export function useScreenerJob<R>(kind: 'scan' | 'backtest', source: string | nu
   useEffect(() => {
     if (!activeId) return;
     const controller = new AbortController();
+    const startedAt = Date.now();
     const timer = setInterval(async () => {
+      if (Date.now() - startedAt > POLL_DEADLINE_MS) { setActiveId(null); setError('This is taking much longer than expected. Check the server, then run it again.'); return; }
       try {
         const response = await fetch(`/api/screener/jobs/${activeId}`, { cache: 'no-store', signal: controller.signal });
         if (!response.ok) return;

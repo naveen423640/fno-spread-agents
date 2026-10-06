@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { UNIVERSE } from '../../lib/screener/config';
 import { candidateDetail, runScreenerCheck, startScreenerJob } from '../../lib/screener/service';
 import type { ScanRow } from '../../lib/screener/types';
+import { createScreenerStore } from '../../lib/screener/store';
 import { makeDeps, mockBroker, SMALL_UNIVERSE, spy } from '../support/screener-service';
 
 const SIX = Object.fromEntries(Object.entries(UNIVERSE).slice(0, 6));
@@ -33,6 +34,25 @@ describe('startScreenerJob: validation and limits', () => {
     expect(await startScreenerJob(deps, { kind: 'scan', source: 'synthetic' })).toEqual({ jobId: 'job-1' });
     await settle();
     expect(await startScreenerJob(deps, { kind: 'scan', source: 'synthetic' })).toMatchObject({ status: 429 });
+  });
+
+  it('does not start a second job while one of the same kind and source is running: it returns the running one', async () => {
+    const { deps, store, settle } = makeDeps({ universe: SIX, synthetic });
+    const first = await startScreenerJob(deps, { kind: 'scan', source: 'synthetic' });
+    const second = await startScreenerJob(deps, { kind: 'scan', source: 'synthetic' });
+    expect(first).toEqual({ jobId: 'job-1' });
+    expect(second).toEqual({ jobId: 'job-1' });
+    expect(await store.getJob('job-2')).toBeNull();
+    await settle();
+    expect(await startScreenerJob(deps, { kind: 'scan', source: 'synthetic' })).toEqual({ jobId: 'job-2' });
+  });
+
+  it('a stale running job (the server stopped) does not block a new one', async () => {
+    const { deps, db, settle } = makeDeps({ universe: SIX, synthetic });
+    const old = createScreenerStore(db, () => new Date('2026-10-06T09:00:00.000Z')); // two hours before the test clock
+    await old.createJob({ id: 'ghost', kind: 'scan', source: 'synthetic', params: {} });
+    expect(await startScreenerJob(deps, { kind: 'scan', source: 'synthetic' })).toEqual({ jobId: 'job-1' });
+    await settle();
   });
 
   it('returns before the work finishes, with the job already visible as running', async () => {

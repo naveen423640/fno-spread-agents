@@ -242,5 +242,6 @@ export const screenerJobs = sqliteTable('screener_jobs', {
   message: text('message').notNull(),
   resultJson: text('result_json'),
   createdAt: text('created_at').notNull(),
+  updatedAt: text('updated_at').notNull(),
   completedAt: text('completed_at'),
 }, (table) => [index('screener_jobs_kind').on(table.kind, table.source, table.createdAt)]);

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { buildConfig, failureStatus, jobView, latestView, parseCheckQuery } from '../../lib/screener/api';
+import { buildConfig, failureStatus, JOB_STALE_MS, jobView, latestView, parseCheckQuery } from '../../lib/screener/api';
+import { createScreenerStore } from '../../lib/screener/store';
 import { DEFAULT_PARAMS, UNIVERSE } from '../../lib/screener/config';
 import { makeDeps } from '../support/screener-service';
 
@@ -10,7 +11,7 @@ describe('jobView', () => {
     await store.createJob({ id: 'j1', kind: 'scan', source: 'synthetic', params: DEFAULT_PARAMS });
     await store.updateJob('j1', { progress: 55, message: 'Loading candles 3/5' });
     const job = await store.getJob('j1');
-    expect(jobView(job as NonNullable<typeof job>)).toEqual({
+    expect(jobView(job as NonNullable<typeof job>, new Date('2026-10-06T11:00:00.000Z'))).toEqual({
       id: 'j1', kind: 'scan', source: 'synthetic', params: DEFAULT_PARAMS, status: 'running', progress: 55, message: 'Loading candles 3/5',
       result: null, createdAt: expect.any(String), completedAt: null,
     });
@@ -20,7 +21,7 @@ describe('jobView', () => {
 describe('latestView', () => {
   it('says none when nothing has finished yet', async () => {
     const { deps } = makeDeps();
-    expect(await latestView(deps, 'scan', 'synthetic')).toEqual({ status: 'none' });
+    expect(await latestView(deps, 'scan', 'synthetic')).toEqual({ status: 'none', running: null });
   });
 
   it('returns the newest finished job for the kind and source', async () => {
@@ -29,13 +30,46 @@ describe('latestView', () => {
     await store.updateJob('a', { status: 'done', progress: 100, message: 'Done', result: { rows: [] } });
     const view = await latestView(deps, 'scan', 'synthetic');
     expect(view).toMatchObject({ status: 'ok', job: { id: 'a', result: { rows: [] } } });
-    expect(await latestView(deps, 'backtest', 'synthetic')).toEqual({ status: 'none' });
+    expect(await latestView(deps, 'backtest', 'synthetic')).toEqual({ status: 'none', running: null });
   });
 
   it('rejects an unknown source', async () => {
     const { deps } = makeDeps();
     expect(await latestView(deps, 'scan', 'yahoo')).toEqual({ status: 'error', error: 'source must be "fyers", "kite" or "synthetic".', httpStatus: 400 });
     expect(await latestView(deps, 'scan', null)).toMatchObject({ status: 'error', httpStatus: 400 });
+  });
+});
+
+describe('stuck jobs', () => {
+  const NOW = new Date('2026-10-06T11:00:00.000Z');
+
+  it('a running job that has not reported for longer than the limit is shown as failed, with an honest message', async () => {
+    const { db } = makeDeps();
+    const old = createScreenerStore(db, () => new Date(NOW.getTime() - JOB_STALE_MS - 60_000));
+    await old.createJob({ id: 'stuck', kind: 'scan', source: 'fyers', params: DEFAULT_PARAMS });
+    const job = await old.getJob('stuck');
+    const view = jobView(job as NonNullable<typeof job>, NOW);
+    expect(view.status).toBe('failed');
+    expect(view.message).toMatch(/stopped responding/i);
+    expect(view.completedAt).toBeNull();
+  });
+
+  it('a running job that reported recently stays running', async () => {
+    const { db } = makeDeps();
+    const recent = createScreenerStore(db, () => new Date(NOW.getTime() - 60_000));
+    await recent.createJob({ id: 'live', kind: 'scan', source: 'fyers', params: DEFAULT_PARAMS });
+    const job = await recent.getJob('live');
+    expect(jobView(job as NonNullable<typeof job>, NOW).status).toBe('running');
+  });
+
+  it('latestView reports a fresh running job so a reopened page can follow it, but not a stale one', async () => {
+    const { db, deps } = makeDeps({ now: () => NOW });
+    const fresh = createScreenerStore(db, () => new Date(NOW.getTime() - 30_000));
+    await fresh.createJob({ id: 'r1', kind: 'scan', source: 'fyers', params: DEFAULT_PARAMS });
+    expect(await latestView(deps, 'scan', 'fyers')).toMatchObject({ status: 'none', running: { id: 'r1', status: 'running' } });
+    const stale = createScreenerStore(db, () => new Date(NOW.getTime() - JOB_STALE_MS - 1000));
+    await stale.createJob({ id: 'r0', kind: 'backtest', source: 'fyers', params: DEFAULT_PARAMS });
+    expect(await latestView(deps, 'backtest', 'fyers')).toEqual({ status: 'none', running: null });
   });
 });
 

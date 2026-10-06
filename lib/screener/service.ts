@@ -6,7 +6,7 @@ import { DEFAULT_PARAMS, UNIVERSE, validateParams, type ScreenerParams } from '.
 import { addIndicators } from './indicators';
 import { runScan } from './scan';
 import { buildActionPlan, spreadCheck, supportResistance, type ActionPlan, type SpreadCheck } from './spread';
-import type { JobKind, ScreenerStore } from './store';
+import { isJobStale, type JobKind, type ScreenerStore } from './store';
 import { monthlyExpiry } from './symbols';
 import { makeSynthetic } from './synthetic';
 import type { BrokerErrorCode, Candle, ScanRow, Side, TradeStats } from './types';
@@ -148,6 +148,9 @@ export async function startScreenerJob(deps: ScreenerDeps, request: { kind?: unk
   if (!params.ok) return { error: params.error, status: 400 };
   const setup = brokerAndTickers(deps, source);
   if (!setup) return { error: `Sign in to ${source === 'kite' ? 'Kite' : 'FYERS'} first (the broker connection is missing or has expired).`, status: 401 };
+  // One running job per kind and source: asking again returns the one in progress instead of doubling the broker requests.
+  const running = await deps.store.runningJob(kind, source);
+  if (running && !isJobStale(running, deps.now())) return { jobId: running.id };
   const since = new Date(deps.now().getTime() - 86_400_000).toISOString();
   if ((await deps.store.countJobsSince(since)) >= deps.maxJobsPerDay) return { error: 'The daily screener job limit has been reached. Try again tomorrow.', status: 429 };
 

@@ -62,6 +62,27 @@ describe('jobs', () => {
     expect(await store.getJob('j1')).toMatchObject({ status: 'done', progress: 100, result: { rows: [1, 2] }, completedAt: NOW.toISOString() });
   });
 
+  it('stamps a heartbeat on create and on every update', async () => {
+    const db = createD1Fake(MIGRATIONS);
+    const early = createScreenerStore(db, () => new Date('2026-10-06T10:00:00.000Z'));
+    const late = createScreenerStore(db, () => new Date('2026-10-06T10:05:00.000Z'));
+    await early.createJob({ id: 'h', kind: 'scan', source: 'fyers', params });
+    expect((await early.getJob('h'))?.updatedAt).toBe('2026-10-06T10:00:00.000Z');
+    await late.updateJob('h', { progress: 10, message: 'Working' });
+    expect((await late.getJob('h'))?.updatedAt).toBe('2026-10-06T10:05:00.000Z');
+  });
+
+  it('runningJob returns the newest running job of a kind and source only', async () => {
+    const store = make();
+    await store.createJob({ id: 'a', kind: 'scan', source: 'fyers', params });
+    await store.updateJob('a', { status: 'done', progress: 100, message: 'x', result: {} });
+    await store.createJob({ id: 'b', kind: 'scan', source: 'fyers', params });
+    await store.createJob({ id: 'c', kind: 'backtest', source: 'fyers', params });
+    expect((await store.runningJob('scan', 'fyers'))?.id).toBe('b');
+    expect((await store.runningJob('backtest', 'fyers'))?.id).toBe('c');
+    expect(await store.runningJob('scan', 'synthetic')).toBeNull();
+  });
+
   it('latestDone returns the newest finished job of a kind and source, ignoring running and failed ones', async () => {
     const store = make();
     for (const [id, status] of [['a', 'done'], ['b', 'failed'], ['c', 'running']] as const) {
