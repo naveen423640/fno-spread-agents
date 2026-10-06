@@ -58,7 +58,8 @@ export function createFyersAdapter(deps: FyersDeps): BrokerAdapter {
       const rows = result.value.candles;
       if (!Array.isArray(rows)) return { ok: false, code: 'UPSTREAM', message: `FYERS returned no candle list for ${symbol}.` };
       for (const row of rows as number[][]) byDate.set(epochToIstDate(row[0]), { date: epochToIstDate(row[0]), open: row[1], high: row[2], low: row[3], close: row[4], volume: row[5] });
-      if (k < chunks.length - 1) await sleep(HISTORY_THROTTLE_MS);
+      // Pause after every call, including the last, so consecutive symbols also stay under the request limit.
+      await sleep(HISTORY_THROTTLE_MS);
     }
     if (!byDate.size) return { ok: false, code: 'UPSTREAM', message: `FYERS returned no candles for ${symbol}.` };
     return { ok: true, value: [...byDate.values()].sort((a, b) => a.date.localeCompare(b.date)) };

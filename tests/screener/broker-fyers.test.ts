@@ -42,7 +42,7 @@ describe('symbols', () => {
 describe('history', () => {
   const candle = (date: string, close: number) => [ist(date), close - 1, close + 2, close - 2, close, 1000];
 
-  it('chunks a long range into 360-day requests, throttles between them, and sends only the auth header', async () => {
+  it('chunks a long range into 360-day requests, pauses 400 ms after every call (so back-to-back symbols stay under the rate limit), and sends only the auth header', async () => {
     const { adapter, urls, headers, sleeps } = setup(() => json({ s: 'ok', candles: [candle('2026-10-01', 100)] }));
     const result = await adapter.history('NSE:HAL-EQ', { from: '2025-01-01', to: '2026-10-01' });
     expect(result.ok).toBe(true);
@@ -52,7 +52,7 @@ describe('history', () => {
     expect(Object.fromEntries(first.searchParams)).toMatchObject({ symbol: 'NSE:HAL-EQ', resolution: 'D', date_format: '1', range_from: '2025-01-01', range_to: '2025-12-27', cont_flag: '1' });
     expect(new URL(urls[1]).searchParams.get('range_from')).toBe('2025-12-28');
     expect(new URL(urls[1]).searchParams.get('range_to')).toBe('2026-10-01');
-    expect(sleeps).toEqual([400]);
+    expect(sleeps).toEqual([400, 400]);
     expect(headers[0].Authorization).toBe('CID-100:tok-SECRET-123');
     expect(urls.join(' ')).not.toContain('tok-SECRET-123');
   });
