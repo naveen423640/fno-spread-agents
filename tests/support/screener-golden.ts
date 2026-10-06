@@ -19,6 +19,7 @@ export type Golden = {
   fy_opt: { sym: string; yy: number; mon: string; strike: number; cp: string; out: string }[];
   bs: { S: number; K: number; T: number; sig: number; call: boolean; out: number }[];
   nice_step: { p: number; out: number }[];
+  np_round: { x: number; d: number; out: number }[];
 };
 
 let cached: Golden | null = null;

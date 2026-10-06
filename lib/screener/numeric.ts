@@ -36,3 +36,15 @@ export function pyRound(x: number, digits = 0): number {
   }
   return sign * Number(a.toFixed(digits));
 }
+
+// numpy round (np.round / np.rint): scale by 10^digits, round half to even, scale back. run_scan rounds numpy floats, so the
+// scan columns use this; it differs from Python's float round() on near-ties (1234.55 -> 1234.6 here, 1234.5 in Python).
+export function npRound(x: number, digits = 0): number {
+  if (!Number.isFinite(x)) return x;
+  const m = 10 ** digits;
+  const y = x * m;
+  const floor = Math.floor(y);
+  const diff = y - floor;
+  const rounded = diff < 0.5 ? floor : diff > 0.5 ? floor + 1 : floor % 2 === 0 ? floor : floor + 1;
+  return rounded / m;
+}

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { DEFAULT_PARAMS } from '../../lib/screener/config';
 import { addIndicators } from '../../lib/screener/indicators';
-import { erf, pyRound } from '../../lib/screener/numeric';
+import { erf, npRound, pyRound } from '../../lib/screener/numeric';
 import { bs, halfStats, runBacktest, simulate, stats } from '../../lib/screener/backtest';
 import type { Candle, IndRow } from '../../lib/screener/types';
 import { candlesOf, closeTo, loadGolden } from '../support/screener-golden';
@@ -20,6 +20,13 @@ describe('numeric helpers', () => {
     for (const [x, expected] of known) expect(Math.abs(erf(x) - expected), `erf(${x})`).toBeLessThan(1e-12);
     expect(erf(8)).toBe(1);
     expect(erf(-8)).toBe(-1);
+  });
+
+  it('npRound matches numpy round (scale, half to even, divide) on every golden case, including the near-ties where it differs from Python', () => {
+    expect(golden.np_round.length).toBeGreaterThan(500);
+    for (const c of golden.np_round) expect(npRound(c.x, c.d), `npRound(${c.x}, ${c.d})`).toBe(c.out);
+    expect([npRound(1234.55, 1), npRound(99.45, 1), npRound(1000.15, 1), npRound(250.05, 1)]).toEqual([1234.6, 99.4, 1000.2, 250]);
+    expect(npRound(Number.NaN, 1)).toBeNaN();
   });
 
   it('pyRound rounds half to even like Python round()', () => {

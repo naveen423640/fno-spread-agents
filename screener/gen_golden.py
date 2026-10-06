@@ -191,6 +191,11 @@ def main():
     golden["bs"] = [dict(S=S, K=K, T=T, sig=sig, call=c, out=ref.bs(S, K, T, sig, c))
                     for S, K, T, sig, c in ((100, 100, 0.08, 0.25, True), (100, 105, 0.08, 0.25, True), (100, 95, 0.08, 0.25, False),
                                             (250, 250, 20 / 252, 0.4, True), (250, 260, 1e-6, 0.4, True), (80, 90, 0.0, 0.3, False), (80, 70, 0.0, 0.3, False))]
+    # run_scan rounds numpy floats, so numpy's round (half to even on the scaled value) is the reference behaviour.
+    ties = [(1234.55, 1), (99.45, 1), (1000.15, 1), (2.675, 2), (250.05, 1), (1826.45, 1), (12.25, 1), (12.75, 1), (0.5, 0), (1.5, 0), (2.5, 0), (-2.5, 0), (1.005, 2), (99.995, 2)]
+    rng = np.random.default_rng(11)
+    ticks = [(round(float(v) * 0.05, 2), d) for v in rng.integers(20, 200_000, 300) for d in (1, 2)]
+    golden["np_round"] = [dict(x=x, d=d, out=float(np.round(np.float64(x), d))) for x, d in ties + ticks]
     golden["nice_step"] = [dict(p=p, out=ref.nice_step(p)) for p in (50, 199.9, 200, 999, 1000, 1999, 2000, 4999, 5000, 80000)]
 
     OUT.parent.mkdir(parents=True, exist_ok=True)

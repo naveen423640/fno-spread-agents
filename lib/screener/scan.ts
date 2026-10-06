@@ -1,7 +1,7 @@
 import type { ScreenerParams } from './config';
 import { UNIVERSE } from './config';
 import { addIndicators } from './indicators';
-import { pyRound } from './numeric';
+import { npRound } from './numeric';
 import { partsBear, partsBull } from './signals';
 import { niceStep } from './symbols';
 import type { Candle, ScanRow, ScanStatus } from './types';
@@ -50,13 +50,13 @@ export function runScan(data: Record<string, Candle[]>, bench: Candle[], p: Scre
         sector: universe[symbol] ?? '',
         side: side > 0 ? 'BULL CALL' : 'BEAR PUT',
         status,
-        close: pyRound(last.close, 1),
-        rsi: pyRound(last.rsi, 1),
-        rs63Pct: pyRound(last.rs63 * 100, 1),
-        volX: pyRound(last.volRatio, 2),
-        hvPctile: pyRound(last.hvPct, 2),
-        longStrikeApprox: pyRound(last.close / step) * step,
-        shortStrikeApprox: pyRound((last.close * (1 + side * expectedMove)) / step) * step,
+        close: npRound(last.close, 1),
+        rsi: npRound(last.rsi, 1),
+        rs63Pct: npRound(last.rs63 * 100, 1),
+        volX: npRound(last.volRatio, 2),
+        hvPctile: npRound(last.hvPct, 2),
+        longStrikeApprox: npRound(last.close / step) * step,
+        shortStrikeApprox: npRound((last.close * (1 + side * expectedMove)) / step) * step,
         expiry: options.expiry,
         lotSize: options.lotSizes?.[symbol] ?? null,
       });
