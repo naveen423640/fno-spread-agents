@@ -272,9 +272,12 @@ export type DetailFailure = { ok: false; code: 'BAD_REQUEST' | 'NO_DATA'; messag
 
 const finite = (value: number) => (Number.isFinite(value) ? value : null);
 
-export async function candidateDetail(deps: ScreenerDeps, input: SpreadRequest & { debit?: unknown; lot?: unknown }): Promise<DetailSuccess | DetailFailure> {
+export async function candidateDetail(deps: ScreenerDeps, input: SpreadRequest & { debit?: unknown; lot?: unknown; params?: unknown }): Promise<DetailSuccess | DetailFailure> {
   const request = parseSpreadRequest(deps, input);
   if (!request.ok) return { ok: false, code: 'BAD_REQUEST', message: request.message };
+  const checked = input.params === undefined ? ({ ok: true, value: DEFAULT_PARAMS } as const) : validateParams(input.params);
+  if (!checked.ok) return { ok: false, code: 'BAD_REQUEST', message: checked.error };
+  const params = checked.value;
 
   let candles: Candle[] | undefined;
   let bench: Candle[] | undefined;
@@ -293,7 +296,6 @@ export async function candidateDetail(deps: ScreenerDeps, input: SpreadRequest &
   const series = rows.slice(-260).map((r) => ({ date: r.date, close: r.close, high: r.high, low: r.low, sma20: finite(r.sma20), sma50: finite(r.sma50), sma200: finite(r.sma200), rsi: finite(r.rsi) }));
 
   const width = Math.abs(request.kShort - request.kLong);
-  const params = DEFAULT_PARAMS;
   const call = request.side > 0;
   const liveDebit = positive(input.debit) ? input.debit : null;
   let debit = liveDebit;
@@ -313,7 +315,7 @@ export async function candidateDetail(deps: ScreenerDeps, input: SpreadRequest &
     lastClose: last.close,
     series,
     levels: supportResistance(rows),
-    plan: sensible ? buildActionPlan({ side: request.side, debit, kLong: request.kLong, kShort: request.kShort, lot: positive(input.lot) ? input.lot : 1, expiry: request.expiry, params, lastClose: last.close, sma20: last.sma20, swing, holidays: deps.holidays }) : null,
+    plan: sensible ? buildActionPlan({ side: request.side, debit, kLong: request.kLong, kShort: request.kShort, lot: positive(input.lot) ? input.lot : null, expiry: request.expiry, params, lastClose: last.close, sma20: last.sma20, swing, holidays: deps.holidays, today: istDate(deps.now()) }) : null,
     planBasis: liveDebit === null ? 'modelled' : 'live quote',
     planNote: sensible ? null : 'The debit is not between zero and the spread width, so no plan can be built for these strikes.',
   };

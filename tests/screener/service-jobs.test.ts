@@ -234,9 +234,17 @@ describe('candidateDetail (chart series, levels and action plan)', () => {
     const { deps } = makeDeps({ universe: SIX, synthetic });
     const one = await candidateDetail(deps, input({ kLong: 100, kShort: 140, debit: 12 }));
     const fifty = await candidateDetail(deps, input({ kLong: 100, kShort: 140, debit: 12, lot: 50 }));
-    expect(one.ok && one.plan?.profitTarget.profitRsPerLot).toBeCloseTo(0.6 * 28, 9);
+    expect(one.ok && one.plan?.profitTarget.profitRsPerLot).toBeNull(); // no lot given, so no rupee amounts
     expect(fifty.ok && fifty.plan?.profitTarget.profitRsPerLot).toBeCloseTo(0.6 * 28 * 50, 9);
     expect(fifty.ok && fifty.plan?.premiumStop.lossRsPerLot).toBeCloseTo(0.5 * 12 * 50, 9);
+  });
+
+  it('uses the exit settings it is given instead of the reference defaults, and rejects invalid ones', async () => {
+    const { deps } = makeDeps({ universe: SIX, synthetic });
+    const custom = await candidateDetail(deps, input({ kLong: 100, kShort: 140, debit: 12, lot: 10, params: { takeProfit: 0.5, stopLoss: 0.4 } }));
+    expect(custom.ok && custom.plan?.profitTarget.spreadValue).toBeCloseTo(12 + 0.5 * 28, 9);
+    expect(custom.ok && custom.plan?.premiumStop.spreadValue).toBeCloseTo(0.6 * 12, 9);
+    expect(await candidateDetail(deps, input({ kLong: 100, kShort: 140, params: { holdDays: 3 } }))).toMatchObject({ ok: false, code: 'BAD_REQUEST' });
   });
 
   it('has no plan when the debit cannot make sense (live debit not inside the width)', async () => {

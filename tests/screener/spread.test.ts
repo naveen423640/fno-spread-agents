@@ -81,7 +81,7 @@ describe('tradingDaysBefore', () => {
 });
 
 describe('buildActionPlan', () => {
-  const base = { side: 1 as const, debit: 100, kLong: 4800, kShort: 5100, lot: 150, expiry: '2026-10-27', params: DEFAULT_PARAMS, lastClose: 4900, sma20: 4950, swing: 4720, holidays: new Set<string>() };
+  const base = { side: 1 as const, debit: 100, kLong: 4800, kShort: 5100, lot: 150, expiry: '2026-10-27', params: DEFAULT_PARAMS, lastClose: 4900, sma20: 4950, swing: 4720, holidays: new Set<string>(), today: '2026-10-06' };
 
   it('profit target is 60% of the way from the debit to the width, premium stop is 50% of the debit', () => {
     const plan = buildActionPlan(base);
@@ -90,6 +90,24 @@ describe('buildActionPlan', () => {
     expect(plan.profitTarget.pctOfMaxProfit).toBe(60);
     expect(plan.premiumStop.spreadValue).toBe(50);
     expect(plan.premiumStop.lossRsPerLot).toBe(50 * 150);
+  });
+
+  it('has no rupee amounts when the lot size is unknown (never mislabels per-share figures as per lot)', () => {
+    const plan = buildActionPlan({ ...base, lot: null });
+    expect(plan.lot).toBeNull();
+    expect(plan.profitTarget.profitRsPerLot).toBeNull();
+    expect(plan.premiumStop.lossRsPerLot).toBeNull();
+    expect(plan.profitTarget.spreadValue).toBeCloseTo(220, 9);
+    expect(buildActionPlan(base).lot).toBe(150);
+  });
+
+  it('flags a time stop that is already in the past because the expiry is too close for the hold period', () => {
+    const late = buildActionPlan({ ...base, expiry: '2026-10-12', today: '2026-10-09' });
+    expect(late.timeStop.passed).toBe(true);
+    expect(late.timeStop.note).toMatch(/already passed/i);
+    const normal = buildActionPlan(base);
+    expect(normal.timeStop.passed).toBe(false);
+    expect(normal.timeStop.note).not.toMatch(/already passed/i);
   });
 
   it('time stop is the configured number of trading days before expiry', () => {

@@ -96,7 +96,7 @@ export function ScreenerScan({ source, params, config, onLogin }: { source: stri
         </>
       )}
 
-      {selected && result && <CandidateDrawer key={`${selected.symbol}-${selected.side}`} row={selected} source={source} asOf={result.asOf} liveLabel={config?.sources.find((s) => s.id === source)?.label ?? source} onClose={() => setSelected(null)} />}
+      {selected && result && <CandidateDrawer key={`${selected.symbol}-${selected.side}`} row={selected} source={source} asOf={result.asOf} liveLabel={config?.sources.find((s) => s.id === source)?.label ?? source} params={params} onClose={() => setSelected(null)} />}
     </div>
   );
 }

@@ -41,8 +41,8 @@ describe('latestView', () => {
 
 describe('parseCheckQuery', () => {
   it('reads the source, symbol, side, strikes, expiry and optional debit from the query string', () => {
-    const q = parseCheckQuery(new URLSearchParams('source=fyers&symbol=HAL&side=bull&kLong=4800&kShort=5100&expiry=2026-10-27&debit=80.5&lot=150'));
-    expect(q).toEqual({ source: 'fyers', symbol: 'HAL', side: 'bull', kLong: 4800, kShort: 5100, expiry: '2026-10-27', debit: 80.5, lot: 150 });
+    const q = parseCheckQuery(new URLSearchParams('source=fyers&symbol=HAL&side=bull&kLong=4800&kShort=5100&expiry=2026-10-27&debit=80.5&lot=150&params=' + encodeURIComponent('{"takeProfit":0.5}')));
+    expect(q).toEqual({ source: 'fyers', symbol: 'HAL', side: 'bull', kLong: 4800, kShort: 5100, expiry: '2026-10-27', debit: 80.5, lot: 150, params: { takeProfit: 0.5 } });
   });
 
   it('turns missing values into undefined and non-numbers into NaN so validation rejects them', () => {
@@ -51,6 +51,8 @@ describe('parseCheckQuery', () => {
     expect(q.kShort).toBeUndefined();
     expect(q.debit).toBeUndefined();
     expect(q.lot).toBeUndefined();
+    expect(q.params).toBeUndefined();
+    expect(parseCheckQuery(new URLSearchParams('params=%7Bnot-json')).params).toBe('{not-json'); // left as text so validation rejects it
     expect(Number.isNaN(q.kLong)).toBe(true);
   });
 });

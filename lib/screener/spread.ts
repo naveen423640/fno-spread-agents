@@ -75,20 +75,22 @@ export type ActionPlanInput = {
   debit: number; // the debit actually expected (live check, or the modelled debit)
   kLong: number;
   kShort: number;
-  lot: number;
+  lot: number | null; // null when the broker lot size is unknown: no rupee amounts are produced
   expiry: string;
   params: ScreenerParams;
   lastClose: number;
   sma20: number;
   swing: number; // recent swing low (bull) or swing high (bear)
   holidays: ReadonlySet<string>;
+  today: string; // ISO date of the data, used to flag a time stop that has already passed
 };
 
 export type ActionPlan = {
-  profitTarget: { spreadValue: number; profitRsPerLot: number; pctOfMaxProfit: number };
-  premiumStop: { spreadValue: number; lossRsPerLot: number };
+  lot: number | null;
+  profitTarget: { spreadValue: number; profitRsPerLot: number | null; pctOfMaxProfit: number };
+  premiumStop: { spreadValue: number; lossRsPerLot: number | null };
   priceStop: { direction: 'below' | 'above'; levels: { label: string; value: number }[]; note: string };
-  timeStop: { date: string; tradingDaysBeforeExpiry: number; note: string };
+  timeStop: { date: string; tradingDaysBeforeExpiry: number; passed: boolean; note: string };
   trail: string;
   gapRules: string[];
   exitOrder: string[];
@@ -99,22 +101,31 @@ export type ActionPlan = {
 const fmt = (n: number) => String(Number(n.toFixed(2)));
 
 export function buildActionPlan(input: ActionPlanInput): ActionPlan {
-  const { side, debit, kLong, kShort, lot, expiry, params, sma20, swing, holidays } = input;
+  const { side, debit, kLong, kShort, lot, expiry, params, sma20, swing, holidays, today } = input;
   const width = Math.abs(kShort - kLong);
   const target = debit + params.takeProfit * (width - debit);
   const premiumStop = (1 - params.stopLoss) * debit;
   const direction = side > 0 ? 'below' : 'above';
   const timeStopDate = tradingDaysBefore(expiry, params.timeExitLeft, holidays);
+  const passed = timeStopDate <= today;
   const levelText = `${fmt(swing)} (recent swing ${side > 0 ? 'low' : 'high'}) or ${fmt(sma20)} (20-DMA)`;
   return {
-    profitTarget: { spreadValue: target, profitRsPerLot: params.takeProfit * (width - debit) * lot, pctOfMaxProfit: params.takeProfit * 100 },
-    premiumStop: { spreadValue: premiumStop, lossRsPerLot: params.stopLoss * debit * lot },
+    lot,
+    profitTarget: { spreadValue: target, profitRsPerLot: lot === null ? null : params.takeProfit * (width - debit) * lot, pctOfMaxProfit: params.takeProfit * 100 },
+    premiumStop: { spreadValue: premiumStop, lossRsPerLot: lot === null ? null : params.stopLoss * debit * lot },
     priceStop: {
       direction,
       levels: [{ label: '20-DMA', value: sma20 }, { label: side > 0 ? 'Recent swing low' : 'Recent swing high', value: swing }],
       note: `Exit if the underlying closes ${direction} the level the thesis relied on: the swing level or the 20-DMA.`,
     },
-    timeStop: { date: timeStopDate, tradingDaysBeforeExpiry: params.timeExitLeft, note: `Close on or before ${timeStopDate} (${params.timeExitLeft} trading days before expiry) if it has not worked; decay accelerates.` },
+    timeStop: {
+      date: timeStopDate,
+      tradingDaysBeforeExpiry: params.timeExitLeft,
+      passed,
+      note: passed
+        ? `The time stop date ${timeStopDate} (${params.timeExitLeft} trading days before expiry) has already passed: this expiry is too close for the ${params.holdDays}-session hold the screen assumes. Consider the next expiry.`
+        : `Close on or before ${timeStopDate} (${params.timeExitLeft} trading days before expiry) if it has not worked; decay accelerates.`,
+    },
     trail: `Once the spread is worth about ${fmt(params.takeProfit * 100)}% of its maximum profit, move the stop to breakeven (the debit paid).`,
     gapRules: [
       `If the underlying opens ${direction} ${levelText}, exit at the open; do not wait for the close.`,

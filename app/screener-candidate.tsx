@@ -6,6 +6,7 @@ import { AlertTriangle, Link2, Loader2, RefreshCw } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import type { ScreenerParams } from '@/lib/screener/config';
 import type { CheckFailure, CheckSuccess, DetailFailure, DetailSuccess } from '@/lib/screener/service';
 import type { ScanRow } from '@/lib/screener/types';
 
@@ -17,14 +18,14 @@ const INPUT = 'h-9 w-28 rounded-lg border border-border bg-background px-2 text-
 type Check = { state: 'idle' } | { state: 'loading' } | { state: 'ok'; data: CheckSuccess } | { state: 'error'; failure: CheckFailure };
 type Detail = { state: 'loading' } | { state: 'ok'; data: DetailSuccess } | { state: 'error'; failure: DetailFailure };
 
-export function CandidateDrawer({ row, source, asOf, liveLabel, onClose }: { row: ScanRow; source: string; asOf: string; liveLabel: string; onClose: () => void }) {
+export function CandidateDrawer({ row, source, asOf, liveLabel, params, onClose }: { row: ScanRow; source: string; asOf: string; liveLabel: string; params: ScreenerParams; onClose: () => void }) {
   const bull = row.side === 'BULL CALL';
   const [kLong, setKLong] = useState(String(row.longStrikeApprox));
   const [kShort, setKShort] = useState(String(row.shortStrikeApprox));
   const [check, setCheck] = useState<Check>({ state: 'idle' });
   const [detail, setDetail] = useState<Detail>({ state: 'loading' });
 
-  const query = useCallback((extra: Record<string, string> = {}) => new URLSearchParams({ source, symbol: row.symbol, side: bull ? 'bull' : 'bear', kLong, kShort, expiry: row.expiry, ...extra }).toString(), [source, row.symbol, row.expiry, bull, kLong, kShort]);
+  const query = useCallback((extra: Record<string, string> = {}) => new URLSearchParams({ source, symbol: row.symbol, side: bull ? 'bull' : 'bear', kLong, kShort, expiry: row.expiry, params: JSON.stringify(params), ...extra }).toString(), [source, row.symbol, row.expiry, bull, kLong, kShort, params]);
 
   const loadDetail = useCallback(async (extra: Record<string, string> = {}) => {
     try {
@@ -39,14 +40,14 @@ export function CandidateDrawer({ row, source, asOf, liveLabel, onClose }: { row
   // Load the chart once when the drawer opens (the drawer is remounted per candidate); later loads are explicit.
   useEffect(() => {
     let cancelled = false;
-    const params = new URLSearchParams({ source, symbol: row.symbol, side: row.side === 'BULL CALL' ? 'bull' : 'bear', kLong: String(row.longStrikeApprox), kShort: String(row.shortStrikeApprox), expiry: row.expiry });
-    if (row.lotSize) params.set('lot', String(row.lotSize));
-    fetch(`/api/screener/candles?${params.toString()}`, { cache: 'no-store' })
+    const search = new URLSearchParams({ source, symbol: row.symbol, side: row.side === 'BULL CALL' ? 'bull' : 'bear', kLong: String(row.longStrikeApprox), kShort: String(row.shortStrikeApprox), expiry: row.expiry, params: JSON.stringify(params) });
+    if (row.lotSize) search.set('lot', String(row.lotSize));
+    fetch(`/api/screener/candles?${search.toString()}`, { cache: 'no-store' })
       .then((response) => response.json() as Promise<DetailSuccess | DetailFailure>)
       .then((body) => { if (!cancelled) setDetail(body.ok ? { state: 'ok', data: body } : { state: 'error', failure: body }); })
       .catch(() => { if (!cancelled) setDetail({ state: 'error', failure: { ok: false, code: 'NO_DATA', message: 'Could not load the chart.' } }); });
     return () => { cancelled = true; };
-  }, [source, row]);
+  }, [source, row, params]);
 
   const runCheck = async () => {
     setCheck({ state: 'loading' });
@@ -157,10 +158,10 @@ export function CandidateDrawer({ row, source, asOf, liveLabel, onClose }: { row
             {!chart.plan ? <p className="text-muted-foreground">{chart.planNote}</p> : (
               <>
                 <dl className="grid gap-3 sm:grid-cols-2">
-                  <div><dt className="text-xs text-muted-foreground">Profit target ({chart.plan.profitTarget.pctOfMaxProfit.toFixed(0)}% of max profit)</dt><dd>Spread worth <b className="tabular-nums">{chart.plan.profitTarget.spreadValue.toFixed(2)}</b> (about {rupees(chart.plan.profitTarget.profitRsPerLot)} per lot)</dd></div>
-                  <div><dt className="text-xs text-muted-foreground">Premium stop</dt><dd>Spread worth <b className="tabular-nums">{chart.plan.premiumStop.spreadValue.toFixed(2)}</b> or less (about {rupees(chart.plan.premiumStop.lossRsPerLot)} lost per lot)</dd></div>
+                  <div><dt className="text-xs text-muted-foreground">Profit target ({chart.plan.profitTarget.pctOfMaxProfit.toFixed(0)}% of max profit)</dt><dd>Spread worth <b className="tabular-nums">{chart.plan.profitTarget.spreadValue.toFixed(2)}</b> {chart.plan.profitTarget.profitRsPerLot === null ? ' (lot size unknown, so no rupee amount)' : ` (about ${rupees(chart.plan.profitTarget.profitRsPerLot)} per lot)`}</dd></div>
+                  <div><dt className="text-xs text-muted-foreground">Premium stop</dt><dd>Spread worth <b className="tabular-nums">{chart.plan.premiumStop.spreadValue.toFixed(2)}</b> or less{chart.plan.premiumStop.lossRsPerLot === null ? ' (lot size unknown, so no rupee amount)' : ` (about ${rupees(chart.plan.premiumStop.lossRsPerLot)} lost per lot)`}</dd></div>
                   <div><dt className="text-xs text-muted-foreground">Price stop (trend invalidation)</dt><dd>A close {chart.plan.priceStop.direction}: {chart.plan.priceStop.levels.map((l) => `${l.label} ${l.value.toFixed(1)}`).join(' or ')}</dd></div>
-                  <div><dt className="text-xs text-muted-foreground">Time stop</dt><dd>{chart.plan.timeStop.note}</dd></div>
+                  <div><dt className="text-xs text-muted-foreground">Time stop</dt><dd className={chart.plan.timeStop.passed ? 'font-medium text-amber-800' : undefined}>{chart.plan.timeStop.note}</dd></div>
                 </dl>
                 <p><b>Trail:</b> {chart.plan.trail}</p>
                 <div><b>Gap-open rules</b><ul className="mt-1 list-disc space-y-1 pl-5 text-muted-foreground">{chart.plan.gapRules.map((r) => <li key={r}>{r}</li>)}</ul></div>

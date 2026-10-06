@@ -27,7 +27,13 @@ export function parseCheckQuery(params: URLSearchParams) {
     const value = params.get(key);
     return value === null || value === '' ? undefined : Number(value);
   };
-  return { source: text('source'), symbol: text('symbol'), side: text('side'), kLong: num('kLong'), kShort: num('kShort'), expiry: text('expiry'), debit: num('debit'), lot: num('lot') };
+  // Parameters arrive as JSON text; text that is not valid JSON is passed on as is so validation rejects it.
+  const rawParams = params.get('params');
+  let parsedParams: unknown;
+  if (rawParams !== null && rawParams !== '') {
+    try { parsedParams = JSON.parse(rawParams); } catch { parsedParams = rawParams; }
+  }
+  return { source: text('source'), symbol: text('symbol'), side: text('side'), kLong: num('kLong'), kShort: num('kShort'), expiry: text('expiry'), debit: num('debit'), lot: num('lot'), params: parsedParams };
 }
 
 export function failureStatus(code: string): number {
