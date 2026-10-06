@@ -3,9 +3,11 @@ import { describe, expect, it } from 'vitest';
 import { runBacktest } from '../../lib/screener/backtest';
 import { DEFAULT_PARAMS } from '../../lib/screener/config';
 import { addIndicators } from '../../lib/screener/indicators';
-import { referenceRules, type Condition, type RuleSet } from '../../lib/screener/rules';
+import { evaluateSide, referenceRules, type Condition, type RuleSet } from '../../lib/screener/rules';
 import { runScan } from '../../lib/screener/scan';
-import type { Candle } from '../../lib/screener/types';
+import { partsBear, partsBull } from '../../lib/screener/signals';
+import { mulberry32 } from '../../lib/screener/synthetic';
+import type { Candle, IndRow } from '../../lib/screener/types';
 import { candlesOf, loadGolden } from '../support/screener-golden';
 
 const P = DEFAULT_PARAMS;
@@ -29,6 +31,72 @@ describe('the reference rules written as custom rules give the identical scan', 
       expect(custom.map((r) => [r.symbol, r.side, r.status])).toEqual(scan.fixed_order.map((r) => [r.symbol, r.side, r.status]));
     });
   }
+});
+
+// The built-in logic of run_scan for one row, used as the oracle for the preset.
+function builtInStatus(row: IndRow, side: 1 | -1): 'SIGNAL' | 'WATCH' | null {
+  const [trend, relativeStrength, pullback, trigger, volatilityOk] = (side > 0 ? partsBull : partsBear)(row, P);
+  if (!(trend && relativeStrength)) return null;
+  return pullback && trigger && volatilityOk ? 'SIGNAL' : pullback && volatilityOk ? 'WATCH' : null;
+}
+const presetStatus = (row: IndRow, side: 1 | -1) => evaluateSide(row, side > 0 ? preset.bull : preset.bear);
+
+describe('the preset equals the built-in rules row by row (not only on the latest row of each scan)', () => {
+  const baseRow = (over: Partial<IndRow>): IndRow => ({ date: '2026-10-01', open: 100, high: 101, low: 99, close: 100, volume: 1000, sma20: 100, sma50: 95, sma200: 90, rsi: 40, rs63: 0.05, volRatio: 1, hv20: 0.3, hvPct: 0.4, prevHigh: 99, prevLow: 101, ...over });
+
+  it('every row of every golden stock, both sides', () => {
+    let nonNull = 0;
+    let rowsSeen = 0;
+    for (const s of symbols) {
+      for (const row of addIndicators(full[s], bench)) {
+        rowsSeen += 1;
+        for (const side of [1, -1] as const) {
+          const expected = builtInStatus(row, side);
+          if (expected) nonNull += 1;
+          expect(presetStatus(row, side)).toBe(expected);
+        }
+      }
+    }
+    expect(rowsSeen).toBeGreaterThan(6000);
+    expect(nonNull).toBeGreaterThan(20);
+  });
+
+  it('100,000 seeded random rows built around the thresholds, both sides, with plenty of real signals and watches', () => {
+    const rng = mulberry32(2026);
+    const counts = { SIGNAL: 0, WATCH: 0 };
+    for (let i = 0; i < 50_000; i += 1) {
+      const close = 80 + rng() * 40;
+      const row = baseRow({
+        close,
+        sma20: close * (0.97 + rng() * 0.06),
+        sma50: close * (0.9 + rng() * 0.2),
+        sma200: close * (0.85 + rng() * 0.3),
+        rsi: 25 + rng() * 45,
+        rs63: (rng() - 0.5) * 0.2,
+        hvPct: rng(),
+        prevHigh: close * (0.98 + rng() * 0.04),
+        prevLow: close * (0.98 + rng() * 0.04),
+      });
+      for (const side of [1, -1] as const) {
+        const expected = builtInStatus(row, side);
+        if (expected) counts[expected] += 1;
+        expect(presetStatus(row, side), `row ${i} side ${side}`).toBe(expected);
+      }
+    }
+    expect(counts.SIGNAL).toBeGreaterThan(100);
+    expect(counts.WATCH).toBeGreaterThan(100);
+  });
+
+  it('rows sitting exactly on every boundary (inclusive and exclusive edges)', () => {
+    const rows: IndRow[] = [];
+    for (const rsi of [P.rsiBull[0], P.rsiBull[1], P.rsiBear[0], P.rsiBear[1], P.rsiBull[0] - 1e-9, P.rsiBull[1] + 1e-9]) rows.push(baseRow({ rsi }), baseRow({ rsi, close: 80, sma20: 80.5, sma50: 80, sma200: 90, rs63: -0.05, prevLow: 81 }));
+    for (const hvPct of [P.hvPctMax, P.hvPctMax + 1e-12, P.hvPctMax - 1e-12]) rows.push(baseRow({ hvPct }), baseRow({ hvPct, close: 80, sma20: 80.5, sma50: 80, sma200: 90, rs63: -0.05, rsi: 58, prevLow: 81 }));
+    const b = baseRow({});
+    rows.push(baseRow({ close: b.sma20 * P.nearMaUp }), baseRow({ close: b.sma50 * P.nearMaLo, sma50: 100 * 1.0001 }), baseRow({ prevHigh: b.close }), baseRow({ prevHigh: b.close - 1e-9 }), baseRow({ sma50: b.sma200 }), baseRow({ close: b.sma200 }), baseRow({ rs63: 0 }), baseRow({ rs63: 1e-12 }));
+    const bear = baseRow({ close: 80, sma20: 80.5, sma50: 80, sma200: 90, rs63: -0.05, rsi: 58, prevLow: 81 });
+    rows.push(bear, { ...bear, close: bear.sma20 * (2 - P.nearMaUp) }, { ...bear, close: bear.sma50 * (2 - P.nearMaLo) }, { ...bear, prevLow: bear.close }, { ...bear, prevLow: bear.close + 1e-9 }, { ...bear, sma50: bear.sma200 }, { ...bear, close: bear.sma200 }, { ...bear, rs63: 0 }, { ...bear, rs63: -1e-12 });
+    for (const row of rows) for (const side of [1, -1] as const) expect(presetStatus(row, side)).toBe(builtInStatus(row, side));
+  });
 });
 
 describe('custom rules in the scan', () => {

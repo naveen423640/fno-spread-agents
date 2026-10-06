@@ -2,6 +2,7 @@ import type { ScreenerParams } from './config';
 import { UNIVERSE } from './config';
 import { addIndicators } from './indicators';
 import { npRound } from './numeric';
+import { evaluateSide, type RuleSet } from './rules';
 import { partsBear, partsBull } from './signals';
 import { niceStep } from './symbols';
 import type { Candle, ScanRow, ScanStatus } from './types';
@@ -15,6 +16,8 @@ export type ScanOptions = {
   lotSizes?: Record<string, number | null>;
   top?: number; // limit after ordering and the sector cap; omit for all rows
   universe?: Record<string, string>;
+  // Custom rules replace the built-in ones when enabled. A side with no rules is not scanned.
+  rules?: RuleSet;
 };
 
 export function orderAndCap(rows: ScanRow[]): ScanRow[] {
@@ -39,9 +42,14 @@ export function runScan(data: Record<string, Candle[]>, bench: Candle[], p: Scre
     const indicators = addIndicators(candles, bench);
     const last = indicators[indicators.length - 1];
     for (const side of [1, -1] as const) {
-      const [trend, relativeStrength, pullback, trigger, volatilityOk] = (side > 0 ? partsBull : partsBear)(last, p);
-      if (!(trend && relativeStrength)) continue;
-      const status: ScanStatus | null = pullback && trigger && volatilityOk ? 'SIGNAL' : pullback && volatilityOk ? 'WATCH' : null;
+      let status: ScanStatus | null;
+      if (options.rules?.enabled) {
+        status = evaluateSide(last, side > 0 ? options.rules.bull : options.rules.bear);
+      } else {
+        const [trend, relativeStrength, pullback, trigger, volatilityOk] = (side > 0 ? partsBull : partsBear)(last, p);
+        if (!(trend && relativeStrength)) continue;
+        status = pullback && trigger && volatilityOk ? 'SIGNAL' : pullback && volatilityOk ? 'WATCH' : null;
+      }
       if (!status) continue;
       const expectedMove = Math.min(Math.max(last.hv20 * 1.1, 0.15), 0.9) * Math.sqrt(25 / 252);
       const step = niceStep(last.close);

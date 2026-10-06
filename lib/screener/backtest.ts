@@ -1,7 +1,8 @@
 import type { ScreenerParams } from './config';
 import { addIndicators } from './indicators';
 import { erf, pyRound } from './numeric';
-import { VARIANTS } from './signals';
+import { allPass, type RuleSet } from './rules';
+import { VARIANTS, type Variant } from './signals';
 import type { Candle, IndRow, Side, Trade, TradeStats } from './types';
 
 // Port of ncdf, bs, simulate, backtest and stats in screener/fo_spread_screener.py.
@@ -77,11 +78,17 @@ export function halfStats(trades: Trade[]): { firstHalf: TradeStats; secondHalf:
 
 export type VariantResult = { name: string; side: Side; trades: Trade[]; stats: TradeStats; firstHalf?: TradeStats; secondHalf?: TradeStats };
 
-export function runBacktest(data: Record<string, Candle[]>, bench: Candle[], p: ScreenerParams, onProgress?: (done: number, total: number) => void): VariantResult[] {
+// The six reference variants, plus custom_bull and custom_bear (a trade on every row where all of that side's rules pass) when
+// custom rules are enabled and that side has rules.
+export function runBacktest(data: Record<string, Candle[]>, bench: Candle[], p: ScreenerParams, onProgress?: (done: number, total: number) => void, rules?: RuleSet): VariantResult[] {
   const indicators = Object.entries(data)
     .filter(([symbol]) => symbol !== '^NSEI')
     .map(([symbol, candles]) => [symbol, addIndicators(candles, bench)] as const);
-  const variants = Object.entries(VARIANTS);
+  const variants: [string, Variant][] = Object.entries(VARIANTS);
+  if (rules?.enabled) {
+    if (rules.bull.length) variants.push(['custom_bull', { side: 1, fn: (d) => allPass(d, rules.bull) }]);
+    if (rules.bear.length) variants.push(['custom_bear', { side: -1, fn: (d) => allPass(d, rules.bear) }]);
+  }
   const results: VariantResult[] = [];
   variants.forEach(([name, variant], index) => {
     const trades: Trade[] = [];
