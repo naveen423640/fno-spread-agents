@@ -3,7 +3,8 @@ import { join } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
-const ALLOWED_FYERS_PATHS = new Set(['', '/api/v3/generate-authcode', '/api/v3/validate-authcode', '/data', '/data/history', '/data/quotes', '/data/options-chain-v3']);
+const ALLOWED_FYERS_PATHS = new Set(['', '/api/v3/generate-authcode', '/api/v3/validate-authcode', '/data', '/data/history', '/data/quotes', '/data/options-chain-v3', '/sym_details/NSE_FO']);
+// '/sym_details/NSE_FO' is FYERS's public, read-only symbol master (a CSV of contracts and lot sizes) used by the Screener tab.
 const ALLOWED_DATA_SUFFIXES = new Set(['quotes', 'history', 'options-chain-v3']);
 const DENY_TERMS = /place_?order|create_?order|cancel_?order|modify_?order|exit_?positions|multi_?order|convert_?position|\bgtt\b/i;
 const SCAN_DIRS = ['app', 'lib', 'db', 'components', 'hooks', 'scripts'];
