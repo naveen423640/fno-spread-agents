@@ -109,3 +109,14 @@ export function scanSymbol(prior: PriorTotals, todayCandles: C5[], options: Scan
 export function foldDay(prior: PriorTotals, candles: C5[]): PriorTotals {
   return scanSymbol(prior, candles).totals;
 }
+
+// The VWAP after each candle, for drawing. Same arithmetic as scanSymbol; null until the first volume trades.
+export function vwapSeries(prior: PriorTotals, candles: C5[]): (number | null)[] {
+  let sumPv = prior.sumPv;
+  let sumV = prior.sumV;
+  return [...candles].sort((a, b) => a.t - b.t).map((c) => {
+    sumPv += ((c.h + c.l + c.c) / 3) * c.v;
+    sumV += c.v;
+    return sumV > 0 ? sumPv / sumV : null;
+  });
+}

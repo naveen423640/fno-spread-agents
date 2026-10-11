@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Activity, AlertCircle, BarChart3, CalendarDays, FlaskConical, LayoutGrid, Layers, LineChart, Link2, Radio, RefreshCw, Search, SlidersHorizontal, ScanSearch, Sparkles, TrendingUp, Users } from 'lucide-react';
+import { Activity, AlertCircle, BarChart3, CalendarDays, FlaskConical, LayoutGrid, Layers, Waves, LineChart, Link2, Radio, RefreshCw, Search, SlidersHorizontal, ScanSearch, Sparkles, TrendingUp, Users } from 'lucide-react';
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, ReferenceLine, XAxis, YAxis } from 'recharts';
 
 import { Button } from '@/components/ui/button';
@@ -15,6 +15,7 @@ import { BacktestPanel } from '@/app/backtest-panel';
 import { HeatmapAssistant } from '@/app/heatmap-assistant';
 import { MarkovRegime } from '@/app/markov-regime';
 import { BoardTab } from '@/app/board-tab';
+import { VwapTab } from '@/app/vwap-tab';
 import { ScreenerTab } from '@/app/screener-tab';
 import { StockAssistant } from '@/app/stock-assistant';
 import { StrategyLab } from '@/app/strategy-lab';
@@ -216,7 +217,7 @@ function IntradayPriceChart({ stock, points, loading, error }: { stock: MarketSt
 }
 
 export default function Home() {
-  const [activeSurface, setActiveSurface] = useState<'heatmap' | 'backtest' | 'strategy-lab' | 'markov-regime' | 'screener' | 'board'>('heatmap');
+  const [activeSurface, setActiveSurface] = useState<'heatmap' | 'backtest' | 'strategy-lab' | 'markov-regime' | 'screener' | 'board' | 'vwap'>('heatmap');
   const [stocks, setStocks] = useState<MarketStock[]>(marketSnapshot);
   const [query, setQuery] = useState('');
   const [sector, setSector] = useState('All sectors');
@@ -403,11 +404,12 @@ export default function Home() {
           <Button size="sm" variant={activeSurface === 'markov-regime' ? 'secondary' : 'ghost'} onClick={() => setActiveSurface('markov-regime')}><Activity />Markov regime</Button>
           <Button size="sm" variant={activeSurface === 'screener' ? 'secondary' : 'ghost'} onClick={() => setActiveSurface('screener')}><ScanSearch />Screener</Button>
           <Button size="sm" variant={activeSurface === 'board' ? 'secondary' : 'ghost'} onClick={() => setActiveSurface('board')}><Layers />OrderBlock Board</Button>
+          <Button size="sm" variant={activeSurface === 'vwap' ? 'secondary' : 'ghost'} onClick={() => setActiveSurface('vwap')}><Waves />VWAP Scan</Button>
         </div>
       </nav>
 
       <section className="mx-auto max-w-[1800px] space-y-4 px-4 py-5 lg:px-7">
-        {activeSurface === 'board' ? <BoardTab /> : activeSurface === 'screener' ? <ScreenerTab /> : activeSurface === 'markov-regime' ? <MarkovRegime key={regimeTicker ?? 'default'} initialTicker={regimeTicker ?? undefined} /> : activeSurface === 'backtest' ? <BacktestPanel /> : activeSurface === 'strategy-lab' ? <StrategyLab /> : <>
+        {activeSurface === 'vwap' ? <VwapTab /> : activeSurface === 'board' ? <BoardTab /> : activeSurface === 'screener' ? <ScreenerTab /> : activeSurface === 'markov-regime' ? <MarkovRegime key={regimeTicker ?? 'default'} initialTicker={regimeTicker ?? undefined} /> : activeSurface === 'backtest' ? <BacktestPanel /> : activeSurface === 'strategy-lab' ? <StrategyLab /> : <>
         <Card className="gap-3 py-3">
           <CardContent className="flex flex-wrap items-end gap-3 px-3">
             <div className="flex rounded-lg bg-muted p-1">

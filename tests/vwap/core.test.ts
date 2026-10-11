@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { EMPTY_PRIOR, foldDay, scanSymbol, type C5, type PriorTotals } from '@/lib/vwap/core';
+import { EMPTY_PRIOR, foldDay, scanSymbol, vwapSeries, type C5, type PriorTotals } from '@/lib/vwap/core';
 
 const T0 = Date.parse('2026-10-07T09:15:00+05:30') / 1000;
 // A candle whose typical price equals its close (high = low = close) keeps the VWAP arithmetic hand-checkable.
@@ -21,6 +21,16 @@ describe('VWAP arithmetic', () => {
   it('foldDay gives the same totals as scanning the day', () => {
     const day = [candle(0, 10, 12, 8, 10), candle(1, 10, 14, 10, 12)];
     expect(foldDay(EMPTY_PRIOR, day)).toEqual(scanSymbol(EMPTY_PRIOR, day).totals);
+  });
+});
+
+describe('vwapSeries', () => {
+  it('ends at the same VWAP scanSymbol reports and is null until something trades', () => {
+    const day = [flat(0, 100, 0), candle(1, 10, 12, 8, 10, 100), candle(2, 10, 14, 10, 12, 300)];
+    const series = vwapSeries(EMPTY_PRIOR, day);
+    expect(series[0]).toBeNull();
+    expect(series[2]).toBeCloseTo(scanSymbol(EMPTY_PRIOR, day).vwap!, 12);
+    expect(vwapSeries(prior(99, 100), [])).toEqual([]);
   });
 });
 
