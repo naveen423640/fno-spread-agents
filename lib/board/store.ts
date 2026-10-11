@@ -25,6 +25,7 @@ export type BoardStore = {
   insertSnapshots(day: string, rows: SnapshotRow[]): Promise<void>;
   latestTs(): Promise<{ ts: number; day: string } | null>;
   snapshotsAt(ts: number): Promise<StoredSnapshot[]>;
+  seriesFor(symbol: string, fromTs: number): Promise<StoredSnapshot[]>;
   recentDays(limit: number, before?: string): Promise<string[]>;
   volumesNear(day: string, ts: number, windowSeconds: number): Promise<Map<string, number>>;
   snapshotCount(): Promise<number>;
@@ -52,6 +53,10 @@ export function createBoardStore(db: D1Like): BoardStore {
     },
     async snapshotsAt(ts) {
       const { results } = await db.prepare('SELECT * FROM board_snapshots WHERE ts = ?').bind(ts).all<Raw>();
+      return results.map(toSnapshot);
+    },
+    async seriesFor(symbol, fromTs) {
+      const { results } = await db.prepare('SELECT * FROM board_snapshots WHERE symbol = ? AND ts >= ? ORDER BY ts ASC').bind(symbol, fromTs).all<Raw>();
       return results.map(toSnapshot);
     },
     async recentDays(limit, before) {

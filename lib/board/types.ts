@@ -71,3 +71,21 @@ export type BoardPayload = {
   coverage: { symbols: number; scored: number; withBaseline: number; withOi: number; skipped: number };
   notes: string[];
 };
+
+export type ZonesPayload = {
+  symbol: string;
+  ticker: string;
+  price: number;
+  direction: Direction;
+  source: 'history' | 'snapshots' | 'none';
+  candles: { t: number; o: number; h: number; l: number; c: number; v: number }[];
+  zones: {
+    supports: { price: number; weight: number; low: number; high: number }[];
+    resistances: { price: number; weight: number; low: number; high: number }[];
+    liquidity: { kind: string; price: number; label: string }[];
+    orderBlocks: { side: 'bull' | 'bear'; top: number; bottom: number; t: number; mitigated: boolean; impulseAtr: number }[];
+  };
+  summary: string;
+  stats: { intradayCandles: number; firstTs: number | null; lastTs: number | null; dailyCandles: number };
+  diagnostics: Record<string, unknown>;
+};

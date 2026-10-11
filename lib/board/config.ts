@@ -48,6 +48,28 @@ export const BOARD_CONFIG = {
     minRangeAtrFraction: 0.35, // day range as a share of the daily ATR; smaller than this is "too quiet"
   },
 
+  // Support/resistance, liquidity and order-block detection for the detail chart. All distances are percent of price.
+  zones: {
+    intraday: { resolution: '5', calendarDays: 8 }, // 5-minute candles, about five sessions
+    daily: { calendarDays: 120 },
+    pivotLookback: { intraday: 5, daily: 3 }, // a swing point beats this many candles on each side (5 five-minute candles is 25 minutes)
+    levelTolerancePct: 0.25, // swing points within this distance are merged into one level
+    minLevelWeight: 2, // a level needs this much weight: a daily swing counts 2, an intraday swing 1
+    levelsPerSide: 2, // nearest support and resistance levels shown
+    equalTolerancePct: 0.1, // swing highs (or lows) this close count as "equal" liquidity
+    equalMinPoints: 2,
+    equalLookbackCandles: 160, // only swings from the last ~two sessions of 5-minute candles count
+    equalPerSide: 2, // equal highs are kept only above the price and equal lows only below it (liquidity not yet taken), nearest first
+    orderBlock: {
+      atrPeriod: 14, // 5-minute ATR used to size an impulse
+      impulseAtrMultiple: 1.5, // the move after the candle must exceed this many 5-minute ATRs
+      impulseWindow: 3, // ...within this many candles
+      zone: 'range', // 'range' = candle low to high; 'body' = open to close
+      maxPerSide: 3,
+      maxDistancePct: 4, // order blocks further than this from the current price are left out; they are too far to act on
+    },
+  },
+
   board: { topN: 20, minAbsScore: 10 }, // list size, and the smallest score that counts as a setup at all
 } as const;
 

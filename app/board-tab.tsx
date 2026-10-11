@@ -1,14 +1,16 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { Layers, Link2, RefreshCw } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { BOARD_CONFIG } from '@/lib/board/config';
 import { marketSession } from '@/lib/market-session';
-import type { BoardEntry, BoardPayload, ScoreComponents } from '@/lib/board/types';
+import type { BoardEntry, BoardPayload, ScoreComponents, ZonesPayload } from '@/lib/board/types';
 import { HOLIDAYS } from '@/lib/screener/holidays';
+
+const BoardChart = lazy(() => import('@/app/board-chart').then((m) => ({ default: m.BoardChart })));
 
 const POLL_MS = BOARD_CONFIG.poll.intervalSeconds * 1000;
 const COMPONENT_LABELS: [keyof ScoreComponents, string][] = [['move', 'Move vs ATR'], ['volume', 'Volume'], ['oi', 'Futures OI'], ['sector', 'Sector']];
@@ -70,6 +72,10 @@ export function BoardTab() {
   const [loginNeeded, setLoginNeeded] = useState(false);
   const [busy, setBusy] = useState(false);
   const [selected, setSelected] = useState<BoardEntry | null>(null);
+  const [zones, setZones] = useState<ZonesPayload | null>(null);
+  const [layers, setLayers] = useState({ levels: true, liquidity: true, blocks: true });
+  const [zonesState, setZonesState] = useState<'idle' | 'loading' | 'error'>('idle');
+  const [zonesError, setZonesError] = useState('');
   const triedFirstSnapshot = useRef(false);
 
   const loadBoard = useCallback(async () => {
@@ -128,6 +134,26 @@ export function BoardTab() {
     }
   }, [board, refresh]);
 
+  // Opening a stock loads its candles and zones. A newer open (or a close) makes an older response be ignored.
+  const requestId = useRef(0);
+  const openDetail = useCallback((entry: BoardEntry | null) => {
+    const id = requestId.current + 1;
+    requestId.current = id;
+    setSelected(entry);
+    setZones(null);
+    setZonesError('');
+    if (!entry) { setZonesState('idle'); return; }
+    setZonesState('loading');
+    fetch(`/api/board/zones?symbol=${encodeURIComponent(entry.symbol)}&direction=${entry.direction}`, { cache: 'no-store' })
+      .then(async (response) => {
+        const body = (await response.json().catch(() => null)) as (ZonesPayload & { error?: string }) | null;
+        if (requestId.current !== id) return;
+        if (!response.ok || !body || body.error) { setZonesState('error'); setZonesError(body?.error ?? 'Could not load the chart.'); return; }
+        setZones(body); setZonesState('idle');
+      })
+      .catch(() => { if (requestId.current === id) { setZonesState('error'); setZonesError('Could not reach the server.'); } });
+  }, []);
+
   const open = marketSession(new Date(), HOLIDAYS) === 'open';
   return (
     <div className="mx-auto grid max-w-3xl gap-4 pb-8">
@@ -149,15 +175,15 @@ export function BoardTab() {
 
       {board ? (
         <>
-          <Section title="Bullish" entries={board.bullish} tone="bull" onOpen={setSelected} />
-          <Section title="Bearish" entries={board.bearish} tone="bear" onOpen={setSelected} />
+          <Section title="Bullish" entries={board.bullish} tone="bull" onOpen={openDetail} />
+          <Section title="Bearish" entries={board.bearish} tone="bear" onOpen={openDetail} />
           {board.notes.length ? <ul className="grid gap-1 text-[11px] text-muted-foreground">{board.notes.map((n) => <li key={n}>• {n}</li>)}</ul> : null}
         </>
       ) : <div className="py-10 text-center text-xs text-muted-foreground">Loading…</div>}
 
       <p className="text-[11px] text-muted-foreground">Analysis, not advice. Scores rank how strongly a stock is moving today; they are untested as a trading signal until the backtest shows an edge.</p>
 
-      <Dialog open={selected !== null} onOpenChange={(next) => { if (!next) setSelected(null); }}>
+      <Dialog open={selected !== null} onOpenChange={(next) => { if (!next) openDetail(null); }}>
         <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
           {selected ? (
             <>
@@ -165,6 +191,23 @@ export function BoardTab() {
                 <DialogTitle>{selected.ticker} · {selected.direction === 'bull' ? 'Bullish' : 'Bearish'} {Math.abs(selected.score).toFixed(0)}</DialogTitle>
                 <DialogDescription>{selected.sector} · ₹{price(selected.price)} · {signed(selected.changePct)}% today</DialogDescription>
               </DialogHeader>
+              {zonesState === 'loading' ? <div className="flex h-[340px] items-center justify-center text-xs text-muted-foreground"><RefreshCw className="mr-2 size-4 animate-spin" />Loading chart…</div> : null}
+              {zonesState === 'error' ? <div className="rounded-md border border-dashed border-border px-3 py-6 text-center text-xs text-muted-foreground">{zonesError}</div> : null}
+              {zones && zones.candles.length ? (
+                <>
+                  <div className="flex flex-wrap gap-1.5">
+                    {([['levels', 'Support / resistance'], ['liquidity', 'Liquidity'], ['blocks', 'Order blocks']] as const).map(([key, label]) => (
+                      <button key={key} type="button" aria-pressed={layers[key]} onClick={() => setLayers((current) => ({ ...current, [key]: !current[key] }))} className={`rounded-full border px-2.5 py-1 text-[11px] ${layers[key] ? 'border-foreground/40 bg-muted font-medium' : 'border-border text-muted-foreground'}`}>{label}</button>
+                    ))}
+                  </div>
+                  <Suspense fallback={<div className="h-[340px]" />}><BoardChart data={zones} layers={layers} /></Suspense>
+                  <p className="text-xs font-medium">{zones.summary}</p>
+                  <p className="text-[11px] text-muted-foreground">
+                    <span className="text-emerald-600">▬ support / bullish block</span> · <span className="text-red-600">▬ resistance / bearish block</span> · <span className="text-amber-500">┈ equal highs/lows</span> · <span className="text-blue-500">┈ day and previous-day levels</span>
+                    {zones.source === 'snapshots' ? ' · Candles are built from recorded snapshots, so wicks are narrower than real candles.' : ''}
+                  </p>
+                </>
+              ) : zones ? <div className="rounded-md border border-dashed border-border px-3 py-6 text-center text-xs text-muted-foreground">No intraday candles are available for this stock yet.</div> : null}
               <ComponentBars components={selected.components} />
               <div className="grid grid-cols-2 gap-2 text-xs">
                 <div className="rounded-md bg-muted/40 p-2"><div className="text-muted-foreground">Move</div>{selected.moveAtr >= 0 ? '+' : ''}{selected.moveAtr.toFixed(2)} daily ATRs</div>
