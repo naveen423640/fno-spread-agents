@@ -286,3 +286,16 @@ export const boardOi = sqliteTable('board_oi', {
   asOfDay: text('as_of_day').notNull(),
   updatedTs: integer('updated_ts').notNull(),
 });
+
+export const boardM5 = sqliteTable('board_m5', {
+  symbol: text('symbol').notNull(),
+  day: text('day').notNull(),
+  candlesJson: text('candles_json').notNull(),
+}, (table) => [primaryKey({ columns: [table.symbol, table.day] })]);
+
+export const boardHist = sqliteTable('board_hist', {
+  kind: text('kind').notNull(),
+  symbol: text('symbol').notNull(),
+  dataJson: text('data_json').notNull(),
+  loadedDay: text('loaded_day').notNull(),
+}, (table) => [primaryKey({ columns: [table.kind, table.symbol] })]);

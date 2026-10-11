@@ -10,6 +10,8 @@ import { marketSession } from '@/lib/market-session';
 import type { BoardEntry, BoardPayload, ScoreComponents, ZonesPayload } from '@/lib/board/types';
 import { HOLIDAYS } from '@/lib/screener/holidays';
 
+import { BoardBacktest } from '@/app/board-backtest';
+
 const BoardChart = lazy(() => import('@/app/board-chart').then((m) => ({ default: m.BoardChart })));
 
 const POLL_MS = BOARD_CONFIG.poll.intervalSeconds * 1000;
@@ -72,6 +74,7 @@ export function BoardTab() {
   const [loginNeeded, setLoginNeeded] = useState(false);
   const [busy, setBusy] = useState(false);
   const [selected, setSelected] = useState<BoardEntry | null>(null);
+  const [view, setView] = useState<'board' | 'backtest'>('board');
   const [zones, setZones] = useState<ZonesPayload | null>(null);
   const [layers, setLayers] = useState({ levels: true, liquidity: true, blocks: true });
   const [zonesState, setZonesState] = useState<'idle' | 'loading' | 'error'>('idle');
@@ -168,6 +171,11 @@ export function BoardTab() {
         </div>
       </div>
 
+      <div className="flex gap-1.5">
+        {([['board', 'Board'], ['backtest', 'Backtest']] as const).map(([id, label]) => <button key={id} type="button" aria-pressed={view === id} onClick={() => setView(id)} className={`rounded-full border px-3 py-1 text-xs ${view === id ? 'border-foreground/40 bg-muted font-medium' : 'border-border text-muted-foreground'}`}>{label}</button>)}
+      </div>
+
+      {view === 'backtest' ? <BoardBacktest /> : <>
       <div className="rounded-lg border border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
         {board?.asOf ? <><strong className="text-foreground">{board.live ? 'Live' : 'Last session'}</strong> · {istTime(board.asOf)} IST · {board.coverage.scored} of {board.coverage.symbols} stocks scored{board.live ? ' · updates every minute' : ''}</> : 'No snapshot recorded yet.'}
         {status ? <div className="mt-1 text-amber-700 dark:text-amber-400">{status}</div> : null}
@@ -182,6 +190,7 @@ export function BoardTab() {
       ) : <div className="py-10 text-center text-xs text-muted-foreground">Loading…</div>}
 
       <p className="text-[11px] text-muted-foreground">Analysis, not advice. Scores rank how strongly a stock is moving today; they are untested as a trading signal until the backtest shows an edge.</p>
+      </>}
 
       <Dialog open={selected !== null} onOpenChange={(next) => { if (!next) openDetail(null); }}>
         <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">

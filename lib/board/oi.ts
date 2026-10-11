@@ -33,3 +33,21 @@ export async function fetchFuturesOi(credentials: { clientId: string; accessToke
     return { ok: false, loginRequired: false, message: 'could not reach FYERS' };
   }
 }
+
+// The whole daily OI series for a future: [IST date, OI] pairs, oldest first. Used by the backtest.
+export async function fetchFuturesOiSeries(credentials: { clientId: string; accessToken: string }, symbol: string, fromDay: string, toDay: string, deps: { fetchImpl?: typeof fetch } = {}): Promise<{ ok: true; series: [string, number][] } | { ok: false; loginRequired: boolean; message: string }> {
+  const fetchImpl = deps.fetchImpl ?? fetch;
+  const url = new URL(`${FYERS_DATA_BASE}/history`);
+  for (const [key, value] of Object.entries({ symbol, resolution: 'D', date_format: '1', range_from: fromDay, range_to: toDay, cont_flag: '1', oi_flag: '1' })) url.searchParams.set(key, value);
+  try {
+    const response = await fetchImpl(url, { headers: { Authorization: `${credentials.clientId}:${credentials.accessToken}`, Accept: 'application/json' }, cache: 'no-store', signal: AbortSignal.timeout(20_000) });
+    const payload = (await response.json().catch(() => null)) as { s?: string; code?: number; message?: string; candles?: unknown } | null;
+    if (response.status === 401 || (payload?.code !== undefined && [-8, -15, -16, -17].includes(payload.code))) return { ok: false, loginRequired: true, message: 'login required' };
+    if (!response.ok || !payload || payload.s !== 'ok' || !Array.isArray(payload.candles)) return { ok: false, loginRequired: false, message: payload?.message ?? `history failed (${response.status})` };
+    const series: [string, number][] = [];
+    for (const row of payload.candles as number[][]) if (Array.isArray(row) && row.length >= 7 && Number.isFinite(row[6]) && row[6] > 0) series.push([istDayOf(row[0]), row[6]]);
+    return series.length ? { ok: true, series } : { ok: false, loginRequired: false, message: 'candles carried no OI column' };
+  } catch {
+    return { ok: false, loginRequired: false, message: 'could not reach FYERS' };
+  }
+}
