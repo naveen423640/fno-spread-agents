@@ -15,7 +15,8 @@
     "format": "oxfmt",
     "test": "vitest run",
     "vwap:scan": "tsx --env-file-if-exists=.env.local scripts/vwap-scan.ts",
-    "vwap:backtest": "tsx --env-file-if-exists=.env.local scripts/vwap-backtest.ts"
+    "vwap:backtest": "tsx --env-file-if-exists=.env.local scripts/vwap-backtest.ts",
+    "vwap:depth": "tsx --env-file-if-exists=.env.local scripts/vwap-depth.ts"
   },
   "dependencies": {
     "@base-ui/react": "1.7.0",
