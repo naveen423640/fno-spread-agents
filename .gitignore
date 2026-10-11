@@ -43,3 +43,4 @@ engine/data/
 engine/**/__pycache__/
 engine/**/*.egg-info/
 engine/.pytest_cache/
+.vwap-cache/

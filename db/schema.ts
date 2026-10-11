@@ -299,3 +299,29 @@ export const boardHist = sqliteTable('board_hist', {
   dataJson: text('data_json').notNull(),
   loadedDay: text('loaded_day').notNull(),
 }, (table) => [primaryKey({ columns: [table.kind, table.symbol] })]);
+
+export const vwapDayTotals = sqliteTable('vwap_day_totals', {
+  symbol: text('symbol').notNull(),
+  month: text('month').notNull(),
+  day: text('day').notNull(),
+  sumPv: real('sum_pv').notNull(),
+  sumV: real('sum_v').notNull(),
+  lastClose: real('last_close').notNull(),
+  lastVwap: real('last_vwap'),
+  dayOpen: real('day_open').notNull(),
+  dayVolume: real('day_volume').notNull(),
+}, (table) => [primaryKey({ columns: [table.symbol, table.day] }), index('vwap_day_totals_month').on(table.symbol, table.month, table.day)]);
+
+export const vwapMonthState = sqliteTable('vwap_month_state', {
+  symbol: text('symbol').notNull(),
+  month: text('month').notNull(),
+  checkedThrough: text('checked_through').notNull(),
+  unreliable: integer('unreliable').notNull().default(0),
+  unreliableNote: text('unreliable_note').notNull().default(''),
+}, (table) => [primaryKey({ columns: [table.symbol, table.month] })]);
+
+export const vwapUniverse = sqliteTable('vwap_universe', {
+  name: text('name').primaryKey(),
+  symbolsJson: text('symbols_json').notNull(),
+  fetchedDay: text('fetched_day').notNull(),
+});

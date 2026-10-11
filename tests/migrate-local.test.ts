@@ -12,7 +12,7 @@ describe('local migration script', () => {
     const dir = mkdtempSync(join(tmpdir(), 'migrate-'));
     const file = join(dir, 'local.sqlite');
     const first = applyMigrations(file, 'drizzle');
-    expect(first).toEqual(['0000_preflight.sql', '0001_strategy_lab_reports.sql', '0002_agent_team.sql', '0003_screener.sql', '0004_board.sql', '0005_board_history.sql']);
+    expect(first).toEqual(['0000_preflight.sql', '0001_strategy_lab_reports.sql', '0002_agent_team.sql', '0003_screener.sql', '0004_board.sql', '0005_board_history.sql', '0006_vwap.sql']);
     applyMigrations(file, 'drizzle');
     const db = new DatabaseSync(file);
     const tables = (db.prepare("SELECT name FROM sqlite_master WHERE type = 'table'").all() as { name: string }[]).map((row) => row.name);
