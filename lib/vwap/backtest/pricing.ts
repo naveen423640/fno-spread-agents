@@ -19,6 +19,7 @@ export type PricingContext = {
   iv: { lookbackDays: number; floor: number; fallback: number };
   riskFreeRate: number;
   fallbackLot: number | null; // used when the symbol master has no lot size; null drops the trade
+  minOptionPremium: number; // option trades priced below this (rupees) are dropped: at a 5-paise tick, tiny premiums swing wildly
 };
 
 export type PricedTrade = RawTrade & {
@@ -81,6 +82,7 @@ export function priceTrade(raw: RawTrade, ctx: PricingContext): PricedTrade | nu
   const call = type === 'CE';
   const entryPremium = Math.max(0.05, roundTick(bs(raw.entryPrice, strike, left(raw.entryT), iv, call, ctx.riskFreeRate)));
   const exitPremium = Math.max(0.05, roundTick(bs(raw.exitPrice, strike, left(raw.exitT), iv, call, ctx.riskFreeRate)));
+  if (entryPremium < ctx.minOptionPremium) return null;
   const lots = ctx.capitalPerTrade ? Math.max(1, Math.floor(ctx.capitalPerTrade / (entryPremium * lot))) : 1;
   const qty = lots * lot;
   const entryFill = entryPremium * (1 + slip); // the buyer pays up on the way in and receives less on the way out

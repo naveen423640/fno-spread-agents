@@ -15,6 +15,7 @@ export type BacktestConfig = {
   capitalPerTrade: number | null;
   portfolio: { maxConcurrent: number | null; marginPct: number; marginCap: number | null };
   iv: { lookbackDays: number; floor: number; fallback: number };
+  minOptionPremium: number;
   holdoutFraction: number;
   bootstrapIterations: number;
   randomRuns: number;
@@ -34,7 +35,7 @@ export const DEFAULT_EXITS: ExitRule[] = [
 export const DEFAULT_CONFIG: BacktestConfig = {
   universe: 'nifty_it', from: '2026-08-01', to: '2026-10-09', source: 'cache',
   filters: DEFAULT_FILTERS, exits: DEFAULT_EXITS, squareoffAt: '15:15', instrument: 'futures', slippageBps: 2, capitalPerTrade: null,
-  portfolio: { maxConcurrent: null, marginPct: 0.15, marginCap: null }, iv: { lookbackDays: 20, floor: 0.15, fallback: 0.3 },
+  portfolio: { maxConcurrent: null, marginPct: 0.15, marginCap: null }, iv: { lookbackDays: 20, floor: 0.15, fallback: 0.3 }, minOptionPremium: 1,
   holdoutFraction: 0.3, bootstrapIterations: 2000, randomRuns: 200, seed: 42, gainersLosersTopN: 3, grid: null,
 };
 
@@ -58,7 +59,7 @@ export function parseConfig(input: unknown): BacktestConfig {
   if (!isTime(c.filters.entryFrom) || !isTime(c.filters.entryTo)) throw new Error('filters.entryFrom and filters.entryTo must be HH:MM.');
   if (!c.filters.types.every((t) => TYPES.includes(t)) || !c.filters.types.length) throw new Error(`filters.types must be a non-empty list of ${TYPES.join(', ')}.`);
   if (!c.filters.directions.every((d) => d === 'up' || d === 'down') || !c.filters.directions.length) throw new Error('filters.directions must be up and/or down.');
-  num(c.slippageBps, 'slippageBps', 0, 500); num(c.holdoutFraction, 'holdoutFraction', 0, 0.9); num(c.bootstrapIterations, 'bootstrapIterations', 100, 20000); num(c.randomRuns, 'randomRuns', 0, 5000);
+  num(c.slippageBps, 'slippageBps', 0, 500); num(c.minOptionPremium, 'minOptionPremium', 0, 100000); num(c.holdoutFraction, 'holdoutFraction', 0, 0.9); num(c.bootstrapIterations, 'bootstrapIterations', 100, 20000); num(c.randomRuns, 'randomRuns', 0, 5000);
   if (c.capitalPerTrade !== null) num(c.capitalPerTrade, 'capitalPerTrade', 1, 1e9);
   if (!Array.isArray(c.exits) || !c.exits.length) throw new Error('exits must be a non-empty list of exit rules.');
   const names = new Set<string>();

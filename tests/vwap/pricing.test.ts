@@ -12,7 +12,7 @@ const raw = (over: Partial<RawTrade> = {}): RawTrade => ({
   exitReason: 'square-off', maePct: -0.2, mfePct: 1.2, holdMinutes: 60, dayOfMonth: 7, sessionOfMonth: 4, ...over,
 });
 const ctx = (over: Partial<PricingContext> = {}): PricingContext => ({
-  kind: 'futures', slippageBps: 0, capitalPerTrade: null, lots: new Map([['TCS', 100]]), strikes: new Map(), closes: new Map(), iv: DEFAULT_IV, riskFreeRate: 0.065, fallbackLot: null, ...over,
+  kind: 'futures', slippageBps: 0, capitalPerTrade: null, lots: new Map([['TCS', 100]]), strikes: new Map(), closes: new Map(), iv: DEFAULT_IV, riskFreeRate: 0.065, fallbackLot: null, minOptionPremium: 0, ...over,
 });
 
 describe('futures costs', () => {
@@ -116,6 +116,10 @@ describe('option pricing (modelled)', () => {
     expect(t.option!.ivSource).toBe('realised');
     expect(t.option!.iv).toBeCloseTo(vol, 8);
     expect(realisedVol(new Map([['2026-09-01', 100]]), '2026-10-07', 20)).toBeNull();
+  });
+
+  it('drops an option whose premium is below the minimum', () => {
+    expect(priceTrade(raw(), optionCtx({ minOptionPremium: 1000 }))).toBeNull();
   });
 
   it('cannot price a trade without a strike grid', () => {

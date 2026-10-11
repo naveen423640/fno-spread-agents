@@ -71,7 +71,9 @@ async function main() {
     console.log(`${s.name.padEnd(24)} ${String(s.all.trades).padStart(5)} ${fmt((s.all.winRate ?? 0) * 100, 0).padStart(5)} ${fmt(s.all.expectancyPct, 3).padStart(10)} ${fmt(s.all.expectancyRs, 0).padStart(7)} ${fmt(s.all.profitFactor).padStart(5)} ${fmt(s.all.totalPnl, 0).padStart(9)} ${fmt(s.all.maxDrawdown, 0).padStart(8)} ${fmt(s.all.sharpeDaily).padStart(7)} | ${String(h?.trades ?? '-').padStart(14)} ${fmt(h?.expectancyPct, 3).padStart(6)} | ${fmt(s.random?.pValue, 3).padStart(8)}  ${ci ? `${fmt(ci.low, 3)}..${fmt(ci.high, 3)}` : '-'}`);
   }
   const b = result.baselines;
-  console.log(`\nbaselines (net % per trade, futures-style): buy@09:30→close ${fmt(b.openToClose.all.long.meanNetPct, 3)} (n=${b.openToClose.all.long.n}), sell@09:30→close ${fmt(b.openToClose.all.short.meanNetPct, 3)}, gainers/losers ${fmt(b.gainersLosers.all.meanNetPct, 3)} (n=${b.gainersLosers.all.n})`);
+  const opt = result.config.instrument === 'option';
+  const v = (x: { meanNetPct: number | null; meanNetPnl: number | null }) => (opt ? `Rs ${fmt(x.meanNetPnl, 0)}` : `${fmt(x.meanNetPct, 3)}%`);
+  console.log(`\nbaselines (net per trade, same instrument): buy@09:30→close ${v(b.openToClose.all.long)} (n=${b.openToClose.all.long.n}), sell@09:30→close ${v(b.openToClose.all.short)}, gainers/losers ${v(b.gainersLosers.all)} (n=${b.gainersLosers.all.n})${opt ? '  [options: scored in rupees per trade]' : ''}`);
   if (result.grid) console.log(`\ngrid: ${result.grid.note}`);
   console.log(`\nSkipped symbol-months: ${result.skipped.length}${result.skipped.length ? ` (e.g. ${result.skipped.slice(0, 3).map((s) => `${s.symbol} ${s.month}: ${s.reason}`).join(' | ')})` : ''}`);
   console.log('\nWARNINGS'); for (const w of result.warnings) console.log(` - ${w}`);

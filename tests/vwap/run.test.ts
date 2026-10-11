@@ -253,8 +253,21 @@ describe('runBacktest on a hand-computable dataset', () => {
   });
 });
 
+describe('option instrument', () => {
+  it('prices every trade and every baseline with the same modelled option, and says so', () => {
+    const m: SymbolMaster = { lots: new Map([['TCS', 100]]), strikes: new Map([['TCS', [90, 95, 100, 105, 110, 115]]]), expiry: new Map() };
+    const { result, trades } = runBacktest(cfg({ instrument: 'option', minOptionPremium: 0 }), oneDayMonths, [], m);
+    expect(trades.length).toBeGreaterThan(0);
+    expect(trades.every((t) => t.modelled && t.instrument === 'option' && t.option)).toBe(true);
+    expect(result.strategies[0].random).not.toBeNull();
+    expect(result.strategies[0].random!.metric).toBe('net Rs per trade');
+    expect(result.baselines.openToClose.all.long.n).toBeGreaterThan(0);
+    expect(result.warnings.join(' ')).toMatch(/MODELLED/);
+  });
+});
+
 describe('baselines', () => {
-  const ctx: PricingContext = { kind: 'futures', slippageBps: 0, capitalPerTrade: null, lots: new Map([['TCS', 100]]), strikes: new Map(), closes: new Map(), iv: DEFAULT_IV, riskFreeRate: 0.065, fallbackLot: null };
+  const ctx: PricingContext = { kind: 'futures', slippageBps: 0, capitalPerTrade: null, lots: new Map([['TCS', 100]]), strikes: new Map(), closes: new Map(), iv: DEFAULT_IV, riskFreeRate: 0.065, fallbackLot: null, minOptionPremium: 0 };
   const prepared = oneDayMonths.flatMap((m) => prepareMonth('NSE:TCS-EQ', 'IT', m.month, m.days));
 
   it('buying at 09:30 wins on a day that rises 1% from 100, and selling loses by about the same', () => {

@@ -21,8 +21,11 @@ export function prepareMonth(symbol: string, sector: string, month: string, days
   return out;
 }
 
-export type BaselineStats = { n: number; meanNetPct: number | null; winRate: number | null; note?: string };
-const stats = (trades: PricedTrade[], note?: string): BaselineStats => ({ n: trades.length, meanNetPct: trades.length ? mean(trades.map((t) => t.netPct)) : null, winRate: trades.length ? trades.filter((t) => t.netPnl > 0).length / trades.length : null, note });
+export type BaselineStats = { n: number; meanNetPct: number | null; meanNetPnl: number | null; winRate: number | null; note?: string };
+const stats = (trades: PricedTrade[], note?: string): BaselineStats => ({ n: trades.length, meanNetPct: trades.length ? mean(trades.map((t) => t.netPct)) : null, meanNetPnl: trades.length ? mean(trades.map((t) => t.netPnl)) : null, winRate: trades.length ? trades.filter((t) => t.netPnl > 0).length / trades.length : null, note });
+
+// What a trade is scored on when strategy and baseline are compared: percent of notional for futures, rupees for options (see run.ts).
+export type TradeMetric = (t: PricedTrade) => number;
 
 const asInput = (d: PreparedDay) => ({ day: d.day, month: d.month, sessionOfMonth: d.sessionOfMonth, symbol: d.symbol, sector: d.sector, candles: d.candles, prior: d.prior });
 
@@ -33,7 +36,7 @@ function runForced(d: PreparedDay, rule: ExitRule, forced: ForcedEntry[], ctx: P
 
 // Baseline 1: random entries at the same times and counts per day as the strategy, in random symbols and directions, with the same exit rule.
 // Returns the mean net percent per trade of each random run, so the strategy can be placed inside that spread.
-export function randomEntryBaseline(prepared: PreparedDay[], strategyTrades: PricedTrade[], rule: ExitRule, ctx: PricingContext, runs: number, seed: number): { runMeans: number[]; tradesPerRun: number } {
+export function randomEntryBaseline(prepared: PreparedDay[], strategyTrades: PricedTrade[], rule: ExitRule, ctx: PricingContext, runs: number, seed: number, metric: TradeMetric = (t) => t.netPct): { runMeans: number[]; tradesPerRun: number } {
   const byDay = new Map<string, PreparedDay[]>();
   for (const d of prepared) byDay.set(d.day, [...(byDay.get(d.day) ?? []), d]);
   const entriesByDay = new Map<string, number[]>();
@@ -59,7 +62,7 @@ export function randomEntryBaseline(prepared: PreparedDay[], strategyTrades: Pri
       }
     }
     count = results.length;
-    if (results.length) runMeans.push(mean(results.map((t) => t.netPct)));
+    if (results.length) runMeans.push(mean(results.map(metric)));
   }
   return { runMeans, tradesPerRun: count };
 }

@@ -13,7 +13,7 @@ export type StrategyResult = {
   name: string; rule: ExitRule;
   all: Summary; train: Summary; holdout: Summary | null;
   expectancyPctCI: { all: { low: number; high: number } | null; holdout: { low: number; high: number } | null };
-  random: { runs: number; tradesPerRun: number; p5: number | null; median: number | null; p95: number | null; pValue: number | null; holdoutPValue: number | null } | null;
+  random: { metric: 'net % per trade' | 'net Rs per trade'; runs: number; tradesPerRun: number; p5: number | null; median: number | null; p95: number | null; pValue: number | null; holdoutPValue: number | null } | null;
   slices: Record<string, SliceRow[]>;
   equity: { t: number; equity: number }[];
   distribution: { edges: number[]; counts: number[] };
@@ -57,7 +57,7 @@ export function pricingContext(config: BacktestConfig, master: SymbolMaster, dat
     for (const [day, candles] of sm.days) byDay.set(day, candles[candles.length - 1].c);
     closes.set(sm.entry.symbol, byDay);
   }
-  return { kind, slippageBps: config.slippageBps, capitalPerTrade: config.capitalPerTrade, lots: master.lots, strikes: master.strikes, closes, iv: config.iv, riskFreeRate: 0.065, fallbackLot: null };
+  return { kind, slippageBps: config.slippageBps, capitalPerTrade: config.capitalPerTrade, lots: master.lots, strikes: master.strikes, closes, iv: config.iv, riskFreeRate: 0.065, fallbackLot: null, minOptionPremium: config.minOptionPremium };
 }
 
 function tradesFor(prepared: PreparedDay[], rule: ExitRule, filters: SignalFilters, ctx: PricingContext, config: BacktestConfig): { trades: PricedTrade[]; skippedByPortfolio: number; unpriced: number } {
@@ -85,7 +85,10 @@ function comboList(grid: NonNullable<BacktestConfig['grid']>): Record<string, un
 
 export function runBacktest(config: BacktestConfig, data: SymbolMonth[], skipped: SkippedMonth[], master: SymbolMaster, now = new Date()): BacktestOutput {
   const ctx = pricingContext(config, master, data);
-  const futuresCtx = config.instrument === 'futures' ? ctx : pricingContext(config, master, data, 'futures');
+  // Futures are compared on percent of notional. Option percent returns on tiny premiums are dominated by a few huge winners, so options
+  // are compared on rupees per trade (one lot).
+  const metric = config.instrument === 'option' ? (t: PricedTrade) => t.netPnl : (t: PricedTrade) => t.netPct;
+  let unpricedTotal = 0;
   const prepared = data.flatMap((sm) => prepareMonth(sm.entry.symbol, sm.entry.sector, sm.month, sm.days));
   const inRange = prepared.filter((d) => d.day >= config.from && d.day <= config.to);
   const allDays = [...new Set(inRange.map((d) => d.day))].sort();
@@ -98,19 +101,19 @@ export function runBacktest(config: BacktestConfig, data: SymbolMonth[], skipped
   const holdoutPrepared = inRange.filter((d) => holdoutMonths.includes(d.month));
 
   const strategies: StrategyResult[] = config.exits.map((rule, i) => {
-    const { trades, skippedByPortfolio } = tradesFor(prepared, rule, config.filters, ctx, config);
+    const { trades, skippedByPortfolio, unpriced } = tradesFor(prepared, rule, config.filters, ctx, config);
+    unpricedTotal = Math.max(unpricedTotal, unpriced);
     const holdout = trades.filter(isHoldout);
     const train = trades.filter((t) => !isHoldout(t));
-    // Random baseline uses futures-style trades so it is comparable on net percent per trade.
+    // The baselines use the same instrument as the strategy, so futures are compared with futures and modelled options with modelled options.
     let random: StrategyResult['random'] = null;
     if (config.randomRuns > 0 && trades.length) {
-      const futuresTrades = config.instrument === 'futures' ? trades : tradesFor(prepared, rule, config.filters, futuresCtx, config).trades;
-      const all = randomEntryBaseline(inRange, futuresTrades, rule, futuresCtx, config.randomRuns, config.seed + i);
-      const hold = holdout.length ? randomEntryBaseline(holdoutPrepared, futuresTrades.filter(isHoldout), rule, futuresCtx, Math.max(50, Math.floor(config.randomRuns / 2)), config.seed + 100 + i) : null;
+      const all = randomEntryBaseline(inRange, trades, rule, ctx, config.randomRuns, config.seed + i, metric);
+      const hold = holdout.length ? randomEntryBaseline(holdoutPrepared, holdout, rule, ctx, Math.max(50, Math.floor(config.randomRuns / 2)), config.seed + 100 + i, metric) : null;
       const sorted = [...all.runMeans].sort((a, b) => a - b);
-      const stratMean = futuresTrades.length ? mean(futuresTrades.map((t) => t.netPct)) : 0;
-      const holdMean = futuresTrades.filter(isHoldout).length ? mean(futuresTrades.filter(isHoldout).map((t) => t.netPct)) : null;
-      random = { runs: all.runMeans.length, tradesPerRun: all.tradesPerRun, p5: pct(sorted, 0.05), median: pct(sorted, 0.5), p95: pct(sorted, 0.95), pValue: pValueAgainst(stratMean, all.runMeans), holdoutPValue: hold && holdMean !== null ? pValueAgainst(holdMean, hold.runMeans) : null };
+      const stratMean = trades.length ? mean(trades.map(metric)) : 0;
+      const holdMean = holdout.length ? mean(holdout.map(metric)) : null;
+      random = { metric: config.instrument === 'option' ? 'net Rs per trade' : 'net % per trade', runs: all.runMeans.length, tradesPerRun: all.tradesPerRun, p5: pct(sorted, 0.05), median: pct(sorted, 0.5), p95: pct(sorted, 0.95), pValue: pValueAgainst(stratMean, all.runMeans), holdoutPValue: hold && holdMean !== null ? pValueAgainst(holdMean, hold.runMeans) : null };
     }
     const exitReasons: Record<string, number> = {};
     for (const t of trades) exitReasons[t.exitReason] = (exitReasons[t.exitReason] ?? 0) + 1;
@@ -124,11 +127,11 @@ export function runBacktest(config: BacktestConfig, data: SymbolMonth[], skipped
   // Every strategy's trades, for the saved trade log.
   const trades = config.exits.flatMap((rule) => tradesFor(prepared, rule, config.filters, ctx, config).trades);
 
-  const openToClose = openToCloseBaseline(inRange, config.squareoffAt, futuresCtx);
-  const gl = gainersLosersBaseline(inRange, config.gainersLosersTopN, config.squareoffAt, futuresCtx);
+  const openToClose = openToCloseBaseline(inRange, config.squareoffAt, ctx);
+  const gl = gainersLosersBaseline(inRange, config.gainersLosersTopN, config.squareoffAt, ctx);
   const baselines: BacktestResult['baselines'] = {
-    openToClose: { all: openToClose, holdout: holdoutPrepared.length ? openToCloseBaseline(holdoutPrepared, config.squareoffAt, futuresCtx) : null },
-    gainersLosers: { all: gl, holdout: holdoutPrepared.length ? gainersLosersBaseline(holdoutPrepared, config.gainersLosersTopN, config.squareoffAt, futuresCtx) : null },
+    openToClose: { all: openToClose, holdout: holdoutPrepared.length ? openToCloseBaseline(holdoutPrepared, config.squareoffAt, ctx) : null },
+    gainersLosers: { all: gl, holdout: holdoutPrepared.length ? gainersLosersBaseline(holdoutPrepared, config.gainersLosersTopN, config.squareoffAt, ctx) : null },
   };
 
   // Optional grid search: choose parameters on the training months only, then show the hold-out result right beside them.
@@ -161,8 +164,9 @@ export function runBacktest(config: BacktestConfig, data: SymbolMonth[], skipped
   warnings.push("Survivorship bias: the stock list is today's constituents (no point-in-time membership is available), so names that left the index in this period are missing.");
   warnings.push("Lot sizes come from today's FYERS symbol master and are applied to past dates; lot sizes change over time. Percent returns do not depend on them.");
   warnings.push('Costs use the rates in lib/vwap/backtest/costs.ts (verified from public sources on 2026-10-12, not from a contract note). Brokerage is a flat Rs 20 per order.');
-  if (config.instrument === 'option') warnings.push('Option P&L is MODELLED with Black-Scholes (realised-vol IV, 6.5% rate, last-Tuesday expiry): expired option candles are not available. It is not real traded premium. Baselines are futures-style.');
+  if (config.instrument === 'option') warnings.push('Option P&L is MODELLED with Black-Scholes (realised-vol IV, 6.5% rate, last-Tuesday expiry): expired option candles are not available. It is not real traded premium. The baselines use the same modelled option, and the percent figures are returns on the premium paid, which small cheap options dominate: read the rupee figures too.');
   if (skipped.length) warnings.push(`${skipped.length} symbol-month(s) were skipped (incomplete month or possible corporate action); see the list.`);
+  if (unpricedTotal) warnings.push(`${unpricedTotal} signal(s) could not be priced and were dropped (no lot size or strike grid, or an option premium under Rs ${config.minOptionPremium}).`);
   const unreliableHoliday = 'The first-session check for each month uses the repo holiday list, which is marked unverified.';
   warnings.push(unreliableHoliday);
 
