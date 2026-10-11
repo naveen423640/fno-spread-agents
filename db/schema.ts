@@ -221,3 +221,27 @@ export const analystReportCache = sqliteTable('analyst_report_cache', {
   reportJson: text('report_json').notNull(),
   createdAt: text('created_at').notNull(),
 }, (table) => [primaryKey({ columns: [table.symbol, table.tradingDate, table.role] })]);
+
+export const screenerCandles = sqliteTable('screener_candles', {
+  source: text('source').notNull(),
+  symbol: text('symbol').notNull(),
+  candlesJson: text('candles_json').notNull(),
+  firstDate: text('first_date').notNull(),
+  lastDate: text('last_date').notNull(),
+  coversFrom: text('covers_from').notNull(),
+  refreshedAt: text('refreshed_at').notNull(),
+}, (table) => [primaryKey({ columns: [table.source, table.symbol] })]);
+
+export const screenerJobs = sqliteTable('screener_jobs', {
+  id: text('id').primaryKey(),
+  kind: text('kind').notNull(),
+  source: text('source').notNull(),
+  paramsJson: text('params_json').notNull(),
+  status: text('status').notNull(),
+  progress: integer('progress').notNull(),
+  message: text('message').notNull(),
+  resultJson: text('result_json'),
+  createdAt: text('created_at').notNull(),
+  updatedAt: text('updated_at').notNull(),
+  completedAt: text('completed_at'),
+}, (table) => [index('screener_jobs_kind').on(table.kind, table.source, table.createdAt)]);
