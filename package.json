@@ -14,7 +14,8 @@
     "lint": "oxlint",
     "format": "oxfmt",
     "test": "vitest run",
-    "vwap:scan": "tsx --env-file-if-exists=.env.local scripts/vwap-scan.ts"
+    "vwap:scan": "tsx --env-file-if-exists=.env.local scripts/vwap-scan.ts",
+    "vwap:backtest": "tsx --env-file-if-exists=.env.local scripts/vwap-backtest.ts"
   },
   "dependencies": {
     "@base-ui/react": "1.7.0",

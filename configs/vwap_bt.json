@@ -1,0 +1,33 @@
+{
+  "universe": "nifty_it",
+  "from": "2026-08-01",
+  "to": "2026-10-09",
+  "source": "cache",
+  "instrument": "futures",
+  "slippageBps": 2,
+  "squareoffAt": "15:15",
+  "filters": {
+    "types": ["close-cross", "body-cross", "gap-cross"],
+    "directions": ["up", "down"],
+    "firstCrossOnly": false,
+    "skipBorderline": false,
+    "entryFrom": "09:20",
+    "entryTo": "15:00",
+    "minDistancePct": 0,
+    "minAvgCandleVolume": 0
+  },
+  "exits": [
+    { "name": "opposite-cross", "opposite": true },
+    { "name": "square-off-1515", "squareoffAt": "15:15" },
+    { "name": "stop-0.5-target-2R", "stopPct": 0.5, "targetR": 2 },
+    { "name": "trail-0.4", "trailPct": 0.4 },
+    { "name": "first-hit-combo", "opposite": true, "stopPct": 0.5, "targetR": 2, "trailPct": 0.6 }
+  ],
+  "portfolio": { "maxConcurrent": null, "marginPct": 0.15, "marginCap": null },
+  "holdoutFraction": 0.3,
+  "bootstrapIterations": 2000,
+  "randomRuns": 200,
+  "seed": 42,
+  "gainersLosersTopN": 3,
+  "grid": null
+}

@@ -325,3 +325,10 @@ export const vwapUniverse = sqliteTable('vwap_universe', {
   symbolsJson: text('symbols_json').notNull(),
   fetchedDay: text('fetched_day').notNull(),
 });
+
+export const vwapM5Month = sqliteTable('vwap_m5_month', {
+  symbol: text('symbol').notNull(),
+  month: text('month').notNull(),
+  through: text('through').notNull(),
+  candlesJson: text('candles_json').notNull(),
+}, (table) => [primaryKey({ columns: [table.symbol, table.month] })]);
