@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { dailyBaselines, exitPrice, replayBoard, runBacktest, type IndexHistory, type StockHistory } from '@/lib/board/backtest';
+import { ABLATION_VARIANTS, dailyBaselines, exitPrice, replayBoard, runAblation, runBacktest, type IndexHistory, type StockHistory } from '@/lib/board/backtest';
+import { BOARD_CONFIG } from '@/lib/board/config';
 import type { C5 } from '@/lib/board/zones';
 
 function rng(seed: number) {
@@ -156,5 +157,26 @@ describe('runBacktest', () => {
     const report = runBacktest(stocks, indices);
     expect(new Set(report.rows.map((r) => r.horizon))).toEqual(new Set(['30m', '60m', 'close']));
     expect(new Set(report.rows.map((r) => r.checkpoint))).toEqual(new Set(['all', '09:30', '10:00', '10:30']));
+  });
+});
+
+describe('ablation', () => {
+  it('a sector-only score ranks nothing when no stock has a sector index, while move-only still finds the planted leader', () => {
+    const { stocks, days, indices } = build(45);
+    const day = days[30];
+    const baselines = dailyBaselines(stocks, day, 20);
+    const cfgOf = (name: string) => ({ ...BOARD_CONFIG, weights: ABLATION_VARIANTS.find((v) => v.name === name)!.weights }) as unknown as typeof BOARD_CONFIG;
+    expect(replayBoard(stocks, indices, day, '10:30', baselines, cfgOf('Sector only'))!.board.bullish).toEqual([]);
+    expect(replayBoard(stocks, indices, day, '10:30', baselines, cfgOf('Move only'))!.board.bullish[0].symbol).toBe('S0');
+  });
+
+  it('gives one result per variant, each measured on the same sessions, and the full score matches the main report', () => {
+    const { stocks, indices } = build(45);
+    const results = runAblation(stocks, indices);
+    expect(results.map((r) => r.name)).toEqual(['Move only', 'Volume only', 'OI only', 'Sector only', 'Full score']);
+    const full = results.find((r) => r.name === 'Full score')!;
+    const main = runBacktest(stocks, indices).rows.filter((r) => r.checkpoint === 'all');
+    expect(full.rows.map((r) => r.meanPct)).toEqual(main.map((r) => r.meanPct));
+    expect(full.sessions).toBe(25);
   });
 });

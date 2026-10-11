@@ -1,7 +1,7 @@
 import type { Candle } from '@/lib/screener/types';
 
 import { buildBoard } from './board';
-import { BOARD_CONFIG } from './config';
+import { BOARD_CONFIG, type BoardConfig } from './config';
 import { atrPercent, avgVolume } from './score';
 import type { IntradayState, StoredSnapshot } from './store';
 import type { Baseline } from './types';
@@ -93,8 +93,8 @@ export type Replayed = {
 };
 
 // The board as it would have looked at one checkpoint, built only from candles that had closed by then.
-export function replayBoard(stocks: StockHistory[], indices: IndexHistory, day: string, checkpoint: string, baselines: Map<string, Baseline>): Replayed | null {
-  const cfg = BOARD_CONFIG;
+export function replayBoard(stocks: StockHistory[], indices: IndexHistory, day: string, checkpoint: string, baselines: Map<string, Baseline>, config: BoardConfig = BOARD_CONFIG): Replayed | null {
+  const cfg = config;
   const endTs = tsOf(day, checkpoint);
   const minutes = (endTs - tsOf(day, '09:15')) / 60;
   const rows: StoredSnapshot[] = [];
@@ -146,12 +146,12 @@ export function replayBoard(stocks: StockHistory[], indices: IndexHistory, day: 
     rows.push({ symbol: index, ts: endTs, day, ltp: seen[seen.length - 1].c, volume: null, oi: null, prevOi: null, open: seen[0].o, high: null, low: null, prevClose: previousClose, vwap: null });
   }
   if (universe.length < 20) return null;
-  return { board: buildBoard({ universe, rows, baselines, states, sameTimeVolumes: sameTime, minutes }), everyone, entry, endTs };
+  return { board: buildBoard({ universe, rows, baselines, states, sameTimeVolumes: sameTime, minutes, config: cfg }), everyone, entry, endTs };
 }
 
 type Observation = { day: string; checkpoint: string; horizon: string; group: string; mean: number; picks: number; hits: number };
 
-export function runBacktest(stocks: StockHistory[], indices: IndexHistory, options: BacktestOptions = DEFAULT_BACKTEST): BacktestReport {
+export function runBacktest(stocks: StockHistory[], indices: IndexHistory, options: BacktestOptions = DEFAULT_BACKTEST, config: BoardConfig = BOARD_CONFIG): BacktestReport {
   const allDays = new Set<string>();
   for (const s of stocks) for (const d of s.m5.keys()) allDays.add(d);
   const days = [...allDays].sort();
@@ -162,7 +162,7 @@ export function runBacktest(stocks: StockHistory[], indices: IndexHistory, optio
     const baselines = dailyBaselines(stocks, day, options.minPriorSessions);
     if (baselines.size < 20) continue;
     for (const checkpoint of options.checkpoints) {
-      const r = replayBoard(stocks, indices, day, checkpoint, baselines);
+      const r = replayBoard(stocks, indices, day, checkpoint, baselines, config);
       if (!r) continue;
       replayed += 1;
       const gainers = [...r.everyone].sort((a, b) => b.changePct - a.changePct);
@@ -239,4 +239,26 @@ export function runBacktest(stocks: StockHistory[], indices: IndexHistory, optio
   warnings.push("The stock list is today's F&O universe, so stocks that left the list in this period are missing (survivorship bias). Returns are gross of slippage; the net column subtracts a flat round-trip cost.");
   warnings.push('Sessions, stocks and checkpoints are correlated, and many rows are tested at once, so a single "significant" row can still be luck.');
   return { firstDay: days[0] ?? null, lastDay: days[days.length - 1] ?? null, sessions: sessionsReplayed, checkpoints: options.checkpoints, stocks: stocks.length, replayedBoards: replayed, rows, warnings };
+}
+
+type Weights = { move: number; volume: number; oi: number; sector: number };
+export type AblationVariant = { name: string; description: string; weights: Weights };
+
+// The score's four inputs, each used alone, and the full blend, so the report can show which input (if any) carries information.
+export const ABLATION_VARIANTS: AblationVariant[] = [
+  { name: 'Move only', description: 'Ranks by % change in daily ATRs', weights: { move: 1, volume: 0, oi: 0, sector: 0 } },
+  { name: 'Volume only', description: 'Ranks by volume vs normal, signed by the move (still needs a 0.25 ATR move)', weights: { move: 0, volume: 1, oi: 0, sector: 0 } },
+  { name: 'OI only', description: 'Ranks by futures OI build-up, signed by the move', weights: { move: 0, volume: 0, oi: 1, sector: 0 } },
+  { name: 'Sector only', description: 'Ranks by sector alignment', weights: { move: 0, volume: 0, oi: 0, sector: 1 } },
+  { name: 'Full score', description: 'The blend the live board uses', weights: BOARD_CONFIG.weights },
+];
+
+export type AblationResult = { name: string; description: string; rows: ReportRow[]; sessions: number };
+
+// Runs the same replay once per variant. Only the weights change; the filters, thresholds and baseline scan are identical.
+export function runAblation(stocks: StockHistory[], indices: IndexHistory, options: BacktestOptions = DEFAULT_BACKTEST): AblationResult[] {
+  return ABLATION_VARIANTS.map((v) => {
+    const report = runBacktest(stocks, indices, options, { ...BOARD_CONFIG, weights: v.weights } as unknown as BoardConfig);
+    return { name: v.name, description: v.description, rows: report.rows.filter((r) => r.checkpoint === 'all'), sessions: report.sessions };
+  });
 }
