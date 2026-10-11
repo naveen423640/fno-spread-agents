@@ -245,3 +245,44 @@ export const screenerJobs = sqliteTable('screener_jobs', {
   updatedAt: text('updated_at').notNull(),
   completedAt: text('completed_at'),
 }, (table) => [index('screener_jobs_kind').on(table.kind, table.source, table.createdAt)]);
+
+export const boardSnapshots = sqliteTable('board_snapshots', {
+  symbol: text('symbol').notNull(),
+  ts: integer('ts').notNull(),
+  day: text('day').notNull(),
+  ltp: real('ltp').notNull(),
+  volume: real('volume'),
+  oi: real('oi'),
+  prevOi: real('prev_oi'),
+  open: real('open'),
+  high: real('high'),
+  low: real('low'),
+  prevClose: real('prev_close'),
+  vwap: real('vwap'),
+}, (table) => [primaryKey({ columns: [table.symbol, table.ts] }), index('board_snapshots_ts').on(table.ts), index('board_snapshots_day').on(table.day, table.ts)]);
+
+export const boardBaselines = sqliteTable('board_baselines', {
+  symbol: text('symbol').primaryKey(),
+  refreshedDay: text('refreshed_day').notNull(),
+  asOf: text('as_of').notNull(),
+  atrPct: real('atr_pct').notNull(),
+  avgVolume: real('avg_volume').notNull(),
+  prevClose: real('prev_close').notNull(),
+});
+
+export const boardIntradayState = sqliteTable('board_intraday_state', {
+  symbol: text('symbol').notNull(),
+  day: text('day').notNull(),
+  vwapSide: integer('vwap_side').notNull(),
+  openSide: integer('open_side').notNull(),
+  vwapCrossings: integer('vwap_crossings').notNull(),
+  openCrossings: integer('open_crossings').notNull(),
+}, (table) => [primaryKey({ columns: [table.symbol, table.day] })]);
+
+export const boardOi = sqliteTable('board_oi', {
+  symbol: text('symbol').primaryKey(),
+  oi: real('oi').notNull(),
+  prevOi: real('prev_oi'),
+  asOfDay: text('as_of_day').notNull(),
+  updatedTs: integer('updated_ts').notNull(),
+});

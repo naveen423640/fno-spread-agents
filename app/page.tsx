@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Activity, AlertCircle, BarChart3, CalendarDays, FlaskConical, LayoutGrid, LineChart, Link2, Radio, RefreshCw, Search, SlidersHorizontal, ScanSearch, Sparkles, TrendingUp, Users } from 'lucide-react';
+import { Activity, AlertCircle, BarChart3, CalendarDays, FlaskConical, LayoutGrid, Layers, LineChart, Link2, Radio, RefreshCw, Search, SlidersHorizontal, ScanSearch, Sparkles, TrendingUp, Users } from 'lucide-react';
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, ReferenceLine, XAxis, YAxis } from 'recharts';
 
 import { Button } from '@/components/ui/button';
@@ -14,30 +14,14 @@ import { AgentRunPanel } from '@/app/agent-run-panel';
 import { BacktestPanel } from '@/app/backtest-panel';
 import { HeatmapAssistant } from '@/app/heatmap-assistant';
 import { MarkovRegime } from '@/app/markov-regime';
+import { BoardTab } from '@/app/board-tab';
 import { ScreenerTab } from '@/app/screener-tab';
 import { StockAssistant } from '@/app/stock-assistant';
 import { StrategyLab } from '@/app/strategy-lab';
 import { marketSnapshot, snapshotAsOf, type MarketStock } from '@/lib/market-snapshot';
 import { previousTradingDate } from '@/lib/market-session';
+import { sectorFor } from '@/lib/sectors';
 
-const sectorSets: Record<string, Set<string>> = {
-  Banks: new Set(['AUBANK','AXISBANK','BANDHANBNK','BANKBARODA','BANKINDIA','CANBK','FEDERALBNK','HDFCBANK','ICICIBANK','IDFCFIRSTB','INDIANB','INDUSINDBK','KOTAKBANK','MAHABANK','PNB','RBLBANK','SBIN','UNIONBANK','YESBANK']),
-  Financials: new Set(['360ONE','ABCAPITAL','ANGELONE','BAJAJFINSV','BAJAJHLDNG','BAJFINANCE','BSE','CAMS','CDSL','CHOLAFIN','HDFCAMC','HDFCLIFE','ICICIGI','ICICIPRULI','JIOFIN','KFINTECH','LICHSGFIN','LICI','LTF','MANAPPURAM','MCX','MFSL','MOTILALOFS','MUTHOOTFIN','NAM-INDIA','PAYTM','PFC','PNBHOUSING','POLICYBZR','RECLTD','SBICARD','SBILIFE','SHRIRAMFIN']),
-  Technology: new Set(['COFORGE','HCLTECH','INFY','KPITTECH','LTM','MPHASIS','OFSS','PERSISTENT','TATAELXSI','TCS','TECHM','WIPRO','SAGILITY','NAUKRI']),
-  Healthcare: new Set(['ALKEM','APOLLOHOSP','AUROPHARMA','BIOCON','CIPLA','DIVISLAB','DRREDDY','FORTIS','GLENMARK','LAURUSLABS','LUPIN','MANKIND','MAXHEALTH','SUNPHARMA','TORNTPHARM','ZYDUSLIFE']),
-  Auto: new Set(['ASHOKLEY','ATHERENERG','BAJAJ-AUTO','BHARATFORG','BOSCHLTD','EICHERMOT','FORCEMOT','HEROMOTOCO','HYUNDAI','M&M','MARUTI','MOTHERSON','SONACOMS','TIINDIA','TMPV','TVSMOTOR','UNOMINDA']),
-  'Energy & Power': new Set(['ADANIENSOL','ADANIGREEN','ADANIPOWER','BPCL','COALINDIA','GAIL','HINDPETRO','IEX','INOXWIND','IOC','IREDA','JSWENERGY','NHPC','NTPC','OIL','ONGC','PETRONET','POWERGRID','PREMIERENE','RELIANCE','SUZLON','TATAPOWER','WAAREEENER']),
-  Metals: new Set(['APLAPOLLO','HINDALCO','HINDZINC','JINDALSTEL','JSWSTEEL','NATIONALUM','NMDC','SAIL','TATASTEEL','VEDL']),
-  Consumer: new Set(['ASIANPAINT','BRITANNIA','COLPAL','DABUR','DMART','ETERNAL','GODFRYPHLP','GODREJCP','HINDUNILVR','INDHOTEL','ITC','JUBLFOOD','KALYANKJIL','MARICO','NESTLEIND','NYKAA','PAGEIND','PATANJALI','PIDILITIND','RADICO','SWIGGY','TATACONSUM','TITAN','TRENT','UNITDSPR','VBL','VMM']),
-  Realty: new Set(['DLF','GODREJPROP','LODHA','NBCC','OBEROIRLTY','PHOENIXLTD','PRESTIGE']),
-  Infrastructure: new Set(['ABB','ADANIENT','ADANIPORTS','AMBER','BDL','BEL','BHEL','CGPOWER','COCHINSHIP','CONCOR','CUMMINSIND','DELHIVERY','DIXON','GMRAIRPORT','GVT&D','HAL','KEI','KAYNES','LT','MAZDOCK','PGEL','POLYCAB','POWERINDIA','RVNL','SIEMENS','SOLARINDS']),
-  Materials: new Set(['AMBUJACEM','ASTRAL','GRASIM','PIIND','SHREECEM','SRF','SUPREMEIND','ULTRACEMCO','UPL']),
-  Telecom: new Set(['BHARTIARTL','IDEA','INDUSTOWER']),
-};
-
-function sectorFor(ticker: string) {
-  return Object.entries(sectorSets).find(([, tickers]) => tickers.has(ticker))?.[0] ?? 'Other';
-}
 
 function tileColor(value: number) {
   const strength = Math.min(Math.abs(value) / 4, 1);
@@ -232,7 +216,7 @@ function IntradayPriceChart({ stock, points, loading, error }: { stock: MarketSt
 }
 
 export default function Home() {
-  const [activeSurface, setActiveSurface] = useState<'heatmap' | 'backtest' | 'strategy-lab' | 'markov-regime' | 'screener'>('heatmap');
+  const [activeSurface, setActiveSurface] = useState<'heatmap' | 'backtest' | 'strategy-lab' | 'markov-regime' | 'screener' | 'board'>('heatmap');
   const [stocks, setStocks] = useState<MarketStock[]>(marketSnapshot);
   const [query, setQuery] = useState('');
   const [sector, setSector] = useState('All sectors');
@@ -418,11 +402,12 @@ export default function Home() {
           <Button size="sm" variant={activeSurface === 'backtest' ? 'secondary' : 'ghost'} onClick={() => setActiveSurface('backtest')}><FlaskConical />6-month strategy test</Button>
           <Button size="sm" variant={activeSurface === 'markov-regime' ? 'secondary' : 'ghost'} onClick={() => setActiveSurface('markov-regime')}><Activity />Markov regime</Button>
           <Button size="sm" variant={activeSurface === 'screener' ? 'secondary' : 'ghost'} onClick={() => setActiveSurface('screener')}><ScanSearch />Screener</Button>
+          <Button size="sm" variant={activeSurface === 'board' ? 'secondary' : 'ghost'} onClick={() => setActiveSurface('board')}><Layers />OrderBlock Board</Button>
         </div>
       </nav>
 
       <section className="mx-auto max-w-[1800px] space-y-4 px-4 py-5 lg:px-7">
-        {activeSurface === 'screener' ? <ScreenerTab /> : activeSurface === 'markov-regime' ? <MarkovRegime key={regimeTicker ?? 'default'} initialTicker={regimeTicker ?? undefined} /> : activeSurface === 'backtest' ? <BacktestPanel /> : activeSurface === 'strategy-lab' ? <StrategyLab /> : <>
+        {activeSurface === 'board' ? <BoardTab /> : activeSurface === 'screener' ? <ScreenerTab /> : activeSurface === 'markov-regime' ? <MarkovRegime key={regimeTicker ?? 'default'} initialTicker={regimeTicker ?? undefined} /> : activeSurface === 'backtest' ? <BacktestPanel /> : activeSurface === 'strategy-lab' ? <StrategyLab /> : <>
         <Card className="gap-3 py-3">
           <CardContent className="flex flex-wrap items-end gap-3 px-3">
             <div className="flex rounded-lg bg-muted p-1">
