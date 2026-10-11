@@ -238,7 +238,7 @@ export default function Home() {
   const [sector, setSector] = useState('All sectors');
   const [sort, setSort] = useState('change-desc');
   const [mode, setMode] = useState<'live' | 'historical'>('live');
-  const [date, setDate] = useState(() => previousTradingDate(new Date()));
+  const [date, setDate] = useState(() => previousTradingDate(new Date(snapshotAsOf)));
   const [selected, setSelected] = useState<MarketStock | null>(marketSnapshot[0] ?? null);
   const [chartOpen, setChartOpen] = useState(false);
   const [asOf, setAsOf] = useState(snapshotAsOf);
@@ -294,6 +294,9 @@ export default function Home() {
     const timer = window.setInterval(() => void loadMarket('live'), 180_000);
     return () => window.clearInterval(timer);
   }, [mode, loadMarket]);
+
+  // The first render must match the server's, so the date starts from the snapshot and moves to today after mount.
+  useEffect(() => { setDate(previousTradingDate(new Date())); }, []);
 
   const selectedSymbol = selected?.symbol;
 
