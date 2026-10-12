@@ -6,8 +6,8 @@ import type { D1Like } from '../../lib/agents/store';
 
 type Bindable = string | number | null;
 
-export function createSqliteD1(path: string, migrations: string[] = []): D1Like {
-  const sqlite = new DatabaseSync(path);
+export function createSqliteD1(path: string, migrations: string[] = [], readOnly = false): D1Like {
+  const sqlite = new DatabaseSync(path, { readOnly });
   for (const file of migrations) sqlite.exec(readFileSync(file, 'utf8'));
   return {
     prepare(sql: string) {

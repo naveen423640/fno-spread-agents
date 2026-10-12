@@ -47,3 +47,4 @@ engine/.pytest_cache/
 
 # inline-plan execution scratch
 .superpowers/
+data/ltp_replay/

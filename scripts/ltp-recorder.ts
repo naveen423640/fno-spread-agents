@@ -1,8 +1,16 @@
 // LTP Levels recorder commands. They talk to the running app (default http://localhost:3000), so the data lands in the same database the tab reads.
 //   npm run ltp:record-once                 one snapshot of all three underlyings now (add --force to record outside market hours, for testing)
+//   npm run ltp:replay -- --date 2026-10-12 --underlying NSE:NIFTY50-INDEX   run the engine over a stored day and write data/ltp_replay/<date>-<underlying>.csv
 //   npm run ltp:record                      keep recording every minute from 09:15 to 15:30 IST on trading days, until stopped
 // The app reads FYERS_ACCESS_TOKEN from .env.local for this (the tab's cookie is not available to a background process). The token expires
 // daily; when it does the app logs gap rows with reason login_required and this runner says so.
+import { existsSync, mkdirSync, readdirSync, statSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
+
+import { createLtpStore } from '../lib/ltp/store';
+import { replayDay } from '../lib/ltp/replay';
+import { createSqliteD1 } from './lib/sqlite-d1';
+
 const argv = process.argv.slice(2);
 const command = argv[0];
 const flag = (name: string) => argv.includes(`--${name}`);
@@ -47,8 +55,24 @@ async function main() {
       // Wake a couple of seconds after the next minute boundary.
       await new Promise((resolve) => setTimeout(resolve, 60_000 - (Date.now() % 60_000) + 2_000));
     }
+  } else if (command === 'replay') {
+    const date = option('date');
+    const underlying = option('underlying') ?? 'NSE:NIFTY50-INDEX';
+    if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) { console.error('Give --date YYYY-MM-DD.'); process.exitCode = 1; return; }
+    // Reads the app's own local database (read-only), so replay works without the app running and without FYERS.
+    // --db <file> reads another sqlite file instead (for example a copy or a scratch database).
+    const dir = '.wrangler/state/v3/d1/miniflare-D1DatabaseObject';
+    const found = existsSync(dir) ? readdirSync(dir).find((f) => f.endsWith('.sqlite') && f !== 'metadata.sqlite' && statSync(join(dir, f)).size > 0) : undefined;
+    const dbPath = option('db') ?? (found ? join(dir, found) : undefined);
+    if (!dbPath || !existsSync(dbPath)) { console.error('No local app database found. Start the app once so it exists, or pass --db <file>.'); process.exitCode = 1; return; }
+    const csv = await replayDay(createLtpStore(createSqliteD1(dbPath, [], true)), underlying, date);
+    if (csv === null) { console.error(`No snapshots are stored for ${underlying} on ${date}.`); process.exitCode = 1; return; }
+    mkdirSync('data/ltp_replay', { recursive: true });
+    const out = `data/ltp_replay/${date}-${underlying.replace(/[^A-Za-z0-9]+/g, '_')}.csv`;
+    writeFileSync(out, csv);
+    console.log(`Wrote ${csv.trim().split('\n').length - 1} rows to ${out}`);
   } else {
-    console.log('Usage: ltp-recorder <record-once [--force] | run> [--base http://localhost:3000]');
+    console.log('Usage: ltp-recorder <record-once [--force] | run | replay --date YYYY-MM-DD [--underlying NSE:NIFTY50-INDEX]> [--base http://localhost:3000]');
     process.exitCode = command ? 1 : 0;
   }
 }
