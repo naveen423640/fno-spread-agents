@@ -157,7 +157,7 @@ export function LtpAgentTab() {
       {section === 'today' && state ? (
         <div className="grid gap-3">
           <h2 className="text-sm font-semibold">Where the agent would trade now</h2>
-          <Watch rows={state.watch} />
+          <Watch rows={state.watch ?? []} />
           <h2 className="text-sm font-semibold">Open trades ({state.today.open.length})</h2>
           {state.today.open.length ? state.today.open.map((t) => <TradeCard key={t.decisionId} t={t} />) : <p className="text-xs text-muted-foreground">No open trades.</p>}
           <h2 className="text-sm font-semibold">Closed today ({state.today.closed.length})</h2>
