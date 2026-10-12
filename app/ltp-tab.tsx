@@ -97,6 +97,17 @@ function LtpLevels() {
     } catch { setRecordMsg('Could not send the token.'); }
   }, []);
 
+  // Merges what the cloud recorder captured (today and yesterday) into this app's database, then reloads the tab.
+  const pullCloud = useCallback(async () => {
+    setRecordMsg('Pulling from the cloud recorder…');
+    try {
+      const res = await fetch('/api/ltp/cloud-pull', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+      const b = (await res.json()) as { ok?: boolean; error?: string; snapshots?: number; gaps?: number };
+      setRecordMsg(b.ok ? `Pulled ${b.snapshots ?? 0} rows and ${b.gaps ?? 0} gap notes from the cloud recorder (rows already here were kept).` : (b.error ?? 'Could not pull.'));
+      if (b.ok) void load();
+    } catch { setRecordMsg('Could not pull from the cloud recorder.'); }
+  }, [load]);
+
   useEffect(() => {
     if (!auto) return;
     const first = setTimeout(() => void recordNow(), 0);
@@ -177,6 +188,7 @@ function LtpLevels() {
           <Button size="sm" variant="secondary" onClick={() => { setLoading(true); void load(); }} disabled={loading}><RefreshCw className={loading ? 'animate-spin' : ''} />Refresh</Button>
           <Button size="sm" variant="secondary" onClick={() => void recordNow()}>Record now</Button>
           <Button size="sm" variant="secondary" onClick={() => void sendCloudToken()}>Send token to cloud</Button>
+          <Button size="sm" variant="secondary" onClick={() => void pullCloud()}>Pull from cloud</Button>
           <label className="flex items-center gap-1.5"><input type="checkbox" checked={auto} onChange={(e) => setAuto(e.target.checked)} />Auto-record</label>
         </span>
       </div>

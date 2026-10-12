@@ -13,17 +13,17 @@ You need a Cloudflare account and `npx wrangler login`. The Workers **Paid** pla
 3. Create the tables: `npm run cloud:db`.
 4. Set a long random admin secret: `npx wrangler secret put ADMIN_SECRET --config cloud-recorder/wrangler.jsonc`.
 5. Deploy: `npm run cloud:deploy`. It prints the Worker's address.
-6. In `.env.local` add `LTP_RECORDER_URL` (that address) and `LTP_RECORDER_SECRET` (the admin secret), for the pull script below.
+6. In `.env.local` add `LTP_RECORDER_URL` (that address) and `LTP_RECORDER_SECRET` (the admin secret), for the pull button and script below.
 
 ## Every morning, before 09:15
 
-Log in to FYERS as usual and put today's access token in `.env.local` as `FYERS_ACCESS_TOKEN` (the same one the local runner uses), then send it:
+In the LTP Levels tab, logged in to FYERS, click **Send token to cloud**. That is all. Without the app, put today's access token in `.env.local` as `FYERS_ACCESS_TOKEN` and send it:
 
 ```bash
 npm run ltp:token
 ```
 
-Or, without the script (paste the token in place of `TOKEN`; the admin secret is the one from step 4):
+or, with `curl` (paste the token in place of `TOKEN`; the admin secret is the one from step 4):
 
 ```bash
 curl -X PUT "$LTP_RECORDER_URL/token" -H "Authorization: Bearer $LTP_RECORDER_SECRET" -H "content-type: application/json" -d '{"token":"TOKEN"}'
@@ -33,7 +33,7 @@ Check it took with `npm run ltp:health` (or `curl -H "Authorization: Bearer $LTP
 
 ## Pulling the data to the Mac
 
-`npm run ltp:pull` fetches today and yesterday from the Worker and merges them into the local database (`--date YYYY-MM-DD` for one day). Rows already here are kept, so the Mac's own recording and the cloud's combine, with the cloud filling the minutes the Mac missed. Tabs, replay, the agent and the Backtest tab then see them as usual.
+The LTP Levels tab has a **Pull from cloud** button, and `npm run ltp:pull` does the same from a terminal. Either fetches today and yesterday from the Worker and merges them into the local database (`--date YYYY-MM-DD` for one day). Rows already here are kept, so the Mac's own recording and the cloud's combine, with the cloud filling the minutes the Mac missed. Tabs, replay, the agent and the Backtest tab then see them as usual.
 
 ## What this does not do
 
