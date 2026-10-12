@@ -24,7 +24,10 @@ export type FyersDeps = {
 
 type Payload = { s?: string; code?: number; message?: string; [key: string]: unknown };
 
-export function createFyersAdapter(deps: FyersDeps): BrokerAdapter {
+// The read-only broker interface plus the full option chain (used by the LTP Levels recorder).
+export type FyersAdapter = BrokerAdapter & { optionChain(underlying: string, strikecount?: number): Promise<BrokerResult<Payload>> };
+
+export function createFyersAdapter(deps: FyersDeps): FyersAdapter {
   const fetchImpl = deps.fetchImpl ?? fetch;
   const sleep = deps.sleep ?? defaultSleep;
   const now = deps.now ?? Date.now;
@@ -120,6 +123,22 @@ export function createFyersAdapter(deps: FyersDeps): BrokerAdapter {
     return { ok: true, value: leg ? finiteOrNull(leg.oi) : null };
   }
 
+  // The whole chain around the money for one underlying (a FYERS symbol such as NSE:NIFTY50-INDEX or BSE:SENSEX-INDEX), nearest expiry. A transient
+  // failure is retried with exponential backoff (500 ms, then 1 s, then 2 s); an expired login is returned at once. Failures are explicit.
+  async function optionChain(underlying: string, strikecount = 20): Promise<BrokerResult<Payload>> {
+    const url = new URL(`${BASE}/data/options-chain-v3`);
+    url.searchParams.set('symbol', underlying);
+    url.searchParams.set('strikecount', String(strikecount));
+    let last: BrokerResult<Payload> = { ok: false, code: 'UPSTREAM', message: 'The option chain request did not run.' };
+    for (let attempt = 0; attempt < 4; attempt += 1) {
+      const result = await call(url);
+      if (result.ok || result.code !== 'UPSTREAM') return result;
+      last = result;
+      if (attempt < 3) await sleep(500 * 2 ** attempt);
+    }
+    return last;
+  }
+
   return {
     name: 'fyers',
     equitySymbol: fyersEquity,
@@ -132,6 +151,7 @@ export function createFyersAdapter(deps: FyersDeps): BrokerAdapter {
     quote,
     lotSize,
     optionOi,
+    optionChain,
   };
 }
 

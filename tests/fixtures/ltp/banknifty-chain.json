@@ -1,0 +1,127 @@
+{
+ "_note": "Legs and expiry dates are copied verbatim from the real FYERS options-chain-v3 responses captured by /api/vwap/option-probe on 2026-10-12 (rawSample, first 6 legs, strikecount 5). The envelope (s, code, message) and the expiryData item shape beyond `date` are inferred from app/api/market/open-interest/route.ts, not captured.",
+ "s": "ok",
+ "code": 200,
+ "message": "",
+ "data": {
+  "expiryData": [
+   {
+    "date": "27-10-2026"
+   },
+   {
+    "date": "23-11-2026"
+   },
+   {
+    "date": "29-12-2026"
+   },
+   {
+    "date": "30-03-2027"
+   },
+   {
+    "date": "29-06-2027"
+   },
+   {
+    "date": "28-09-2027"
+   }
+  ],
+  "optionsChain": [
+   {
+    "ask": 0,
+    "bid": 0,
+    "description": "NIFTYBANK-INDEX",
+    "ex_symbol": "BANKNIFTY",
+    "exchange": "NSE",
+    "fp": 55349,
+    "fpch": -130.6,
+    "fpchp": -0.24,
+    "fyToken": "101000000026009",
+    "ltp": 55120.3,
+    "ltpch": -136.35,
+    "ltpchp": -0.25,
+    "option_type": "",
+    "strike_price": -1,
+    "symbol": "NSE:NIFTYBANK-INDEX"
+   },
+   {
+    "ask": 419.9,
+    "bid": 418.15,
+    "fyToken": "101126102749428",
+    "ltp": 419.4,
+    "ltpch": 26.25,
+    "ltpchp": 6.68,
+    "oi": 110040,
+    "oich": 960,
+    "oichp": 0.88,
+    "option_type": "PE",
+    "prev_oi": 109080,
+    "strike_price": 54600,
+    "symbol": "NSE:BANKNIFTY26OCT54600PE",
+    "volume": 25560
+   },
+   {
+    "ask": 1150.65,
+    "bid": 1137.2,
+    "fyToken": "101126102749427",
+    "ltp": 1143.45,
+    "ltpch": -110.3,
+    "ltpchp": -8.8,
+    "oi": 53070,
+    "oich": -810,
+    "oichp": -1.5,
+    "option_type": "CE",
+    "prev_oi": 53880,
+    "strike_price": 54600,
+    "symbol": "NSE:BANKNIFTY26OCT54600CE",
+    "volume": 2430
+   },
+   {
+    "ask": 450.75,
+    "bid": 448.65,
+    "fyToken": "101126102749432",
+    "ltp": 450.4,
+    "ltpch": 26.55,
+    "ltpchp": 6.26,
+    "oi": 161370,
+    "oich": -510,
+    "oichp": -0.32,
+    "option_type": "PE",
+    "prev_oi": 161880,
+    "strike_price": 54700,
+    "symbol": "NSE:BANKNIFTY26OCT54700PE",
+    "volume": 32550
+   },
+   {
+    "ask": 1083.35,
+    "bid": 1069.65,
+    "fyToken": "101126102749431",
+    "ltp": 1071.85,
+    "ltpch": -99.55,
+    "ltpchp": -8.5,
+    "oi": 92460,
+    "oich": -420,
+    "oichp": -0.45,
+    "option_type": "CE",
+    "prev_oi": 92880,
+    "strike_price": 54700,
+    "symbol": "NSE:BANKNIFTY26OCT54700CE",
+    "volume": 4680
+   },
+   {
+    "ask": 483.95,
+    "bid": 481.5,
+    "fyToken": "101126102749434",
+    "ltp": 483.1,
+    "ltpch": 29.15,
+    "ltpchp": 6.42,
+    "oi": 160080,
+    "oich": -2670,
+    "oichp": -1.64,
+    "option_type": "PE",
+    "prev_oi": 162750,
+    "strike_price": 54800,
+    "symbol": "NSE:BANKNIFTY26OCT54800PE",
+    "volume": 43620
+   }
+  ]
+ }
+}

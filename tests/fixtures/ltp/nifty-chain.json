@@ -1,0 +1,163 @@
+{
+ "_note": "Legs and expiry dates are copied verbatim from the real FYERS options-chain-v3 responses captured by /api/vwap/option-probe on 2026-10-12 (rawSample, first 6 legs, strikecount 5). The envelope (s, code, message) and the expiryData item shape beyond `date` are inferred from app/api/market/open-interest/route.ts, not captured.",
+ "s": "ok",
+ "code": 200,
+ "message": "",
+ "data": {
+  "expiryData": [
+   {
+    "date": "13-10-2026"
+   },
+   {
+    "date": "19-10-2026"
+   },
+   {
+    "date": "27-10-2026"
+   },
+   {
+    "date": "03-11-2026"
+   },
+   {
+    "date": "09-11-2026"
+   },
+   {
+    "date": "23-11-2026"
+   },
+   {
+    "date": "29-12-2026"
+   },
+   {
+    "date": "30-03-2027"
+   },
+   {
+    "date": "29-06-2027"
+   },
+   {
+    "date": "28-09-2027"
+   },
+   {
+    "date": "28-12-2027"
+   },
+   {
+    "date": "27-06-2028"
+   },
+   {
+    "date": "26-12-2028"
+   },
+   {
+    "date": "26-06-2029"
+   },
+   {
+    "date": "24-12-2029"
+   },
+   {
+    "date": "25-06-2030"
+   },
+   {
+    "date": "31-12-2030"
+   },
+   {
+    "date": "24-06-2031"
+   }
+  ],
+  "optionsChain": [
+   {
+    "ask": 0,
+    "bid": 0,
+    "description": "NIFTY50-INDEX",
+    "ex_symbol": "NIFTY",
+    "exchange": "NSE",
+    "fp": 22665.7,
+    "fpch": 53.1,
+    "fpchp": 0.23,
+    "fyToken": "101000000026000",
+    "ltp": 22583.15,
+    "ltpch": 62.7,
+    "ltpchp": 0.28,
+    "option_type": "",
+    "strike_price": -1,
+    "symbol": "NSE:NIFTY50-INDEX"
+   },
+   {
+    "ask": 21.25,
+    "bid": 21.2,
+    "fyToken": "101126101344601",
+    "ltp": 21.3,
+    "ltpch": -16.2,
+    "ltpchp": -43.2,
+    "oi": 5679375,
+    "oich": 561795,
+    "oichp": 10.98,
+    "option_type": "PE",
+    "prev_oi": 5117580,
+    "strike_price": 22350,
+    "symbol": "NSE:NIFTY26O1322350PE",
+    "volume": 10061545
+   },
+   {
+    "ask": 289.2,
+    "bid": 288.5,
+    "fyToken": "101126101344600",
+    "ltp": 288.7,
+    "ltpch": 38.8,
+    "ltpchp": 15.53,
+    "oi": 904930,
+    "oich": -119410,
+    "oichp": -11.66,
+    "option_type": "CE",
+    "prev_oi": 1024340,
+    "strike_price": 22350,
+    "symbol": "NSE:NIFTY26O1322350CE",
+    "volume": 588900
+   },
+   {
+    "ask": 28.55,
+    "bid": 28.5,
+    "fyToken": "101126101344604",
+    "ltp": 28.65,
+    "ltpch": -18.75,
+    "ltpchp": -39.56,
+    "oi": 12673830,
+    "oich": 1947230,
+    "oichp": 18.15,
+    "option_type": "PE",
+    "prev_oi": 10726600,
+    "strike_price": 22400,
+    "symbol": "NSE:NIFTY26O1322400PE",
+    "volume": 17530955
+   },
+   {
+    "ask": 245.95,
+    "bid": 245.5,
+    "fyToken": "101126101344602",
+    "ltp": 246.2,
+    "ltpch": 36,
+    "ltpchp": 17.13,
+    "oi": 2799745,
+    "oich": 30615,
+    "oichp": 1.11,
+    "option_type": "CE",
+    "prev_oi": 2769130,
+    "strike_price": 22400,
+    "symbol": "NSE:NIFTY26O1322400CE",
+    "volume": 1906320
+   },
+   {
+    "ask": 38.1,
+    "bid": 38,
+    "fyToken": "101126101344611",
+    "ltp": 38.1,
+    "ltpch": -21.8,
+    "ltpchp": -36.39,
+    "oi": 6412770,
+    "oich": 1136790,
+    "oichp": 21.55,
+    "option_type": "PE",
+    "prev_oi": 5275980,
+    "strike_price": 22450,
+    "symbol": "NSE:NIFTY26O1322450PE",
+    "volume": 10694905
+   }
+  ]
+ }
+}

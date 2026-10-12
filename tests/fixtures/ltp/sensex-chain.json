@@ -1,0 +1,166 @@
+{
+ "_note": "Legs and expiry dates are copied verbatim from the real FYERS options-chain-v3 responses captured by /api/vwap/option-probe on 2026-10-12 (rawSample, first 6 legs, strikecount 5). The envelope (s, code, message) and the expiryData item shape beyond `date` are inferred from app/api/market/open-interest/route.ts, not captured.",
+ "s": "ok",
+ "code": 200,
+ "message": "",
+ "data": {
+  "expiryData": [
+   {
+    "date": "15-10-2026"
+   },
+   {
+    "date": "22-10-2026"
+   },
+   {
+    "date": "29-10-2026"
+   },
+   {
+    "date": "05-11-2026"
+   },
+   {
+    "date": "12-11-2026"
+   },
+   {
+    "date": "19-11-2026"
+   },
+   {
+    "date": "26-11-2026"
+   },
+   {
+    "date": "31-12-2026"
+   },
+   {
+    "date": "25-03-2027"
+   },
+   {
+    "date": "24-06-2027"
+   },
+   {
+    "date": "30-09-2027"
+   },
+   {
+    "date": "30-12-2027"
+   },
+   {
+    "date": "29-06-2028"
+   },
+   {
+    "date": "28-12-2028"
+   },
+   {
+    "date": "28-06-2029"
+   },
+   {
+    "date": "27-12-2029"
+   },
+   {
+    "date": "27-06-2030"
+   },
+   {
+    "date": "26-12-2030"
+   },
+   {
+    "date": "26-06-2031"
+   }
+  ],
+  "optionsChain": [
+   {
+    "ask": 0,
+    "bid": 0,
+    "description": "SENSEX-INDEX",
+    "ex_symbol": "SENSEX",
+    "exchange": "BSE",
+    "fp": 72900,
+    "fpch": 85.9,
+    "fpchp": 0.12,
+    "fyToken": "12100000001",
+    "ltp": 72552.7,
+    "ltpch": 80.37,
+    "ltpchp": 0.11,
+    "option_type": "",
+    "strike_price": -1,
+    "symbol": "BSE:SENSEX-INDEX"
+   },
+   {
+    "ask": 850.25,
+    "bid": 846.7,
+    "fyToken": "12112610151104245",
+    "ltp": 863.05,
+    "ltpch": 43.15,
+    "ltpchp": 5.26,
+    "oi": 90680,
+    "oich": 6460,
+    "oichp": 7.67,
+    "option_type": "CE",
+    "prev_oi": 84220,
+    "strike_price": 72100,
+    "symbol": "BSE:SENSEX26O1572100CE",
+    "volume": 29300
+   },
+   {
+    "ask": 255.95,
+    "bid": 255.05,
+    "fyToken": "12112610151107704",
+    "ltp": 254.7,
+    "ltpch": -27.5,
+    "ltpchp": -9.74,
+    "oi": 269740,
+    "oich": 8320,
+    "oichp": 3.18,
+    "option_type": "PE",
+    "prev_oi": 261420,
+    "strike_price": 72100,
+    "symbol": "BSE:SENSEX26O1572100PE",
+    "volume": 323680
+   },
+   {
+    "ask": 284.75,
+    "bid": 284,
+    "fyToken": "12112610151103491",
+    "ltp": 284,
+    "ltpch": -26.75,
+    "ltpchp": -8.61,
+    "oi": 319720,
+    "oich": 46520,
+    "oichp": 17.03,
+    "option_type": "PE",
+    "prev_oi": 273200,
+    "strike_price": 72200,
+    "symbol": "BSE:SENSEX26O1572200PE",
+    "volume": 408240
+   },
+   {
+    "ask": 780.45,
+    "bid": 777.2,
+    "fyToken": "12112610151117378",
+    "ltp": 779.2,
+    "ltpch": 31.25,
+    "ltpchp": 4.18,
+    "oi": 88260,
+    "oich": -15980,
+    "oichp": -15.33,
+    "option_type": "CE",
+    "prev_oi": 104240,
+    "strike_price": 72200,
+    "symbol": "BSE:SENSEX26O1572200CE",
+    "volume": 67500
+   },
+   {
+    "ask": 318.05,
+    "bid": 317.3,
+    "fyToken": "12112610151116970",
+    "ltp": 318.2,
+    "ltpch": -25.1,
+    "ltpchp": -7.31,
+    "oi": 422360,
+    "oich": 58120,
+    "oichp": 15.96,
+    "option_type": "PE",
+    "prev_oi": 364240,
+    "strike_price": 72300,
+    "symbol": "BSE:SENSEX26O1572300PE",
+    "volume": 435040
+   }
+  ]
+ }
+}
