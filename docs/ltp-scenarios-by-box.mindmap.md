@@ -1,0 +1,875 @@
+---
+title: The 9 scenarios of the Detailed Chart of Accuracy
+markmap:
+  colorFreezeLevel: 2
+  maxWidth: 420
+---
+
+# The 9 scenarios: history, pressure, top and bottom, trades
+
+## How to read this
+- Pick the scenario (COA box) = the status of the two sides now
+- Each side has a history condition (S0, S1 ... for support; R0, R1 ... for resistance)
+- The history gives a pressure: stable strong, bearish, bullish, highly bearish, highly bullish
+- The pair of pressures gives the top and bottom
+- The top and bottom decide the trades
+- Source: the practice tool, 529 cases, all matched by our engine; pressure per condition is our reading, confirmed with the owner
+
+## COA 1.1: support Strong, resistance Strong
+### Support history
+- **S0** Strong since morning → stable strong
+- **S1** Strong but shifted from top to bottom (single shifting) → bearish
+- **S2** Strong but shifted from bottom to top (single shifting) → bullish
+- **S3** Initially WTB then became strong → bullish
+- **S4** Initially WTT then became strong → bearish
+- **S5** Shifted from top to bottom and again shifted to bottom and now strong (double shifting) → highly bearish
+- **S6** Shifted from bottom to top and again shifted to top and now strong (double shifting) → highly bullish
+- **S7** Shifted from top to bottom became strong, then again shifted from bottom to top at any place and now strong → bullish
+- **S8** Shifted from top to bottom [WTT % is there in continuation] and then became WTT at new place and also shifted there and now strong → bullish
+- **S9** Shifted from top to bottom [WTT % is there in continuation] and then became WTT at new place and then became strong (not shifted) → bearish
+- **S10** Shifted from bottom to top became strong, then again shifted from top to bottom at any place and now strong → bearish
+- **S11** Shifted from bottom to top [WTB % is there in continuation] and then became WTB at new place and also shifted there and now strong → bearish
+- **S12** Shifted from bottom to top [WTB % is there in continuation] and then became WTB at new place and then became strong (not shifted) → bullish
+### Resistance history
+- **R0** Strong since morning → stable strong
+- **R1** Strong but shifted from top to bottom (single shifting) → bearish
+- **R2** Strong but shifted from bottom to top (single shifting) → bullish
+- **R3** Initially WTB then became strong → bullish
+- **R4** Initially WTT then became strong → bearish
+- **R5** Shifted from top to bottom and again shifted to bottom and now strong (double shifting) → highly bearish
+- **R6** Shifted from bottom to top and again shifted to top and now strong (double shifting) → highly bullish
+- **R7** Shifted from top to bottom became strong, then again shifted from bottom to top at any place and now strong → bullish
+- **R8** Shifted from top to bottom [WTT % is there in continuation] and then became WTT at new place and also shifted there and now strong → bullish
+- **R9** Shifted from top to bottom [WTT % is there in continuation] and then became WTT at new place and then became strong (not shifted) → bearish
+- **R10** Shifted from bottom to top became strong, then again shifted from top to bottom at any place and now strong → bearish
+- **R11** Shifted from bottom to top [WTB % is there in continuation] and then became WTB at new place and also shifted there and now strong → bearish
+- **R12** Shifted from bottom to top [WTB % is there in continuation] and then became WTB at new place and then became strong (not shifted) → bullish
+### Outcomes and trades
+- **Top EOR, no bottom (Blood Bath)**
+  - Trades
+    - Short at EOR (resistance side)
+    - No long from a bottom (Blood Bath)
+    - Risky short allowed at the tool's Risky level [owner rule]
+  - Pressure and when it happens
+    - Support stable strong, resistance highly bearish
+      - S0 with R5
+    - Support bearish, resistance bearish
+      - S1 with R1, 4, 9, 10, 11
+      - S4 with R1, 4, 9, 10, 11
+      - S9 with R1, 4, 9, 10, 11
+      - S10 with R1, 4, 9, 10, 11
+      - S11 with R1, 4, 9, 10, 11
+    - Support bearish, resistance highly bearish
+      - S1 with R5
+      - S4 with R5
+      - S9 with R5
+      - S10 with R5
+      - S11 with R5
+    - Support highly bearish, resistance stable strong
+      - S5 with R0
+    - Support highly bearish, resistance bearish
+      - S5 with R1, 4, 9, 10, 11
+    - Support highly bearish, resistance highly bearish
+      - S5 with R5
+- **No top (Bull Run), bottom EOS**
+  - Trades
+    - No short from a top (Bull Run)
+    - Long at EOS (support side)
+    - Risky long allowed at the tool's Risky level [owner rule]
+  - Pressure and when it happens
+    - Support stable strong, resistance highly bullish
+      - S0 with R6
+    - Support bullish, resistance bullish
+      - S2 with R2, 3, 7, 8, 12
+      - S3 with R2, 3, 7, 8, 12
+      - S7 with R2, 3, 7, 8, 12
+      - S8 with R2, 3, 7, 8, 12
+      - S12 with R2, 3, 7, 8, 12
+    - Support bullish, resistance highly bullish
+      - S2 with R6
+      - S3 with R6
+      - S7 with R6
+      - S8 with R6
+      - S12 with R6
+    - Support highly bullish, resistance stable strong
+      - S6 with R0
+    - Support highly bullish, resistance bullish
+      - S6 with R2, 3, 7, 8, 12
+    - Support highly bullish, resistance highly bullish
+      - S6 with R6
+- **Top EOR, bottom EOS-1**
+  - Trades
+    - Short at EOR (resistance side)
+    - Long at EOS-1 (support side)
+  - Pressure and when it happens
+    - Support stable strong, resistance bearish
+      - S0 with R1, 4, 9, 10, 11
+    - Support bearish, resistance stable strong
+      - S1 with R0
+      - S4 with R0
+      - S9 with R0
+      - S10 with R0
+      - S11 with R0
+    - Support bullish, resistance highly bearish
+      - S2 with R5
+      - S3 with R5
+      - S7 with R5
+      - S8 with R5
+      - S12 with R5
+    - Support highly bearish, resistance bullish
+      - S5 with R2, 3, 7, 8, 12
+- **Top EOR+1, bottom EOS**
+  - Trades
+    - Short at EOR+1 (resistance side)
+    - Long at EOS (support side)
+  - Pressure and when it happens
+    - Support stable strong, resistance bullish
+      - S0 with R2, 3, 7, 8, 12
+    - Support bearish, resistance highly bullish
+      - S1 with R6
+      - S4 with R6
+      - S9 with R6
+      - S10 with R6
+      - S11 with R6
+    - Support bullish, resistance stable strong
+      - S2 with R0
+      - S3 with R0
+      - S7 with R0
+      - S8 with R0
+      - S12 with R0
+    - Support highly bullish, resistance bearish
+      - S6 with R1, 4, 9, 10, 11
+- **Top EOR+1, bottom EOS-1**
+  - Trades
+    - Short at EOR+1 (resistance side)
+    - Long at EOS-1 (support side)
+  - Pressure and when it happens
+    - Support bearish, resistance bullish
+      - S1 with R2, 3, 7, 8, 12
+      - S4 with R2, 3, 7, 8, 12
+      - S9 with R2, 3, 7, 8, 12
+      - S10 with R2, 3, 7, 8, 12
+      - S11 with R2, 3, 7, 8, 12
+    - Support bullish, resistance bearish
+      - S2 with R1, 4, 9, 10, 11
+      - S3 with R1, 4, 9, 10, 11
+      - S7 with R1, 4, 9, 10, 11
+      - S8 with R1, 4, 9, 10, 11
+      - S12 with R1, 4, 9, 10, 11
+- **Top EOR, bottom EOS**
+  - Trades
+    - Short at EOR (resistance side)
+    - Long at EOS (support side)
+  - Pressure and when it happens
+    - Support stable strong, resistance stable strong
+      - S0 with R0
+- **Rare scenario: do not trade**
+  - Trades
+    - Do not trade: the market is very volatile
+    - For anyone who still trades: risky short at the top shown, risky long at the bottom shown
+  - Pressure and when it happens
+    - Support highly bearish, resistance highly bullish
+      - S5 with R6
+    - Support highly bullish, resistance highly bearish
+      - S6 with R5
+## COA 1.2: support Strong, resistance WTB (weak toward bottom)
+### Support history
+- **S0** Strong since morning → stable strong
+- **S1** Strong but shifted from top to bottom (single shifting) → bearish
+- **S2** Strong but shifted from bottom to top (single shifting) → bullish
+- **S3** Initially WTB then became strong → bullish
+- **S4** Initially WTT then became strong → bearish
+- **S5** Shifted from top to bottom and again shifted to bottom and now strong (double shifting) → highly bearish
+- **S6** Shifted from bottom to top and again shifted to top and now strong (double shifting) → highly bullish
+- **S7** Shifted from top to bottom became strong, then again shifted from bottom to top at any place and now strong → bullish
+- **S8** Shifted from top to bottom [WTT % is there in continuation] and then became WTT at new place and also shifted there and now strong → bullish
+- **S9** Shifted from top to bottom [WTT % is there in continuation] and then became WTT at new place and then became strong (not shifted) → bearish
+- **S10** Shifted from bottom to top became strong, then again shifted from top to bottom at any place and now strong → bearish
+- **S11** Shifted from bottom to top [WTB % is there in continuation] and then became WTB at new place and also shifted there and now strong → bearish
+- **S12** Shifted from bottom to top [WTB % is there in continuation] and then became WTB at new place and then became strong (not shifted) → bullish
+### Resistance history
+- **R0** Weak towards bottom → bearish
+- **R1** Shifted from top to bottom and now again WTB → highly bearish
+- **R2** Shifted from bottom to top and in that continuation, it is looking WTB → bullish
+- **R3** Shifted from bottom to top became strong and again became WTB at any place → bearish
+- **R4** Shifted from bottom to top [WTB % is there in continuation] and then WTB at new place → bearish
+### Outcomes and trades
+- **Top EOR, no bottom (Blood Bath)**
+  - Trades
+    - Short at EOR (resistance side)
+    - No long from a bottom (Blood Bath)
+    - Risky short allowed at the tool's Risky level [owner rule]
+  - Pressure and when it happens
+    - Support stable strong, resistance highly bearish
+      - S0 with R1
+    - Support bearish, resistance bearish
+      - S1 with R0, 3, 4
+      - S4 with R0, 3, 4
+      - S9 with R0, 3, 4
+      - S10 with R0, 3, 4
+      - S11 with R0, 3, 4
+    - Support bearish, resistance highly bearish
+      - S1 with R1
+      - S4 with R1
+      - S9 with R1
+      - S10 with R1
+      - S11 with R1
+    - Support highly bearish, resistance bearish
+      - S5 with R0, 3, 4
+    - Support highly bearish, resistance highly bearish
+      - S5 with R1
+- **Top EOR, bottom EOS-1**
+  - Trades
+    - Short at EOR (resistance side)
+    - Long at EOS-1 (support side)
+  - Pressure and when it happens
+    - Support stable strong, resistance bearish
+      - S0 with R0, 3, 4
+    - Support bullish, resistance highly bearish
+      - S2 with R1
+      - S3 with R1
+      - S7 with R1
+      - S8 with R1
+      - S12 with R1
+    - Support highly bearish, resistance bullish
+      - S5 with R2
+- **Top EOR+1, bottom EOS**
+  - Trades
+    - Short at EOR+1 (resistance side)
+    - Long at EOS (support side)
+  - Pressure and when it happens
+    - Support stable strong, resistance bullish
+      - S0 with R2
+    - Support highly bullish, resistance bearish
+      - S6 with R0, 3, 4
+- **Top EOR+1, bottom EOS-1**
+  - Trades
+    - Short at EOR+1 (resistance side)
+    - Long at EOS-1 (support side)
+  - Pressure and when it happens
+    - Support bearish, resistance bullish
+      - S1 with R2
+      - S4 with R2
+      - S9 with R2
+      - S10 with R2
+      - S11 with R2
+    - Support bullish, resistance bearish
+      - S2 with R0, 3, 4
+      - S3 with R0, 3, 4
+      - S7 with R0, 3, 4
+      - S8 with R0, 3, 4
+      - S12 with R0, 3, 4
+- **No top (Bull Run), bottom EOS**
+  - Trades
+    - No short from a top (Bull Run)
+    - Long at EOS (support side)
+  - Pressure and when it happens
+    - Support bullish, resistance bullish
+      - S2 with R2
+      - S3 with R2
+      - S7 with R2
+      - S8 with R2
+      - S12 with R2
+    - Support highly bullish, resistance bullish
+      - S6 with R2
+- **Rare scenario: do not trade**
+  - Trades
+    - Do not trade: the market is very volatile
+    - For anyone who still trades: risky short at the top shown, risky long at the bottom shown
+  - Pressure and when it happens
+    - Support highly bullish, resistance highly bearish
+      - S6 with R1
+## COA 1.3: support Strong, resistance WTT (weak toward top)
+### Support history
+- **S0** Strong since morning → stable strong
+- **S1** Strong but shifted from top to bottom (single shifting) → bearish
+- **S2** Strong but shifted from bottom to top (single shifting) → bullish
+- **S3** Initially WTB then became strong → bullish
+- **S4** Initially WTT then became strong → bearish
+- **S5** Shifted from top to bottom and again shifted to bottom and now strong (double shifting) → highly bearish
+- **S6** Shifted from bottom to top and again shifted to top and now strong (double shifting) → highly bullish
+- **S7** Shifted from top to bottom became strong, then again shifted from bottom to top at any place and now strong → bullish
+- **S8** Shifted from top to bottom [WTT % is there in continuation] and then became WTT at new place and also shifted there and now strong → bullish
+- **S9** Shifted from top to bottom [WTT % is there in continuation] and then became WTT at new place and then became strong (not shifted) → bearish
+- **S10** Shifted from bottom to top became strong, then again shifted from top to bottom at any place and now strong → bearish
+- **S11** Shifted from bottom to top [WTB % is there in continuation] and then became WTB at new place and also shifted there and now strong → bearish
+- **S12** Shifted from bottom to top [WTB % is there in continuation] and then became WTB at new place and then became strong (not shifted) → bullish
+### Resistance history
+- **R0** Weak towards top → bullish
+- **R1** Shifted from bottom to top and now again WTT → highly bullish
+- **R2** Shifted from top to bottom and in that continuation, it is looking WTT → bearish
+- **R3** Shifted from top to bottom became strong and again became WTT at any place → bullish
+- **R4** Shifted from top to bottom [WTT % is there in continuation] and then WTT at new place → bullish
+### Outcomes and trades
+- **No top (Bull Run), bottom EOS**
+  - Trades
+    - No short from a top (Bull Run)
+    - Long at EOS (support side)
+    - Risky long allowed at the tool's Risky level [owner rule]
+  - Pressure and when it happens
+    - Support stable strong, resistance highly bullish
+      - S0 with R1
+    - Support bullish, resistance bullish
+      - S2 with R0, 3, 4
+      - S3 with R0, 3, 4
+      - S7 with R0, 3, 4
+      - S8 with R0, 3, 4
+      - S12 with R0, 3, 4
+    - Support bullish, resistance highly bullish
+      - S2 with R1
+      - S3 with R1
+      - S7 with R1
+      - S8 with R1
+      - S12 with R1
+    - Support highly bullish, resistance bullish
+      - S6 with R0, 3, 4
+    - Support highly bullish, resistance highly bullish
+      - S6 with R1
+- **Top WTT-1, bottom EOS**
+  - Trades
+    - Short at WTT-1 (resistance side)
+    - Long at EOS (support side)
+    - WTT / WTB percentage is the key player for the weak-side level
+  - Pressure and when it happens
+    - Support stable strong, resistance bullish
+      - S0 with R0, 3, 4
+    - Support bearish, resistance highly bullish
+      - S1 with R1
+      - S4 with R1
+      - S9 with R1
+      - S10 with R1
+      - S11 with R1
+- **Top WTT-1, bottom EOS-1**
+  - Trades
+    - Short at WTT-1 (resistance side)
+    - Long at EOS-1 (support side)
+    - WTT / WTB percentage is the key player for the weak-side level
+  - Pressure and when it happens
+    - Support bearish, resistance bullish
+      - S1 with R0, 3, 4
+      - S4 with R0, 3, 4
+      - S9 with R0, 3, 4
+      - S10 with R0, 3, 4
+      - S11 with R0, 3, 4
+    - Support highly bearish, resistance bullish
+      - S5 with R0, 3, 4
+- **Top EOR, no bottom (Blood Bath)**
+  - Trades
+    - Short at EOR (resistance side)
+    - No long from a bottom (Blood Bath)
+  - Pressure and when it happens
+    - Support bearish, resistance bearish
+      - S1 with R2
+      - S4 with R2
+      - S9 with R2
+      - S10 with R2
+      - S11 with R2
+    - Support highly bearish, resistance bearish
+      - S5 with R2
+- **Top EOR, bottom EOS-1**
+  - Trades
+    - Short at EOR (resistance side)
+    - Long at EOS-1 (support side)
+  - Pressure and when it happens
+    - Support stable strong, resistance bearish
+      - S0 with R2
+- **Top EOR+1, bottom EOS-1**
+  - Trades
+    - Short at EOR+1 (resistance side)
+    - Long at EOS-1 (support side)
+  - Pressure and when it happens
+    - Support bullish, resistance bearish
+      - S2 with R2
+      - S3 with R2
+      - S7 with R2
+      - S8 with R2
+      - S12 with R2
+- **Top EOR+1, bottom EOS**
+  - Trades
+    - Short at EOR+1 (resistance side)
+    - Long at EOS (support side)
+  - Pressure and when it happens
+    - Support highly bullish, resistance bearish
+      - S6 with R2
+- **Rare scenario: do not trade**
+  - Trades
+    - Do not trade: the market is very volatile
+    - For anyone who still trades: risky short at the top shown, risky long at the bottom shown
+  - Pressure and when it happens
+    - Support highly bearish, resistance highly bullish
+      - S5 with R1
+## COA 1.4: support WTB (weak toward bottom), resistance Strong
+### Support history
+- **S0** Weak towards bottom → bearish
+- **S1** Shifted from top to bottom and now again WTB → highly bearish
+- **S2** Shifted from bottom to top and in that continuation, it is looking WTB → bullish
+- **S3** Shifted from bottom to top became strong and again became WTB at any place → bearish
+- **S4** Shifted from bottom to top [WTB % is there in continuation] and then WTB at new place → bearish
+### Resistance history
+- **R0** Strong since morning → stable strong
+- **R1** Strong but shifted from top to bottom (single shifting) → bearish
+- **R2** Strong but shifted from bottom to top (single shifting) → bullish
+- **R3** Initially WTB then became strong → bullish
+- **R4** Initially WTT then became strong → bearish
+- **R5** Shifted from top to bottom and again shifted to bottom and now strong (double shifting) → highly bearish
+- **R6** Shifted from bottom to top and again shifted to top and now strong (double shifting) → highly bullish
+- **R7** Shifted from top to bottom became strong, then again shifted from bottom to top at any place and now strong → bullish
+- **R8** Shifted from top to bottom [WTT % is there in continuation] and then became WTT at new place and also shifted there and now strong → bullish
+- **R9** Shifted from top to bottom [WTT % is there in continuation] and then became WTT at new place and then became strong (not shifted) → bearish
+- **R10** Shifted from bottom to top became strong, then again shifted from top to bottom at any place and now strong → bearish
+- **R11** Shifted from bottom to top [WTB % is there in continuation] and then became WTB at new place and also shifted there and now strong → bearish
+- **R12** Shifted from bottom to top [WTB % is there in continuation] and then became WTB at new place and then became strong (not shifted) → bullish
+### Outcomes and trades
+- **Top EOR, no bottom (Blood Bath)**
+  - Trades
+    - Short at EOR (resistance side)
+    - No long from a bottom (Blood Bath)
+  - Pressure and when it happens
+    - Support bearish, resistance bearish
+      - S0 with R1, 4, 9, 10, 11
+      - S3 with R1, 4, 9, 10, 11
+      - S4 with R1, 4, 9, 10, 11
+    - Support bearish, resistance highly bearish
+      - S0 with R5
+      - S3 with R5
+      - S4 with R5
+    - Support highly bearish, resistance stable strong
+      - S1 with R0
+    - Support highly bearish, resistance bearish
+      - S1 with R1, 4, 9, 10, 11
+    - Support highly bearish, resistance highly bearish
+      - S1 with R5
+- **Top EOR, bottom WTB+1**
+  - Trades
+    - Short at EOR (resistance side)
+    - Long at WTB+1 (support side)
+    - WTT / WTB percentage is the key player for the weak-side level
+  - Pressure and when it happens
+    - Support bearish, resistance stable strong
+      - S0 with R0
+      - S3 with R0
+      - S4 with R0
+    - Support highly bearish, resistance bullish
+      - S1 with R2, 3, 7, 8, 12
+- **Top EOR+1, bottom WTB+1**
+  - Trades
+    - Short at EOR+1 (resistance side)
+    - Long at WTB+1 (support side)
+    - WTT / WTB percentage is the key player for the weak-side level
+  - Pressure and when it happens
+    - Support bearish, resistance bullish
+      - S0 with R2, 3, 7, 8, 12
+      - S3 with R2, 3, 7, 8, 12
+      - S4 with R2, 3, 7, 8, 12
+    - Support bearish, resistance highly bullish
+      - S0 with R6
+      - S3 with R6
+      - S4 with R6
+- **No top (Bull Run), bottom EOS**
+  - Trades
+    - No short from a top (Bull Run)
+    - Long at EOS (support side)
+  - Pressure and when it happens
+    - Support bullish, resistance bullish
+      - S2 with R2, 3, 7, 8, 12
+    - Support bullish, resistance highly bullish
+      - S2 with R6
+- **Top EOR+1, bottom EOS**
+  - Trades
+    - Short at EOR+1 (resistance side)
+    - Long at EOS (support side)
+  - Pressure and when it happens
+    - Support bullish, resistance stable strong
+      - S2 with R0
+- **Top EOR+1, bottom EOS-1**
+  - Trades
+    - Short at EOR+1 (resistance side)
+    - Long at EOS-1 (support side)
+  - Pressure and when it happens
+    - Support bullish, resistance bearish
+      - S2 with R1, 4, 9, 10, 11
+- **Top EOR, bottom EOS-1**
+  - Trades
+    - Short at EOR (resistance side)
+    - Long at EOS-1 (support side)
+  - Pressure and when it happens
+    - Support bullish, resistance highly bearish
+      - S2 with R5
+- **Rare scenario: do not trade**
+  - Trades
+    - Do not trade: the market is very volatile
+    - For anyone who still trades: risky short at the top shown, risky long at the bottom shown
+  - Pressure and when it happens
+    - Support highly bearish, resistance highly bullish
+      - S1 with R6
+## COA 1.5: support WTT (weak toward top), resistance Strong
+### Support history
+- **S0** Weak towards top → bullish
+- **S1** Shifted from bottom to top and now again WTT → highly bullish
+- **S2** Shifted from top to bottom and in that continuation, it is looking WTT → bearish
+- **S3** Shifted from top to bottom became strong and again became WTT at any place → bullish
+- **S4** Shifted from top to bottom [WTT % is there in continuation] and then WTT at new place → bullish
+### Resistance history
+- **R0** Strong since morning → stable strong
+- **R1** Strong but shifted from top to bottom (single shifting) → bearish
+- **R2** Strong but shifted from bottom to top (single shifting) → bullish
+- **R3** Initially WTB then became strong → bullish
+- **R4** Initially WTT then became strong → bearish
+- **R5** Shifted from top to bottom and again shifted to bottom and now strong (double shifting) → highly bearish
+- **R6** Shifted from bottom to top and again shifted to top and now strong (double shifting) → highly bullish
+- **R7** Shifted from top to bottom became strong, then again shifted from bottom to top at any place and now strong → bullish
+- **R8** Shifted from top to bottom [WTT % is there in continuation] and then became WTT at new place and also shifted there and now strong → bullish
+- **R9** Shifted from top to bottom [WTT % is there in continuation] and then became WTT at new place and then became strong (not shifted) → bearish
+- **R10** Shifted from bottom to top became strong, then again shifted from top to bottom at any place and now strong → bearish
+- **R11** Shifted from bottom to top [WTB % is there in continuation] and then became WTB at new place and also shifted there and now strong → bearish
+- **R12** Shifted from bottom to top [WTB % is there in continuation] and then became WTB at new place and then became strong (not shifted) → bullish
+### Outcomes and trades
+- **No top (Bull Run), bottom EOS**
+  - Trades
+    - No short from a top (Bull Run)
+    - Long at EOS (support side)
+  - Pressure and when it happens
+    - Support bullish, resistance bullish
+      - S0 with R2, 3, 7, 8, 12
+      - S3 with R2, 3, 7, 8, 12
+      - S4 with R2, 3, 7, 8, 12
+    - Support bullish, resistance highly bullish
+      - S0 with R6
+      - S3 with R6
+      - S4 with R6
+    - Support highly bullish, resistance stable strong
+      - S1 with R0
+    - Support highly bullish, resistance bullish
+      - S1 with R2, 3, 7, 8, 12
+    - Support highly bullish, resistance highly bullish
+      - S1 with R6
+- **Top EOR+1, bottom EOS**
+  - Trades
+    - Short at EOR+1 (resistance side)
+    - Long at EOS (support side)
+  - Pressure and when it happens
+    - Support bullish, resistance stable strong
+      - S0 with R0
+      - S3 with R0
+      - S4 with R0
+    - Support highly bullish, resistance bearish
+      - S1 with R1, 4, 9, 10, 11
+    - Support bearish, resistance highly bullish
+      - S2 with R6
+- **Top EOR+1, bottom EOS-1**
+  - Trades
+    - Short at EOR+1 (resistance side)
+    - Long at EOS-1 (support side)
+  - Pressure and when it happens
+    - Support bullish, resistance bearish
+      - S0 with R1, 4, 9, 10, 11
+      - S3 with R1, 4, 9, 10, 11
+      - S4 with R1, 4, 9, 10, 11
+    - Support bearish, resistance bullish
+      - S2 with R2, 3, 7, 8, 12
+- **Top EOR, bottom EOS-1**
+  - Trades
+    - Short at EOR (resistance side)
+    - Long at EOS-1 (support side)
+  - Pressure and when it happens
+    - Support bullish, resistance highly bearish
+      - S0 with R5
+      - S3 with R5
+      - S4 with R5
+    - Support bearish, resistance stable strong
+      - S2 with R0
+- **Top EOR, no bottom (Blood Bath)**
+  - Trades
+    - Short at EOR (resistance side)
+    - No long from a bottom (Blood Bath)
+  - Pressure and when it happens
+    - Support bearish, resistance bearish
+      - S2 with R1, 4, 9, 10, 11
+    - Support bearish, resistance highly bearish
+      - S2 with R5
+- **Rare scenario: do not trade**
+  - Trades
+    - Do not trade: the market is very volatile
+    - For anyone who still trades: risky short at the top shown, risky long at the bottom shown
+  - Pressure and when it happens
+    - Support highly bullish, resistance highly bearish
+      - S1 with R5
+## COA 1.6: support WTB (weak toward bottom), resistance WTB (weak toward bottom)
+### Support history
+- **S0** Weak towards bottom → bearish
+- **S1** Shifted from top to bottom and now again WTB → highly bearish
+- **S2** Shifted from bottom to top and in that continuation, it is looking WTB → bullish
+- **S3** Shifted from bottom to top became strong and again became WTB at any place → bearish
+- **S4** Shifted from bottom to top [WTB % is there in continuation] and then WTB at new place → bearish
+### Resistance history
+- **R0** Weak towards bottom → bearish
+- **R1** Shifted from top to bottom and now again WTB → highly bearish
+- **R2** Shifted from bottom to top and in that continuation, it is looking WTB → bullish
+- **R3** Shifted from bottom to top became strong and again became WTB at any place → bearish
+- **R4** Shifted from bottom to top [WTB % is there in continuation] and then WTB at new place → bearish
+### Outcomes and trades
+- **Top EOR, no bottom (Blood Bath)**
+  - Trades
+    - Short at EOR (resistance side)
+    - No long from a bottom (Blood Bath)
+  - Pressure and when it happens
+    - Support bearish, resistance bearish
+      - S0 with R0, 3, 4
+      - S3 with R0, 3, 4
+      - S4 with R0, 3, 4
+    - Support bearish, resistance highly bearish
+      - S0 with R1
+      - S3 with R1
+      - S4 with R1
+    - Support highly bearish, resistance bearish
+      - S1 with R0, 3, 4
+    - Support highly bearish, resistance highly bearish
+      - S1 with R1
+- **Top EOR+1, bottom WTB+1**
+  - Trades
+    - Short at EOR+1 (resistance side)
+    - Long at WTB+1 (support side)
+    - WTT / WTB percentage is the key player for the weak-side level
+  - Pressure and when it happens
+    - Support bearish, resistance bullish
+      - S0 with R2
+      - S3 with R2
+      - S4 with R2
+- **Top EOR, bottom WTB+1**
+  - Trades
+    - Short at EOR (resistance side)
+    - Long at WTB+1 (support side)
+    - WTT / WTB percentage is the key player for the weak-side level
+  - Pressure and when it happens
+    - Support highly bearish, resistance bullish
+      - S1 with R2
+- **Top EOR+1, bottom EOS-1**
+  - Trades
+    - Short at EOR+1 (resistance side)
+    - Long at EOS-1 (support side)
+  - Pressure and when it happens
+    - Support bullish, resistance bearish
+      - S2 with R0, 3, 4
+- **Top EOR, bottom EOS-1**
+  - Trades
+    - Short at EOR (resistance side)
+    - Long at EOS-1 (support side)
+  - Pressure and when it happens
+    - Support bullish, resistance highly bearish
+      - S2 with R1
+- **No top (Bull Run), bottom EOS**
+  - Trades
+    - No short from a top (Bull Run)
+    - Long at EOS (support side)
+  - Pressure and when it happens
+    - Support bullish, resistance bullish
+      - S2 with R2
+## COA 1.7: support WTT (weak toward top), resistance WTT (weak toward top)
+### Support history
+- **S0** Weak towards top → bullish
+- **S1** Shifted from bottom to top and now again WTT → highly bullish
+- **S2** Shifted from top to bottom and in that continuation, it is looking WTT → bearish
+- **S3** Shifted from top to bottom became strong and again became WTT at any place → bullish
+- **S4** Shifted from top to bottom [WTT % is there in continuation] and then WTT at new place → bullish
+### Resistance history
+- **R0** Weak towards top → bullish
+- **R1** Shifted from bottom to top and now again WTT → highly bullish
+- **R2** Shifted from top to bottom and in that continuation, it is looking WTT → bearish
+- **R3** Shifted from top to bottom became strong and again became WTT at any place → bullish
+- **R4** Shifted from top to bottom [WTT % is there in continuation] and then WTT at new place → bullish
+### Outcomes and trades
+- **No top (Bull Run), bottom EOS**
+  - Trades
+    - No short from a top (Bull Run)
+    - Long at EOS (support side)
+  - Pressure and when it happens
+    - Support bullish, resistance bullish
+      - S0 with R0, 3, 4
+      - S3 with R0, 3, 4
+      - S4 with R0, 3, 4
+    - Support bullish, resistance highly bullish
+      - S0 with R1
+      - S3 with R1
+      - S4 with R1
+    - Support highly bullish, resistance bullish
+      - S1 with R0, 3, 4
+    - Support highly bullish, resistance highly bullish
+      - S1 with R1
+- **Top EOR+1, bottom EOS-1**
+  - Trades
+    - Short at EOR+1 (resistance side)
+    - Long at EOS-1 (support side)
+  - Pressure and when it happens
+    - Support bullish, resistance bearish
+      - S0 with R2
+      - S3 with R2
+      - S4 with R2
+- **Top EOR+1, bottom EOS**
+  - Trades
+    - Short at EOR+1 (resistance side)
+    - Long at EOS (support side)
+  - Pressure and when it happens
+    - Support highly bullish, resistance bearish
+      - S1 with R2
+- **Top WTT-1, bottom EOS-1**
+  - Trades
+    - Short at WTT-1 (resistance side)
+    - Long at EOS-1 (support side)
+    - WTT / WTB percentage is the key player for the weak-side level
+  - Pressure and when it happens
+    - Support bearish, resistance bullish
+      - S2 with R0, 3, 4
+- **Top WTT-1, bottom EOS**
+  - Trades
+    - Short at WTT-1 (resistance side)
+    - Long at EOS (support side)
+    - WTT / WTB percentage is the key player for the weak-side level
+  - Pressure and when it happens
+    - Support bearish, resistance highly bullish
+      - S2 with R1
+- **Top EOR, no bottom (Blood Bath)**
+  - Trades
+    - Short at EOR (resistance side)
+    - No long from a bottom (Blood Bath)
+  - Pressure and when it happens
+    - Support bearish, resistance bearish
+      - S2 with R2
+## COA 1.8: support WTB (weak toward bottom), resistance WTT (weak toward top)
+### Support history
+- **S0** Weak towards bottom → bearish
+- **S1** Shifted from top to bottom and now again WTB → highly bearish
+- **S2** Shifted from bottom to top and in that continuation, it is looking WTB → bullish
+- **S3** Shifted from bottom to top became strong and again became WTB at any place → bearish
+- **S4** Shifted from bottom to top [WTB % is there in continuation] and then WTB at new place → bearish
+### Resistance history
+- **R0** Weak towards top → bullish
+- **R1** Shifted from bottom to top and now again WTT → highly bullish
+- **R2** Shifted from top to bottom and in that continuation, it is looking WTT → bearish
+- **R3** Shifted from top to bottom became strong and again became WTT at any place → bullish
+- **R4** Shifted from top to bottom [WTT % is there in continuation] and then WTT at new place → bullish
+### Outcomes and trades
+- **Top WTT-1, bottom WTB+1**
+  - Trades
+    - Short at WTT-1 (resistance side)
+    - Long at WTB+1 (support side)
+    - WTT / WTB percentage is the key player for the weak-side level
+  - Pressure and when it happens
+    - Support bearish, resistance bullish
+      - S0 with R0, 3, 4
+      - S3 with R0, 3, 4
+      - S4 with R0, 3, 4
+    - Support bearish, resistance highly bullish
+      - S0 with R1
+      - S3 with R1
+      - S4 with R1
+    - Support highly bearish, resistance bullish
+      - S1 with R0, 3, 4
+- **Top EOR, no bottom (Blood Bath)**
+  - Trades
+    - Short at EOR (resistance side)
+    - No long from a bottom (Blood Bath)
+  - Pressure and when it happens
+    - Support bearish, resistance bearish
+      - S0 with R2
+      - S3 with R2
+      - S4 with R2
+    - Support highly bearish, resistance bearish
+      - S1 with R2
+- **No top (Bull Run), bottom EOS**
+  - Trades
+    - No short from a top (Bull Run)
+    - Long at EOS (support side)
+  - Pressure and when it happens
+    - Support bullish, resistance bullish
+      - S2 with R0, 3, 4
+    - Support bullish, resistance highly bullish
+      - S2 with R1
+- **Top EOR+1, bottom EOS-1**
+  - Trades
+    - Short at EOR+1 (resistance side)
+    - Long at EOS-1 (support side)
+  - Pressure and when it happens
+    - Support bullish, resistance bearish
+      - S2 with R2
+- **Rare scenario: do not trade**
+  - Trades
+    - Do not trade: the market is very volatile
+    - For anyone who still trades: risky short at the top shown, risky long at the bottom shown
+  - Pressure and when it happens
+    - Support highly bearish, resistance highly bullish
+      - S1 with R1
+## COA 1.9: support WTT (weak toward top), resistance WTB (weak toward bottom)
+### Support history
+- **S0** Weak towards top → bullish
+- **S1** Shifted from bottom to top and now again WTT → highly bullish
+- **S2** Shifted from top to bottom and in that continuation, it is looking WTT → bearish
+- **S3** Shifted from top to bottom became strong and again became WTT at any place → bullish
+- **S4** Shifted from top to bottom [WTT % is there in continuation] and then WTT at new place → bullish
+### Resistance history
+- **R0** Weak towards bottom → bearish
+- **R1** Shifted from top to bottom and now again WTB → highly bearish
+- **R2** Shifted from bottom to top and in that continuation, it is looking WTB → bullish
+- **R3** Shifted from bottom to top became strong and again became WTB at any place → bearish
+- **R4** Shifted from bottom to top [WTB % is there in continuation] and then WTB at new place → bearish
+### Outcomes and trades
+- **Top EOR+1, bottom EOS-1**
+  - Trades
+    - Short at EOR+1 (resistance side)
+    - Long at EOS-1 (support side)
+  - Pressure and when it happens
+    - Support bullish, resistance bearish
+      - S0 with R0, 3, 4
+      - S3 with R0, 3, 4
+      - S4 with R0, 3, 4
+    - Support bearish, resistance bullish
+      - S2 with R2
+- **No top (Bull Run), bottom EOS**
+  - Trades
+    - No short from a top (Bull Run)
+    - Long at EOS (support side)
+  - Pressure and when it happens
+    - Support bullish, resistance bullish
+      - S0 with R2
+      - S3 with R2
+      - S4 with R2
+    - Support highly bullish, resistance bullish
+      - S1 with R2
+- **Top EOR, no bottom (Blood Bath)**
+  - Trades
+    - Short at EOR (resistance side)
+    - No long from a bottom (Blood Bath)
+  - Pressure and when it happens
+    - Support bearish, resistance bearish
+      - S2 with R0, 3, 4
+    - Support bearish, resistance highly bearish
+      - S2 with R1
+- **Top EOR, bottom EOS-1**
+  - Trades
+    - Short at EOR (resistance side)
+    - Long at EOS-1 (support side)
+  - Pressure and when it happens
+    - Support bullish, resistance highly bearish
+      - S0 with R1
+      - S3 with R1
+      - S4 with R1
+- **Top EOR+1, bottom EOS**
+  - Trades
+    - Short at EOR+1 (resistance side)
+    - Long at EOS (support side)
+  - Pressure and when it happens
+    - Support highly bullish, resistance bearish
+      - S1 with R0, 3, 4
+- **Rare scenario: do not trade**
+  - Trades
+    - Do not trade: the market is very volatile
+    - For anyone who still trades: risky short at the top shown, risky long at the bottom shown
+  - Pressure and when it happens
+    - Support highly bullish, resistance highly bearish
+      - S1 with R1
+## Rules behind the outcomes
+- No bottom (Blood Bath) = highly bearish pressure; no top (Bull Run) = highly bullish
+- A highly bearish side against a bullish side stops the Blood Bath, and the bottom is EOS-1
+- Highly bearish against highly bullish = rare scenario, do not trade
+- WTT-1 replaces the top, WTB+1 the bottom, only for a weak side that is bullish (resistance) or bearish (support)
+- Risky trade when pressure is highly bearish or highly bullish [owner rule]; level = the tool's Risky line
+- Safe, moderate and risky entries for the other scenarios: still open
