@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { writerBreakeven } from '@/lib/ltp/extensions';
 import { replayCsv, replayDay, REPLAY_COLUMNS } from '@/lib/ltp/replay';
 import { createLtpStore } from '@/lib/ltp/store';
 import { istTs } from '@/lib/ltp/time';
