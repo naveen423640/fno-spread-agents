@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { sendTokenToCloud } from '@/lib/ltp/cloud-token';
+import { createD1Fake } from '../support/d1-fake';
 
 const TOKEN = 'secret-fyers-token-xyz';
 const SECRET = 'admin-secret-123';
@@ -48,5 +49,26 @@ describe('sendTokenToCloud: the logged-in FYERS token goes from the app to the c
     expect(result).toMatchObject({ ok: false, status: 502 });
     expect(JSON.stringify(result)).not.toContain(TOKEN);
     expect(JSON.stringify(result)).not.toContain(SECRET);
+  });
+});
+
+describe('sendTokenToCloud on the cloud copy: it shares the recorder\'s database, so the token is written there directly', () => {
+  const db = () => createD1Fake(['cloud-recorder/schema.sql']);
+  it('stores the token and the app id with the time, and makes no web request (a Worker cannot call another Worker on workers.dev)', async () => {
+    const database = db();
+    const { seen, fetchImpl } = recorder();
+    expect(await sendTokenToCloud({ accessToken: TOKEN, clientId: 'APP-100', url: undefined, secret: undefined, db: database, now: () => 1234, fetchImpl })).toEqual({ ok: true });
+    expect(seen).toHaveLength(0);
+    expect(await database.prepare('SELECT token, saved_at, client_id FROM recorder_token').first()).toEqual({ token: TOKEN, saved_at: 1234, client_id: 'APP-100' });
+  });
+  it('a second send replaces the first, and without an app id the old one is cleared', async () => {
+    const database = db();
+    await sendTokenToCloud({ accessToken: 'old', clientId: 'APP-100', url: undefined, secret: undefined, db: database, now: () => 1 });
+    await sendTokenToCloud({ accessToken: TOKEN, clientId: undefined, url: undefined, secret: undefined, db: database, now: () => 2 });
+    expect(await database.prepare('SELECT token, saved_at, client_id FROM recorder_token').first()).toEqual({ token: TOKEN, saved_at: 2, client_id: null });
+  });
+  it('still needs a FYERS login, and refuses an unusable app id', async () => {
+    expect(await sendTokenToCloud({ accessToken: undefined, url: undefined, secret: undefined, db: db() })).toMatchObject({ ok: false, status: 401 });
+    expect(await sendTokenToCloud({ accessToken: TOKEN, clientId: 'bad id;', url: undefined, secret: undefined, db: db() })).toMatchObject({ ok: false, status: 400 });
   });
 });

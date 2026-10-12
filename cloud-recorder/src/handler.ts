@@ -7,11 +7,11 @@ import { health, recordOnce, UNDERLYINGS, type ChainSource, type RecordSummary }
 import { createLtpStore } from '@/lib/ltp/store';
 import { createFyersAdapter } from '@/lib/screener/broker/fyers';
 import { HOLIDAYS } from '@/lib/screener/holidays';
+import { parseTokenInput, saveRecorderToken } from './token';
 
 export type Env = { DB: D1Like; ADMIN_SECRET: string; FYERS_CLIENT_ID: string };
 type MakeSource = (credentials: { clientId: string; accessToken: string }) => ChainSource;
 
-const MAX_TOKEN_LENGTH = 4000;
 const MAX_JOURNAL_ROWS = 30; // each row is one database call, and a Worker run may make only so many
 // The agent journal tables the Mac may push. Decisions and outcomes are written once, so a repeat is ignored; the rest are replaced by the newer copy.
 const JOURNAL_TABLES: Record<string, 'ignore' | 'replace'> = { agent_decisions: 'ignore', trade_outcomes: 'ignore', agent_trades: 'replace', trade_reviews: 'replace', agent_experiments: 'replace', agent_state: 'replace', agent_strategies: 'replace' };
@@ -50,12 +50,9 @@ export async function handleRequest(request: Request, env: Env, now: Date = new 
 
   if (request.method === 'PUT' && url.pathname === '/token') {
     const body = (await request.json().catch(() => null)) as { token?: unknown; clientId?: unknown } | null;
-    const token = typeof body?.token === 'string' ? body.token.trim() : '';
-    if (!token || token.length > MAX_TOKEN_LENGTH) return json({ error: 'Send {"token": "<today\'s FYERS access token>"}.' }, 400);
-    // The FYERS app id the token was issued to. Tokens only work with their own app, and the cloud app and the Mac may use different FYERS apps.
-    if (body?.clientId !== undefined && (typeof body.clientId !== 'string' || !/^[A-Za-z0-9-]{1,100}$/.test(body.clientId))) return json({ error: 'clientId must be the FYERS app id (letters, digits and dashes).' }, 400);
-    const clientId = typeof body?.clientId === 'string' ? body.clientId : null;
-    await env.DB.prepare('INSERT INTO recorder_token (id, token, saved_at, client_id) VALUES (1, ?, ?, ?) ON CONFLICT(id) DO UPDATE SET token = excluded.token, saved_at = excluded.saved_at, client_id = excluded.client_id').bind(token, nowTs, clientId).run();
+    const parsed = parseTokenInput(body?.token, body?.clientId);
+    if (!parsed.ok) return json({ error: parsed.error }, 400);
+    await saveRecorderToken(env.DB, parsed.value, nowTs);
     return json({ ok: true, savedAt: nowTs });
   }
 

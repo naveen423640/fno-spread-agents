@@ -5,7 +5,7 @@ A second deployment of this app on Cloudflare, so a Samsung tablet can show the 
 - **Address:** https://fno-calculator.fnocalculator.workers.dev (Worker `fno-calculator`, config in `cloud-app/wrangler.jsonc`).
 - **Database:** the same D1 database as the cloud recorder (`ltp-recorder`), so the tablet sees every recorded chain. The other app tables are created in it by `npm run cloud:app:db`.
 - **Lock:** Cloudflare Access (email one-time code). The Worker also checks Access's signed token itself (`lib/cloud/access.ts`), so with Access misconfigured or off it answers 503/401 to everyone instead of running open.
-- **What it will not do:** record chains, run or change the agent, pull from the cloud (`blockedInCloud`). It can still send the FYERS token on to the recorder, so you can do the morning token from the tablet.
+- **What it will not do:** record chains, run or change the agent, pull from the cloud (`blockedInCloud`). It can still send the FYERS token on to the recorder, so you can do the morning token from the tablet. Because one Worker cannot call another through `workers.dev`, the cloud copy writes the token straight into the shared database instead of calling the recorder.
 
 ## Setup
 
