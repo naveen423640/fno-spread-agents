@@ -17,7 +17,9 @@
     "vwap:scan": "tsx --env-file-if-exists=.env.local scripts/vwap-scan.ts",
     "vwap:backtest": "tsx --env-file-if-exists=.env.local scripts/vwap-backtest.ts",
     "vwap:depth": "tsx --env-file-if-exists=.env.local scripts/vwap-depth.ts",
-    "vwap:index": "tsx --env-file-if-exists=.env.local scripts/vwap-index.ts"
+    "vwap:index": "tsx --env-file-if-exists=.env.local scripts/vwap-index.ts",
+    "ltp:record-once": "tsx scripts/ltp-recorder.ts record-once",
+    "ltp:record": "tsx scripts/ltp-recorder.ts run"
   },
   "dependencies": {
     "@base-ui/react": "1.7.0",
