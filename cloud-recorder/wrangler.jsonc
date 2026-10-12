@@ -9,6 +9,6 @@
   "triggers": { "crons": ["* 3-10 * * 1-5"] },
   // Not a secret: your FYERS app id. The access token goes in through PUT /token and ADMIN_SECRET through `wrangler secret put`.
   "vars": { "FYERS_CLIENT_ID": "SET-YOUR-FYERS-APP-ID" },
-  "d1_databases": [{ "binding": "DB", "database_name": "ltp-recorder", "database_id": "SET-AFTER-wrangler-d1-create" }],
+  "d1_databases": [{ "binding": "DB", "database_name": "ltp-recorder", "database_id": "90c9e5d1-9583-4f8b-a8e7-15e5ebb921b9" }],
   "observability": { "enabled": true }
 }
