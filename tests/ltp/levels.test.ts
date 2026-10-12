@@ -68,6 +68,16 @@ describe('computeLevels (C2)', () => {
     expect(flipped.support.decidedBy).toBe('volume');
   });
 
+  it('volume and OI peaks equally far from the line: volume wins (real NIFTY support 2026-10-12 10:55: the OI peak moved to 22400, the volume peak stayed at 22500, the tool stayed at 22500)', () => {
+    const s = makeChain({ spot: 22445.85, step: 50, pe: { 22500: { volume: 9000, oi: 1000 }, 22400: { volume: 1000, oi: 9000 } } }); // line 22400 / 22450: both peaks are 50 from the upper strike
+    const l = computeLevels(s)!;
+    expect(l.support.byVolume!.strike).toBe(22500);
+    expect(l.support.byOi!.strike).toBe(22400);
+    expect(l.support).toMatchObject({ strike: 22500, decidedBy: 'volume' });
+    const ce = computeLevels(makeChain({ spot: 22445.85, step: 50, ce: { 22350: { volume: 9000, oi: 1000 }, 22450: { volume: 1000, oi: 9000 } } }))!; // both peaks are 50 from the lower strike 22400
+    expect(ce.resistance).toMatchObject({ strike: 22350, decidedBy: 'volume' });
+  });
+
   it('a spot exactly on a strike includes that strike on both sides', () => {
     const s = makeChain({ spot: 24050, step: 50, pe: { 24050: { volume: 9000, oi: 9000 } }, ce: { 24050: { volume: 9000, oi: 9000 } } });
     const l = computeLevels(s)!;

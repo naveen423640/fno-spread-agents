@@ -34,7 +34,7 @@ function decide(volume: MetricPick | null, oi: MetricPick | null, distance: (str
   if (!volume && !oi) return null;
   if (volume && oi) {
     if (volume.strike === oi.strike) return { strike: volume.strike, decidedBy: 'volume+oi', byVolume: volume, byOi: oi };
-    const volumeWins = distance(volume.strike) < distance(oi.strike);
+    const volumeWins = distance(volume.strike) <= distance(oi.strike); // a tie goes to volume (the tool stayed on the volume peak when the OI peak was equally close)
     return { strike: volumeWins ? volume.strike : oi.strike, decidedBy: volumeWins ? 'volume' : 'oi', byVolume: volume, byOi: oi };
   }
   return { strike: (volume ?? oi)!.strike, decidedBy: volume ? 'volume' : 'oi', byVolume: volume, byOi: oi };
