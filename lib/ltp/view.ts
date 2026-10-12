@@ -4,6 +4,7 @@ import { LTP_CONFIG } from './config';
 import type { ChainView } from './state';
 import type { ConditionInfo } from './conditions';
 import { istHhmm, minutesOf } from './time';
+import { signalTag } from './tug-of-war';
 
 export type CellMark = 'max' | 'second_weak';
 
@@ -94,8 +95,8 @@ export function conditionSummary(prefix: 'S' | 'R', c: ConditionInfo): string {
   const age = `${phaseAge(c.currentPhaseMinutes)} in this phase${c.continuation ? ' (continuation)' : ''}`;
   return `${prefix}${c.number}${c.exact ? '' : '~'}: ${PRESSURE_WORD[c.pressure]} · ${phases} · ${age}${c.exact ? '' : ' · closest listed condition'}`;
 }
-// "Scenario 6-S5/R1 · support bearish · resistance bearish", with the State of Confusion when there is one.
+// The short headline of the current signal, "6(S5/R1) S-Bearish R-Bullish(H)", with the State of Confusion when there is one.
 export function scenarioHeadline(a: Pick<UsableAnalysis, 'coa1' | 'soc'>): string {
   const soc = a.soc ? ` · ${a.soc.bias === 'bullish' ? 'Bullish' : 'Bearish'} SOC ${a.soc.type}` : '';
-  return `Scenario ${a.coa1.label} · support ${PRESSURE_WORD[a.coa1.conditions.support.pressure]} · resistance ${PRESSURE_WORD[a.coa1.conditions.resistance.pressure]}${soc}`;
+  return `${signalTag(a)}${soc}`;
 }

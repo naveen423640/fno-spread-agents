@@ -5,10 +5,11 @@ import type { UsableAnalysis } from '@/lib/ltp/analyze';
 import { countHits } from '@/lib/ltp/coa1';
 import { istHhmm } from '@/lib/ltp/time';
 import type { Direction } from './books';
+import { tugOfWar } from '@/lib/ltp/tug-of-war';
 import { graphTrace } from './graph-use';
 import type { Strategy } from './strategy';
 
-export type SetupType = 'coa1_reversal' | 'nine_twenty' | 'soc';
+export type SetupType = 'coa1_reversal' | 'nine_twenty' | 'soc' | 'risky_tug';
 export type RuleStep = { rule: string; inputs: Record<string, number | string | boolean | null>; passed: boolean };
 export type EvalContext = { dayTradeCount: number; openCount: number; dayLossInr: number };
 export type Candidate = {
@@ -100,6 +101,17 @@ function build(a: UsableAnalysis, strategy: Strategy, ctx: EvalContext, mode: 't
     if (value !== null && touched(value) && !coaDirections.has(direction)) raws.push({ setup: 'soc', direction, level: { label, value }, stop: coaStop(direction, label), target: a.soc.target }); // the diversion of the zone (course ch14)
   }
 
+  // The tug of war: when both sides push one way, or one pushes highly and the other is stable, a risky entry at the live Risky level is allowed, in the
+  // winner's direction. (Owner rule, 2026-10-13; the level is the proxy of the tool's own Risky line.)
+  if (strategy.setups_enabled.risky_tug) {
+    const tug = tugOfWar(a.coa1.pressure.support, a.coa1.pressure.resistance);
+    if (tug.riskyAllowed && tug.riskyDirection && !coaDirections.has(tug.riskyDirection)) {
+      const direction = tug.riskyDirection;
+      const risky = direction === 'short' ? a.extensions.riskyShort : a.extensions.riskyLong;
+      if (risky.value !== null && touched(risky.value)) raws.push({ setup: 'risky_tug', direction, level: { label: 'Risky', value: risky.value }, stop: coaStop(direction, direction === 'short' ? 'EOR-1' : 'EOS+1'), target: coaTarget(direction) });
+    }
+  }
+
   return raws.map((r) => judge(r));
 
   function judge(r: Raw): Candidate {
@@ -108,8 +120,9 @@ function build(a: UsableAnalysis, strategy: Strategy, ctx: EvalContext, mode: 't
     const entry = mode === 'watch' ? r.level.value : spot;
     // The Detailed Chart gives no top (Bull Run) or no bottom (Blood Bath) in some pairs: that side has no trade whatever the strategy table says.
     const hasLevel = (r.direction === 'long' ? scenario.bottom : scenario.top) !== null;
-    const allowed = strategy.scenarios_traded[String(scenario.number) as '1'][r.direction] && hasLevel;
-    const blocked = strategy.block_scenarios.includes(scenario.number);
+    // v2.0 decides from the mind-map outcome (a top gives shorts, a bottom gives longs); earlier versions also ask the first-level scenario table.
+    const allowed = hasLevel && (strategy.decide_by_graph || strategy.scenarios_traded[String(scenario.number) as '1'][r.direction]);
+    const blocked = !strategy.decide_by_graph && strategy.block_scenarios.includes(scenario.number);
     const start = r.setup === 'nine_twenty' ? strategy.window.nine_twenty_start : strategy.window.start;
     const stop = r.stop;
     const target = r.target;

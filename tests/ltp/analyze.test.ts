@@ -75,7 +75,7 @@ describe('each side\'s numbered condition and the scenario label, like the pract
     // Support: weak toward top, then strong (WTT TO STRONG): "initially WTT then became strong" = condition 5. Resistance: weak toward bottom from the start = condition 1.
     expect(r.coa1.conditions.support).toMatchObject({ number: 5, exact: true, pressure: 'B' });
     expect(r.coa1.conditions.resistance).toMatchObject({ number: 1, exact: true, pressure: 'B' });
-    expect(r.coa1.label).toBe('6-S5/R1');
+    expect(r.coa1.label).toBe('6(S5/R1)');
     expect(r.coa1.conditions.resistance.currentPhaseMinutes).toBeGreaterThanOrEqual(0);
   });
 });

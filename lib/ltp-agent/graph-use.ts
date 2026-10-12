@@ -5,6 +5,7 @@
 // The rule engine itself is not changed by this: it computes the same facts the graph is generated from.
 import type { UsableAnalysis } from '@/lib/ltp/analyze';
 import { buildKnowledgeGraph, type KnowledgeGraph } from '@/lib/ltp/knowledge-graph';
+import { tugOfWar, type Tug } from '@/lib/ltp/tug-of-war';
 
 const str = (v: unknown): string => (typeof v === 'string' ? v : '');
 let cached: KnowledgeGraph | null = null;
@@ -12,7 +13,7 @@ const graph = () => (cached ??= buildKnowledgeGraph());
 
 export type GraphTrace = {
   label: string; pair: string; supportPressure: string; resistancePressure: string; top: string | null; bottom: string | null;
-  outcome: 'blood_bath' | 'bull_run' | 'rare' | null; consistent: boolean; rules: string[]; ownerRuleNotUsedForTrading?: true;
+  outcome: 'blood_bath' | 'bull_run' | 'rare' | null; consistent: boolean; rules: string[]; tug: Tug;
 };
 
 export function graphTrace(a: UsableAnalysis): GraphTrace {
@@ -29,15 +30,12 @@ export function graphTrace(a: UsableAnalysis): GraphTrace {
   const rules = ['top-bottom-from-pairs'];
   if (top === 'WTT-1' || bottom === 'WTB+1') rules.push('wtt1-wtb1-substitution');
   if (rare) rules.push('rare-do-not-trade');
-  const highlyBearish = support === 'HB' || resistance === 'HB';
-  const highlyBullish = support === 'HU' || resistance === 'HU';
-  const riskyRule = (outcome === 'blood_bath' && highlyBearish) || (outcome === 'bull_run' && highlyBullish);
-  if (riskyRule) rules.push('risky-high-pressure');
+  const tug = tugOfWar(support, resistance);
+  if (tug.riskyAllowed) rules.push('risky-high-pressure'); // the owner's tug-of-war rule: a risky trade is allowed in the winner's direction
   return {
     label: a.coa1.label, pair: `${support}|${resistance}`, supportPressure: support, resistancePressure: resistance, top, bottom, outcome,
     consistent: a.coa1.scenario.top === top && a.coa1.scenario.bottom === bottom, rules,
-    // The owner's risky-trade rule is recorded for the reviewer, but the agent does not trade on it until the tool's Risky level is defined.
-    ...(riskyRule ? { ownerRuleNotUsedForTrading: true as const } : {}),
+    tug,
   };
 }
 

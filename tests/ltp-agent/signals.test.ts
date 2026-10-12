@@ -73,6 +73,46 @@ describe('the nine COA 1.0 scenarios: which side is traded, at which level', () 
   });
 });
 
+describe('v2.0 decides from the mind-map outcome, not from the first-level scenario number, and the tug of war allows risky trades', () => {
+  const v20t = parseStrategy(readFileSync('strategies/ltp_v2.0.yaml', 'utf8'));
+  it('the first-level scenario table is not consulted: switch off both sides of scenario 1 in the table and v2.0 still trades the outcome, while a version that uses the table skips', () => {
+    const a = fakeAnalysis({ spot: EXT.eos + 2, spots: [EXT.eos + 90, EXT.eos + 2] });
+    const edited = (base: typeof v20t) => ({ ...base, scenarios_traded: { ...base.scenarios_traded, '1': { long: false, short: false } } });
+    expect(evaluate(a, edited(v20t), idle).find((x) => x.direction === 'long')).toMatchObject({ taken: true });
+    expect(evaluate(a, edited(v01), idle).find((x) => x.direction === 'long')).toMatchObject({ taken: false, skipReason: 'scenario_allowed' });
+  });
+  it('block_scenarios is not consulted either', () => {
+    const a = fakeAnalysis({ spot: EXT.eos + 2, spots: [EXT.eos + 90, EXT.eos + 2] });
+    expect(evaluate(a, { ...v20t, block_scenarios: [1] }, idle).find((x) => x.direction === 'long')).toMatchObject({ taken: true });
+    expect(evaluate(a, { ...v01, block_scenarios: [1] }, idle).find((x) => x.direction === 'long')).toMatchObject({ taken: false });
+  });
+  it('where the outcome has no bottom the long is still never taken, whatever the strategy table says', () => {
+    const a = fakeAnalysis({ pressure: { support: 'B', resistance: 'B' }, spot: EXT.eos + 2, spots: [EXT.eos + 90, EXT.eos + 2] });
+    expect(a.coa1.scenario.bottom).toBeNull();
+    expect(evaluate(a, v20t, idle).find((x) => x.direction === 'long')).toMatchObject({ taken: false, skipReason: 'scenario_allowed' });
+  });
+  it('both sides pushing down: a risky short at the live Risky level is a candidate and is taken (bears are winning)', () => {
+    const a = fakeAnalysis({ pressure: { support: 'B', resistance: 'B' }, spot: EXT.eorMinus1 - 2, spots: [EXT.eorMinus1 - 60, EXT.eorMinus1 - 2] });
+    const c = evaluate(a, v20t, idle).filter((x) => x.setup === 'risky_tug');
+    expect(c).toHaveLength(1);
+    expect(c[0]).toMatchObject({ direction: 'short', taken: true, level: { label: 'Risky', value: EXT.eorMinus1 } });
+  });
+  it('both sides pushing up: a risky long at the Risky level; one side highly pushing with the other stable: risky as well', () => {
+    const up = fakeAnalysis({ pressure: { support: 'U', resistance: 'U' }, spot: EXT.eosPlus1 + 2, spots: [EXT.eosPlus1 + 60, EXT.eosPlus1 + 2] });
+    expect(evaluate(up, v20t, idle).filter((x) => x.setup === 'risky_tug')).toMatchObject([{ direction: 'long', taken: true }]);
+    const highStable = fakeAnalysis({ pressure: { support: 'S', resistance: 'HB' }, spot: EXT.eorMinus1 - 2, spots: [EXT.eorMinus1 - 60, EXT.eorMinus1 - 2] });
+    expect(evaluate(highStable, v20t, idle).filter((x) => x.setup === 'risky_tug')).toMatchObject([{ direction: 'short', taken: true }]);
+  });
+  it('no risky trade for a mild lead (one side plainly pushing, the other stable), for sides pulling against each other, or in v0.1', () => {
+    const mild = fakeAnalysis({ pressure: { support: 'B', resistance: 'S' }, spot: EXT.eorMinus1 - 2, spots: [EXT.eorMinus1 - 60, EXT.eorMinus1 - 2] });
+    expect(evaluate(mild, v20t, idle).filter((x) => x.setup === 'risky_tug')).toEqual([]);
+    const contested = fakeAnalysis({ pressure: { support: 'HB', resistance: 'U' }, spot: EXT.eorMinus1 - 2, spots: [EXT.eorMinus1 - 60, EXT.eorMinus1 - 2] });
+    expect(evaluate(contested, v20t, idle).filter((x) => x.setup === 'risky_tug')).toEqual([]);
+    const both = fakeAnalysis({ pressure: { support: 'B', resistance: 'B' }, spot: EXT.eorMinus1 - 2, spots: [EXT.eorMinus1 - 60, EXT.eorMinus1 - 2] });
+    expect(evaluate(both, v01, idle).filter((x) => x.setup === 'risky_tug')).toEqual([]);
+  });
+});
+
 describe('the knowledge-graph guard of v2.0', () => {
   const v20 = parseStrategy(readFileSync('strategies/ltp_v2.0.yaml', 'utf8'));
   const inconsistent = () => { const a = fakeAnalysis({ spot: EXT.eos + 2, spots: [EXT.eos + 90, EXT.eos + 2] }); a.coa1.scenario = { ...a.coa1.scenario, top: 'EOR+1' }; return a; }; // the graph says EOR, the live scenario says EOR+1

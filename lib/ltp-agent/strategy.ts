@@ -12,13 +12,14 @@ export const strategySchema = z.object({
   scenarios_traded: z.object(Object.fromEntries(scenarioKeys.map((k) => [k, sides])) as Record<(typeof scenarioKeys)[number], typeof sides>).strict(),
   block_scenarios: z.array(z.number().int().min(1).max(9)),
   entry_profile: z.enum(['risky', 'moderate']),
-  setups_enabled: z.object({ coa1_reversal: z.boolean(), nine_twenty: z.boolean(), soc: z.boolean(), end_of_diversion: z.boolean() }).strict(),
+  setups_enabled: z.object({ coa1_reversal: z.boolean(), nine_twenty: z.boolean(), soc: z.boolean(), end_of_diversion: z.boolean(), risky_tug: z.boolean() }).strict(),
   touch_tolerance_pts: z.number().positive(),
   window: z.object({ start: hhmm, end: hhmm, nine_twenty_start: hhmm }).strict(),
   max_hit_number: z.number().int().min(1),
   require_coa2_agree: z.boolean(),
   block_on_opposing_soc: z.boolean(),
   graph_consistent_required: z.boolean(), // skip a signal when the live scenario and the knowledge graph disagree
+  decide_by_graph: z.boolean(), // which sides may be traded comes from the mind-map outcome (a top gives shorts, a bottom gives longs), not from the first-level scenario number
   stop_rule: z.enum(['nine_twenty', 'next_level']),
   stop_buffer_pts: z.number().nonnegative(),
   time_exit: hhmm,

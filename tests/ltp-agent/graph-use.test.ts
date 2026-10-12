@@ -8,7 +8,7 @@ describe('graphTrace: which part of the knowledge graph a decision rests on', ()
     const t = graphTrace(fakeAnalysis());
     expect(t).toMatchObject({ pair: 'S|S', supportPressure: 'S', resistancePressure: 'S', top: 'EOR', bottom: 'EOS', outcome: null, consistent: true });
     expect(t.rules).toContain('top-bottom-from-pairs');
-    expect(t.label).toBe(fakeAnalysis().coa1.label); // the numbered-condition label, like 1-S1/R1
+    expect(t.label).toBe(fakeAnalysis().coa1.label); // the numbered-condition label, like 1(S1/R1)
   });
   it('a weak side with matching pressure gives the variant, and the trace still agrees with the live scenario', () => {
     const t = graphTrace(fakeAnalysis({ support: 'wtb', resistance: 'wtt' })); // B|U, both weak now
@@ -22,7 +22,13 @@ describe('graphTrace: which part of the knowledge graph a decision rests on', ()
     const t = graphTrace(a);
     expect(t).toMatchObject({ pair: 'HB|S', top: 'EOR', bottom: null, outcome: 'blood_bath', consistent: true });
     expect(t.rules).toContain('risky-high-pressure');
-    expect(t.ownerRuleNotUsedForTrading).toBe(true);
+    expect(t.tug).toMatchObject({ winner: 'bears', riskyAllowed: true, riskyDirection: 'short' });
+  });
+  it('both sides pushing one way brings in the risky rule even when the outcome is plain bearish; sides pulling apart do not', () => {
+    const both = fakeAnalysis({ pressure: { support: 'B', resistance: 'B' } });
+    expect(graphTrace(both).rules).toContain('risky-high-pressure');
+    expect(graphTrace(fakeAnalysis({ pressure: { support: 'HB', resistance: 'U' } })).rules).not.toContain('risky-high-pressure');
+    expect(graphTrace(fakeAnalysis({ pressure: { support: 'B', resistance: 'S' } })).tug).toMatchObject({ winner: 'bears', riskyAllowed: false });
   });
   it('the rare scenario is named and the do-not-trade rule listed', () => {
     const a = fakeAnalysis();

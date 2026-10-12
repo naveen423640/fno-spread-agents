@@ -25,6 +25,7 @@ setups_enabled:
   nine_twenty: true
   soc: true
   end_of_diversion: false # the engine has no trade rule for it yet
+  risky_tug: true # a risky entry at the live Risky level when the tug of war allows it (both sides pushing one way, or one pushing highly and the other stable)
 
 touch_tolerance_pts: 5
 window:
@@ -35,6 +36,7 @@ max_hit_number: 2
 require_coa2_agree: false # COA 2.0 is logged either way
 block_on_opposing_soc: true
 graph_consistent_required: true # skip a signal when the live scenario and the knowledge graph disagree (docs/data/ltp-knowledge-graph.json)
+decide_by_graph: true # the sides to trade come from the mind-map outcome, not from scenarios_traded / block_scenarios
 
 stop_rule: nine_twenty # EOR+2 / EOS-2 beyond the entry, plus the buffer; or next_level
 stop_buffer_pts: 10

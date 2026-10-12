@@ -23,7 +23,7 @@ describe('ltp_v0.1.yaml is the pure course rules with the defaults of the brief'
     expect(s.risk).toMatchObject({ max_trades_per_day: 3, max_concurrent: 1 });
   });
   it('setups: COA 1.0 reversal, 9:20 and SOC on; end of diversion off', () => {
-    expect(s.setups_enabled).toEqual({ coa1_reversal: true, nine_twenty: true, soc: true, end_of_diversion: false });
+    expect(s.setups_enabled).toEqual({ coa1_reversal: true, nine_twenty: true, soc: true, end_of_diversion: false, risky_tug: false });
   });
   it('scenarios traded follow the course table: both sides in 1 to 5, shorts only in 6 (Blood Bath), longs only in 7 (Bull Run), both sides in 8 and 9 (Detailed Chart)', () => {
     for (const n of ['1', '2', '3', '4', '5']) expect(s.scenarios_traded[n as '1']).toEqual({ long: true, short: true });
@@ -99,12 +99,14 @@ describe('strategy files', () => {
 describe('ltp_v2.0.yaml: the course rules plus the knowledge graph as a guard', () => {
   const v20 = parseStrategy(readFileSync('strategies/ltp_v2.0.yaml', 'utf8'));
   const v01s = parseStrategy(v01());
-  it('differs from v0.1 only in its version, its name and the graph guard', () => {
+  it('differs from v0.1 only in its version, its name, the graph guard, deciding by the mind-map outcome and the risky tug-of-war setup', () => {
     expect(v20.version).toBe('2.0');
-    expect(v20.graph_consistent_required).toBe(true);
-    expect(v01s.graph_consistent_required).toBe(false);
-    const { version: _a, name: _b, graph_consistent_required: _c, ...rest20 } = v20;
-    const { version: _d, name: _e, graph_consistent_required: _f, ...rest01 } = v01s;
+    expect(v20).toMatchObject({ graph_consistent_required: true, decide_by_graph: true });
+    expect(v20.setups_enabled.risky_tug).toBe(true);
+    expect(v01s).toMatchObject({ graph_consistent_required: false, decide_by_graph: false });
+    const { version: _a, name: _b, graph_consistent_required: _c, decide_by_graph: _g, setups_enabled: se20, ...rest20 } = v20;
+    const { version: _d, name: _e, graph_consistent_required: _f, decide_by_graph: _h, setups_enabled: se01, ...rest01 } = v01s;
     expect(rest20).toEqual(rest01);
+    expect({ ...se20, risky_tug: false }).toEqual(se01);
   });
 });

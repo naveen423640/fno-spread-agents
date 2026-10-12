@@ -101,9 +101,9 @@ export function analyzeSession(snapshots: Snapshot[], opts: AnalysisOptions): Se
   // classes gives the top and bottom. A side that is Strong now but just came back from a weakness or a shift therefore still counts as pressure.
   const pressure = { support: pressureOf(supportEvents, support.status), resistance: pressureOf(resistanceEvents, resistance.status) };
   const scenario = selectDetailed(pressure.support, pressure.resistance, support.status, resistance.status);
-  // Which of the practice tool's numbered history conditions each side is in, and the label "scenario-S<support>/R<resistance>" (for example 6-S3/R1).
+  // Which of the practice tool's numbered history conditions each side is in, and the label "scenario(S<support>/R<resistance>)" (for example 6(S3/R1)).
   const conditions = { support: classifyCondition(supportEvents, support.status, latest.ts, cfg), resistance: classifyCondition(resistanceEvents, resistance.status, latest.ts, cfg) };
-  const label = `${scenario.number}-S${conditions.support.number}${conditions.support.exact ? '' : '~'}/R${conditions.resistance.number}${conditions.resistance.exact ? '' : '~'}`;
+  const label = `${scenario.number}(S${conditions.support.number}${conditions.support.exact ? '' : '~'}/R${conditions.resistance.number}${conditions.resistance.exact ? '' : '~'})`;
   const { top, bottom } = scenarioLevels(scenario, ext);
   const spots = snaps.map((s) => s.spot);
   const hit = (lv: ExtLevel | null): Hit => { const count = countHits(spots, lv?.value ?? null, cfg.hitTolerancePoints); return { level: lv?.value ?? null, count, label: hitLabel(count) }; };

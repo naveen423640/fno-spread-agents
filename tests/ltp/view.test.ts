@@ -135,10 +135,10 @@ describe('the numbered condition shown on the LTP screen', () => {
     expect(conditionSummary('S', info({ exact: false }))).toMatch(/^S5~: bearish/);
     expect(conditionSummary('S', info({ exact: false }))).toMatch(/closest listed/);
   });
-  it('the headline is the scenario with its condition label and both pressures, plus the State of Confusion when there is one', () => {
-    const a = { coa1: { label: '6-S5/R1', scenario: { number: 6 }, conditions: { support: info(), resistance: info({ number: 1, pressure: 'B' }) } }, soc: null } as never;
-    expect(scenarioHeadline(a)).toBe('Scenario 6-S5/R1 · support bearish · resistance bearish');
-    const withSoc = { coa1: { label: '8-S1/R2', scenario: { number: 8 }, conditions: { support: info({ pressure: 'B' }), resistance: info({ pressure: 'U' }) } }, soc: { bias: 'bullish', type: '3h' } } as never;
-    expect(scenarioHeadline(withSoc)).toBe('Scenario 8-S1/R2 · support bearish · resistance bullish · Bullish SOC 3h');
+  it('the headline is the short signal tag, plus the State of Confusion when there is one', () => {
+    const a = { coa1: { label: '6(S5/R1)', scenario: { number: 6 }, pressure: { support: 'B', resistance: 'HB' } }, soc: null } as never;
+    expect(scenarioHeadline(a)).toBe('6(S5/R1) S-Bearish R-Bearish(H)');
+    const withSoc = { coa1: { label: '8(S1/R2)', scenario: { number: 8 }, pressure: { support: 'B', resistance: 'U' } }, soc: { bias: 'bullish', type: '3h' } } as never;
+    expect(scenarioHeadline(withSoc)).toBe('8(S1/R2) S-Bearish R-Bullish · Bullish SOC 3h');
   });
 });
