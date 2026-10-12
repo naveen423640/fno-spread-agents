@@ -11,3 +11,5 @@ const token = (body?.token ?? {}) as { present?: boolean; savedAt?: number | nul
 console.log(`badge ${body?.badge} | recording now: ${body?.recordingNow} | last snapshot: ${ts(body?.lastSuccessTs)} IST | gaps today: ${body?.gapsToday}`);
 console.log(`token: ${token.present ? `present, saved ${ts(token.savedAt)} IST` : 'NOT set'}`);
 console.log('snapshots today:', JSON.stringify(body?.snapshotsToday));
+
+export {};

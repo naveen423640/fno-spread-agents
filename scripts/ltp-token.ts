@@ -8,3 +8,5 @@ if (!token) { console.error('Set today\'s FYERS_ACCESS_TOKEN in .env.local first
 const response = await fetch(`${base}/token`, { method: 'PUT', headers: { Authorization: `Bearer ${secret}`, 'content-type': 'application/json' }, body: JSON.stringify({ token }) });
 if (!response.ok) { console.error(`The recorder answered ${response.status}${response.status === 401 ? ': the secret in .env.local is not the one set on the Worker.' : '.'}`); process.exit(1); }
 console.log('Token saved on the cloud recorder. Check it with: npm run ltp:health');
+
+export {};
