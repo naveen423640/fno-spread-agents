@@ -201,7 +201,7 @@ Status key: **matches**, **differs**, **missing**, **unknown** (the site gives n
 | 3 | Status when the level is based on **both** metrics (away needs both; toward in either; opposite means toward wins) | matches | |
 | 4 | Status when the level is based on **one** metric | **fixed 2026-10-12** | The app treats volume and OI symmetrically, each against its own highest strike. The site: the deciding metric's own box counts in either direction; the other metric counts only if its box lies on the line side of the level. Matters whenever volume and OI peak at different strikes. |
 | 5 | Ignore the yellow box at the strike a level just left until it vanishes and reappears | matches | |
-| 6 | Percentage trend (rising or falling) as a bullish or bearish signal | missing | Only the discrete events (shift, weak, weak turns strong) are used. |
+| 6 | Percentage trend (rising or falling) as a bullish or bearish signal | **fixed 2026-10-12** (`lib/ltp/pct-trend.ts`; shown in the tab and logged in the agent context, not yet a trade rule) | Only the discrete events (shift, weak, weak turns strong) are used. |
 | 7 | Side direction from the latest event (shift down bearish, WTT bullish, WTT-to-strong bearish, ...) | matches | reproduced the captured logs |
 | 8 | "Highly" pressure (double shifting, shift then weak the same way) | missing | HB and HU are not distinguished from B and U. |
 | 9 | Nine-scenario top and bottom (basic) | matches | |
@@ -211,7 +211,7 @@ Status key: **matches**, **differs**, **missing**, **unknown** (the site gives n
 | 13 | Rare scenario (highly bearish with highly bullish): do not trade | missing | |
 | 14 | SOC conditions and timing | partly | One-hour, two-hour and three-hour logic is there; "stable" read as the spread of the percentage. Needs checking against what the tool prints ("Bullish SOC - 3 hours"). |
 | 15 | SOC target: diversion of the smallest (or largest) strike in the zone | **fixed 2026-10-12** (`socTarget`; the SOC setup's target) | The agent targets the opposite extension (EOS or EOR) instead. |
-| 16 | COA 2.0 on the **ATM strike's** call and put OI change from 09:15 | **differs** | The app uses call OI at the resistance strike and put OI at the support strike, and OI rather than OI change (same slope, different percentages). Needs your decision: your original brief said resistance and support strikes; the course says ATM. |
+| 16 | COA 2.0 on the **ATM strike's** call and put OI change from 09:15 | **fixed 2026-10-12** (ATM strike's OI series; its slope is the OI change's) | The app uses call OI at the resistance strike and put OI at the support strike, and OI rather than OI change (same slope, different percentages). Needs your decision: your original brief said resistance and support strikes; the course says ATM. |
 | 17 | COA 2.0 window and "not on the first hit of an extension" | matches | The "use it when consolidating or at diversions" advice is not modelled. |
 | 18 | Weekly range | matches | Computed for every index; the course says only those with a weekly expiry. |
 | 19 | Diversions count and direction | matches | |

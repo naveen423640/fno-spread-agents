@@ -1,7 +1,13 @@
-// C6 COA 2.0: the OI-trend scenarios at the resistance (call OI) and support (put OI) strikes. The stable band and the lookback are my own
+// C6 COA 2.0: the OI-trend scenarios of the at-the-money strike's call OI and put OI (course ch15). The stable band and the lookback are my own
 // parameters (the method gives no numbers) and live in the config. Pure.
 import { LTP_CONFIG, type LtpConfig } from './config';
 import { minutesOf } from './time';
+
+// The strike nearest the spot; an exact tie goes to the lower strike.
+export function atmStrike(spot: number, strikes: number[]): number | null {
+  const sorted = [...strikes].sort((a, b) => a - b);
+  return sorted.reduce<number | null>((best, k) => (best === null || Math.abs(k - spot) < Math.abs(best - spot) ? k : best), null);
+}
 
 export type Trend = 'increasing' | 'decreasing' | 'stable';
 

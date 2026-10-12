@@ -15,6 +15,10 @@ export type LtpConfig = {
     windowStart: string; // brief: COA 2.0 is valid from this IST time
     windowEnd: string; // brief: ...until this IST time
   };
+  pctTrend: {
+    lookbackMin: number; // assumed: minutes over which a weak side's percentage is read as rising or falling
+    minChangePoints: number; // assumed: a smaller move than this many percentage points is flat
+  };
   soc: {
     oneHour: SocRange; // brief: pct spread of 2 to 5 points for more than 60 minutes, no shift
     twoHour: SocRange; // brief: spread of 10 to 15 points for 120 minutes, no shift
@@ -34,6 +38,7 @@ export const LTP_CONFIG: LtpConfig = {
   lotSize: { 'NSE:NIFTY50-INDEX': 65, 'NSE:NIFTYBANK-INDEX': 30, 'BSE:SENSEX-INDEX': 20 },
   hitTolerancePoints: 5,
   coa2: { stableBandPct: 5, lookbackMin: 30, windowStart: '09:45', windowEnd: '14:30' },
+  pctTrend: { lookbackMin: 30, minChangePoints: 2 },
   soc: {
     oneHour: { minutes: 60, rangeMin: 2, rangeMax: 5 },
     twoHour: { minutes: 120, rangeMin: 10, rangeMax: 15 },

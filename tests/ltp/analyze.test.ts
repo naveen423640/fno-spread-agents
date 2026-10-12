@@ -45,6 +45,24 @@ describe('COA 1.0 scenario follows the side directions, like the real tool', () 
   });
 });
 
+describe('COA 2.0 reads the at-the-money strike (course ch15)', () => {
+  // Spot 24037: the ATM strike is 24050. Call OI there grows 30% over the half hour; the resistance strike (24200) and support strike (23900) stay flat.
+  const c = (hhmm: string, atmCall: number, atmPut: number) => makeChain({
+    spot: 24037, step: 50, ts: istTs(DAY, hhmm),
+    pe: { 23900: { volume: 10000, oi: 10000 }, 24050: { volume: 1000, oi: atmPut } },
+    ce: { 24200: { volume: 10000, oi: 10000 }, 24050: { volume: 1000, oi: atmCall } },
+  });
+  it('the call and put trends come from the ATM strike, not from the support and resistance strikes', () => {
+    const series = [c('10:00', 1000, 1000), c('10:15', 1150, 1000), c('10:30', 1300, 1000)];
+    const r = analyzeSession(series, { now: istTs(DAY, '10:30', 30) });
+    if (r.empty || !r.usable) throw new Error('expected a usable analysis');
+    expect(r.coa2.atmStrike).toBe(24050);
+    expect(r.coa2.callTrend).toBe('increasing');
+    expect(r.coa2.putTrend).toBe('stable');
+    expect(r.coa2.result).toMatchObject({ status: 'ok', number: 2 });
+  });
+});
+
 describe('Risky entry', () => {
   const chain = (ce: Record<number, { volume: number; oi: number }>) => makeChain({ spot: 24037, step: 50, ts: istTs(DAY, '09:30'), pe: { 23900: { volume: 10000, oi: 10000 } }, ce });
   it('is one strike inside the level normally, and the reversal at the weak strike when resistance is WTB (real tool: Risky 22521.5 with resistance 22600 WTB-22500)', () => {
@@ -54,6 +72,21 @@ describe('Risky entry', () => {
     expect(strong.extensions.riskyShort.strike).toBe(24150); // EOR-1
     expect(weak.strength.resistance.status).toBe('wtb');
     expect(weak.extensions.riskyShort.strike).toBe(24100); // the weak strike, not EOR-1
+  });
+});
+
+describe('the weak-percentage trend is part of the analysis', () => {
+  const chain = (hhmm: string, pe23950: number) => makeChain({
+    spot: 24037, step: 50, ts: istTs(DAY, hhmm),
+    pe: { 23900: { volume: 10000, oi: 10000 }, 23950: { volume: pe23950, oi: pe23950 } },
+    ce: { 24200: { volume: 10000, oi: 10000 } },
+  });
+  it('support WTT with its percentage rising from 80 to 92 is bullish pressure', () => {
+    const r = analyzeSession([chain('09:15', 8000), chain('09:25', 8600), chain('09:35', 9200)], { now: istTs(DAY, '09:35', 30) });
+    if (r.empty || !r.usable) throw new Error('expected a usable analysis');
+    expect(r.strength.support.status).toBe('wtt');
+    expect(r.pctTrend.support).toMatchObject({ trend: 'rising', bias: 'bullish' });
+    expect(r.pctTrend.resistance).toBeNull();
   });
 });
 

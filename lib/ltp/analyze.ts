@@ -1,6 +1,6 @@
 // Runs the whole engine over one session's snapshots and returns everything the tab shows. Pure: `now` is passed in, and only snapshots at or
 // before it are read, so a stored day can be replayed exactly as it would have looked live.
-import { classifyTrend, selectCoa2, type Coa2Result, type Trend } from './coa2';
+import { atmStrike, classifyTrend, selectCoa2, type Coa2Result, type Trend } from './coa2';
 import { countHits, hitLabel, scenarioLevels, type Coa1Scenario } from './coa1';
 import { selectDetailed } from './coa1-detailed';
 import { LTP_CONFIG, type LtpConfig } from './config';
@@ -8,12 +8,13 @@ import { banner, currentDirection, sideEvents, type Banner, type Direction, type
 import { diversionCount, diversionPath, type DiversionPoint } from './diversions';
 import { extensionLevels, ivMove, weakStrike, type ExtLevel, type Extensions, type ExtensionMethod } from './extensions';
 import type { Levels } from './levels';
+import { pctTrend, type PctTrend } from './pct-trend';
 import { pressureOf } from './pressure';
 import { freezeLines0920, type Lines0920 } from './lines0920';
 import { detectSoc, socTarget, type SocResult } from './soc';
 import { trackStrength, type LevelShift, type SideStrength } from './strength';
 import { istDate, istHhmm } from './time';
-import { valueAt, type Snapshot } from './types';
+import { strikesOf, valueAt, type Snapshot } from './types';
 
 // An event with what the real tool's popup shows beside it: the spot and the EOR/EOS family at that moment (null: no data, 'broken': already passed).
 export type Reversal = number | 'broken' | null;
@@ -31,8 +32,9 @@ export type UsableAnalysis = {
   method: { id: string; label: string };
   extensions: Extensions;
   coa1: { scenario: Coa1Scenario; top: ExtLevel | null; bottom: ExtLevel | null; hits: { top: Hit; bottom: Hit } };
-  coa2: { callTrend: Trend | null; putTrend: Trend | null; result: Coa2Result; firstHitOfExtension: boolean };
+  coa2: { atmStrike: number | null; callTrend: Trend | null; putTrend: Trend | null; result: Coa2Result; firstHitOfExtension: boolean };
   diversions: { count: number; bullish: DiversionPoint[]; bearish: DiversionPoint[] };
+  pctTrend: { support: PctTrend | null; resistance: PctTrend | null }; // the weak side's percentage rising or falling (course ch12, ch13)
   soc: (SocResult & { target: number | null }) | null; // target: the diversion price where the confusion is expected to resolve (proxy)
   direction: { support: { events: LoggedEvent[]; current: Direction }; resistance: { events: LoggedEvent[]; current: Direction }; banner: Banner };
   lines0920: Lines0920 | null;
@@ -98,16 +100,25 @@ export function analyzeSession(snapshots: Snapshot[], opts: AnalysisOptions): Se
   const hit = (lv: ExtLevel | null): Hit => { const count = countHits(spots, lv?.value ?? null, cfg.hitTolerancePoints); return { level: lv?.value ?? null, count, label: hitLabel(count) }; };
   const hits = { top: hit(top), bottom: hit(bottom) };
 
-  // COA 2.0: CE OI at the resistance strike and PE OI at the support strike since the open.
+  // CE OI at the resistance strike and PE OI at the support strike since the open (charts and the reviewer's path).
   const ceOi = snaps.flatMap((s) => { const oi = valueAt(s, levels.resistance.strike, 'CE', 'oi'); return oi === null ? [] : [{ ts: s.ts, oi }]; });
   const peOi = snaps.flatMap((s) => { const oi = valueAt(s, levels.support.strike, 'PE', 'oi'); return oi === null ? [] : [{ ts: s.ts, oi }]; });
-  const callTrend = classifyTrend(ceOi, latest.ts, cfg);
-  const putTrend = classifyTrend(peOi, latest.ts, cfg);
+  // COA 2.0 reads the at-the-money strike's call and put OI since the open (the course's OI-change graph, whose slope is the OI's).
+  const atm = atmStrike(latest.spot, strikesOf(latest));
+  const atmSeries = (side: 'CE' | 'PE') => (atm === null ? [] : snaps.flatMap((s) => { const oi = valueAt(s, atm, side, 'oi'); return oi === null ? [] : [{ ts: s.ts, oi }]; }));
+  const callTrend = classifyTrend(atmSeries('CE'), latest.ts, cfg);
+  const putTrend = classifyTrend(atmSeries('PE'), latest.ts, cfg);
   // The first touch of an extension level (anything other than plain EOS / EOR) is not read with COA 2.0.
   const onFirstExtensionHit = (label: string | null, lv: ExtLevel | null, h: Hit) => label !== null && label !== 'EOS' && label !== 'EOR' && lv?.value != null && Math.abs(latest.spot - lv.value) <= cfg.hitTolerancePoints && h.count <= 1;
   const firstHitOfExtension = onFirstExtensionHit(scenario.top, top, hits.top) || onFirstExtensionHit(scenario.bottom, bottom, hits.bottom);
   const result = selectCoa2(callTrend, putTrend, istHhmm(latest.ts), { firstHitOfExtension }, cfg);
 
+  // The percentage of the weak metric(s) behind the side's current status, snapshot by snapshot.
+  const weakTrend = (side: 'support' | 'resistance', status: SideStrength['status']) => pctTrend(perSnapshot.map((p) => {
+    const st = p[side];
+    const pcts = st && st.status === status ? (['volume', 'oi'] as const).filter((m) => st.byMetric[m].weak && st.byMetric[m].direction === status).map((m) => st.byMetric[m].pct ?? 0) : [];
+    return { ts: p.ts, pct: pcts.length ? Math.max(...pcts) : null };
+  }), status, latest.ts, cfg);
   const detected = detectSoc(perSnapshot, events, cfg);
   const socWithTarget = detected ? { ...detected, target: socTarget(detected, latest, method) } : null;
 
@@ -119,8 +130,9 @@ export function analyzeSession(snapshots: Snapshot[], opts: AnalysisOptions): Se
     empty: false, usable: true, asOf: latest.ts, date, underlying: latest.underlying, expiry: latest.expiry, spot: latest.spot, step: latest.step,
     levels, strength: { support, resistance }, method: { id: method.id, label: method.label }, extensions: ext,
     coa1: { scenario, top, bottom, hits },
-    coa2: { callTrend, putTrend, result, firstHitOfExtension },
+    coa2: { atmStrike: atm, callTrend, putTrend, result, firstHitOfExtension },
     diversions: { count: diversionCount(levels.support.strike, levels.resistance.strike, latest.step), bullish: diversionPath(latest, levels.support.strike, levels.resistance.strike, 'bullish', method), bearish: diversionPath(latest, levels.support.strike, levels.resistance.strike, 'bearish', method) },
+    pctTrend: { support: weakTrend('support', support.status), resistance: weakTrend('resistance', resistance.status) },
     soc: socWithTarget, direction,
     lines0920: freezeLines0920(snaps, method, cfg),
     events,

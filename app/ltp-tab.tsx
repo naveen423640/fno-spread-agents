@@ -215,13 +215,13 @@ function LtpLevels() {
                   <div className="rounded-lg border border-border bg-card p-3 text-sm">
                     <div className="text-[11px] text-muted-foreground">Levels</div>
                     <p>Imaginary line <strong className="tabular-nums">{a.levels.line.exact ? a.levels.line.low : `${a.levels.line.low} – ${a.levels.line.high}`}</strong></p>
-                    {(['support', 'resistance'] as const).map((side) => <p key={side} className="text-xs capitalize">{side} {a.levels[side].strike} (decided by {a.levels[side].decidedBy}) · volume {num(a.strength[side].pct.volume, 1)}% · OI {num(a.strength[side].pct.oi, 1)}%</p>)}
+                    {(['support', 'resistance'] as const).map((side) => <p key={side} className="text-xs capitalize">{side} {a.levels[side].strike} (decided by {a.levels[side].decidedBy}) · volume {num(a.strength[side].pct.volume, 1)}% · OI {num(a.strength[side].pct.oi, 1)}%{a.pctTrend[side] ? ` · weak % ${a.pctTrend[side]!.trend} (${a.pctTrend[side]!.bias})` : ''}</p>)}
                     <p className="mt-1 text-xs text-muted-foreground">{a.diversions.count} diversion strikes between support and resistance.</p>
                     <p className="text-xs">{a.soc ? `SOC ${a.soc.type}: ${a.soc.bias}, ${a.soc.minutes} min on ${a.soc.side} (from ${a.soc.from} proxy)` : 'No sustained-weakness (SOC) pattern.'}</p>
                   </div>
                   <div className="rounded-lg border border-border bg-card p-3 text-sm">
-                    <div className="text-[11px] text-muted-foreground">COA 2.0 (OI trend at the walls)</div>
-                    <p className="text-xs">Call OI at resistance: {a.coa2.callTrend ?? 'unknown'} · Put OI at support: {a.coa2.putTrend ?? 'unknown'}</p>
+                    <div className="text-[11px] text-muted-foreground">COA 2.0 (OI trend at the ATM strike)</div>
+                    <p className="text-xs">Call OI at the ATM strike {a.coa2.atmStrike ?? '–'}: {a.coa2.callTrend ?? 'unknown'} · Put OI there: {a.coa2.putTrend ?? 'unknown'}</p>
                     <p className="mt-1">{a.coa2.result.status === 'ok' ? `Scenario ${a.coa2.result.number}: ${a.coa2.result.outcome}` : { outside_window: 'Outside the 09:45–14:30 window.', not_on_first_hit: 'Not read on the first hit of an extension.', no_data: 'Not enough OI history yet.' }[a.coa2.result.status]}</p>
                     <p className="mt-1 text-xs tabular-nums">Top <Proxy level={a.coa1.top} /> · hits {a.coa1.hits.top.count}{a.coa1.hits.top.label ? ` (${a.coa1.hits.top.label})` : ''}</p>
                     <p className="text-xs tabular-nums">Bottom <Proxy level={a.coa1.bottom} /> · hits {a.coa1.hits.bottom.count}{a.coa1.hits.bottom.label ? ` (${a.coa1.hits.bottom.label})` : ''}</p>

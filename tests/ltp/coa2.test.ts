@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { classifyTrend, COA2_TABLE, selectCoa2, type Trend } from '@/lib/ltp/coa2';
+import { atmStrike, classifyTrend, COA2_TABLE, selectCoa2, type Trend } from '@/lib/ltp/coa2';
 import { LTP_CONFIG } from '@/lib/ltp/config';
 import { istDate, istHhmm, istTs } from '@/lib/ltp/time';
 
@@ -66,5 +66,14 @@ describe('selectCoa2 (C6)', () => {
   });
   it('says there is no data when a trend could not be classified', () => {
     expect(selectCoa2(null, 'stable', '10:30', { firstHitOfExtension: false }).status).toBe('no_data');
+  });
+});
+
+describe('the at-the-money strike (course ch15: open the OI-change graph of the ATM strike)', () => {
+  it('is the strike nearest the spot; an exact tie goes to the lower strike', () => {
+    expect(atmStrike(24037, [24000, 24050, 24100])).toBe(24050);
+    expect(atmStrike(24020, [24000, 24050, 24100])).toBe(24000);
+    expect(atmStrike(24025, [24000, 24050, 24100])).toBe(24000);
+    expect(atmStrike(24025, [])).toBeNull();
   });
 });
