@@ -80,7 +80,7 @@ export const ivMove: ExtensionMethod = {
 export const EXTENSION_METHODS: ExtensionMethod[] = [ivMove, writerBreakeven, timeValueOnly];
 
 export type ExtLevel = { label: string; strike: number; value: number | null; method: string; isProxy: true };
-export type Extensions = { eos: ExtLevel; eor: ExtLevel; eosMinus: ExtLevel[]; eorPlus: ExtLevel[]; wtbPlus1: ExtLevel | null; wttMinus1: ExtLevel | null };
+export type Extensions = { eos: ExtLevel; eor: ExtLevel; eosPlus1: ExtLevel; eorMinus1: ExtLevel; eosMinus: ExtLevel[]; eorPlus: ExtLevel[]; wtbPlus1: ExtLevel | null; wttMinus1: ExtLevel | null };
 
 const level = (s: Snapshot, method: ExtensionMethod, name: string, strike: number, side: Side): ExtLevel => ({
   label: `${name} (proxy: ${method.label})`, strike, value: method.reversal(s, strike, side), method: method.id, isProxy: true,
@@ -106,6 +106,8 @@ export function extensionLevels(s: Snapshot, levels: Levels, support: SideStatus
   return {
     eos: level(s, method, 'EOS', sup, 'PE'),
     eor: level(s, method, 'EOR', res, 'CE'),
+    eosPlus1: level(s, method, 'EOS+1', sup + step, 'PE'),
+    eorMinus1: level(s, method, 'EOR-1', res - step, 'CE'),
     eosMinus: [1, 2].map((n) => level(s, method, `EOS-${n}`, sup - n * step, 'PE')),
     eorPlus: [1, 2].map((n) => level(s, method, `EOR+${n}`, res + n * step, 'CE')),
     wtbPlus1: wtb === null ? null : level(s, method, 'WTB+1', wtb + step, 'PE'),

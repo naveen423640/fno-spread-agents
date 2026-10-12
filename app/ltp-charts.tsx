@@ -95,10 +95,8 @@ export function LtpCharts({ analysis, lines0920, only = 'all', height }: { analy
     ...g(levels.support.strike, '#4ade80', `Support ${levels.support.strike}`, LineStyle.Dashed),
     // The frozen 9:20 lines (dotted): both profiles' entries, and the stops.
     ...(l0 ? [
-      ...g(val(l0.eor), RED, '9:20 EOR (proxy)', LineStyle.Dotted), ...g(val(l0.eorPlus1), '#fb923c', '9:20 EOR+1 (proxy)', LineStyle.Dotted),
-      ...g(val(l0.eos), GREEN, '9:20 EOS (proxy)', LineStyle.Dotted), ...g(val(l0.eosMinus1), '#2dd4bf', '9:20 EOS-1 (proxy)', LineStyle.Dotted),
-      ...g(l0.profiles.risky.find((e) => e.side === 'short')?.stop ?? null, AMBER, '9:20 stop above', LineStyle.Dotted),
-      ...g(l0.profiles.risky.find((e) => e.side === 'long')?.stop ?? null, AMBER, '9:20 stop below', LineStyle.Dotted),
+      ...g(val(l0.short.risky), '#fb923c', '9:20 Risky short (proxy)', LineStyle.Dotted), ...g(val(l0.short.moderate), RED, '9:20 Moderate short (proxy)', LineStyle.Dotted), ...g(val(l0.short.maxPain), AMBER, '9:20 Max Pain above', LineStyle.Dotted),
+      ...g(val(l0.long.risky), '#2dd4bf', '9:20 Risky long (proxy)', LineStyle.Dotted), ...g(val(l0.long.moderate), GREEN, '9:20 Moderate long (proxy)', LineStyle.Dotted), ...g(val(l0.long.maxPain), AMBER, '9:20 Max Pain below', LineStyle.Dotted),
     ] : []),
   ];
   return (

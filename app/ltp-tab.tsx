@@ -103,20 +103,42 @@ export function LtpTab() {
   const spot = state && !state.empty ? (a?.spot ?? (state.analysis.empty ? 0 : state.analysis.spot)) : 0;
   const name = UNDERLYING_OPTIONS.find((o) => o.value === underlying)?.label ?? '';
   const bias = a?.coa1.scenario.bias ?? '';
-  const bannerClass = /^(Bull)/.test(bias) ? 'bg-emerald-600' : /^(Bear|Blood)/.test(bias) ? 'bg-red-600' : bias.startsWith('Not') ? 'bg-slate-500' : 'bg-blue-600';
-  const lastShift = (side: 'support' | 'resistance') => a?.events.filter((e) => e.side === side).slice(-1)[0];
+  const kind = a?.direction.banner.kind;
+  const bannerClass = kind === 'bull_run' ? 'bg-emerald-600' : kind === 'blood_bath' ? 'bg-red-600' : 'bg-slate-500';
+  const bannerText = a ? (kind === 'mixed' ? `sides disagree (support ${a.direction.support.current}, resistance ${a.direction.resistance.current})` : `in ${a.direction.banner.text}`) : '';
+  const lastEvent = (side: 'support' | 'resistance') => a?.direction[side].events.slice(-1)[0];
   const [panel, setPanel] = useState<'scenario' | 'lines' | 'weekly' | 'charts' | 'shifts' | 'calibration'>('scenario');
-  const PANELS: [typeof panel, string][] = [['scenario', 'Scenario & levels'], ['lines', '9:20 lines'], ['weekly', 'Weekly range'], ['charts', 'Charts'], ['shifts', 'Level shifts'], ['calibration', 'Calibration']];
+  const PANELS: [typeof panel, string][] = [['scenario', 'Scenario & levels'], ['lines', '9:20 lines'], ['weekly', 'Weekly range'], ['charts', 'Charts'], ['shifts', 'Side logs'], ['calibration', 'Calibration']];
 
+  const DIRECTION_CLASS = { bullish: 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-400', bearish: 'bg-red-500/20 text-red-700 dark:text-red-400', neutral: 'bg-muted text-muted-foreground' };
   const sidePill = (side: 'support' | 'resistance') => {
     if (!a) return null;
-    const st = a.strength[side];
-    const shift = lastShift(side);
-    const label = st.status === 'strong' ? 'STRONG' : st.status === 'wtt' ? 'WEAK TOWARDS TOP (WTT)' : 'WEAK TOWARDS BOTTOM (WTB)';
+    const ev = lastEvent(side);
+    const dir = a.direction[side].current;
     return (
       <div className={`rounded-md border px-3 py-1.5 text-xs ${side === 'support' ? 'border-emerald-600/50 bg-emerald-500/10' : 'border-red-600/50 bg-red-500/10'}`}>
-        <div className="font-bold">{side === 'support' ? 'SUPPORT' : 'RESISTANCE'} {a.levels[side].strike} · <span className={st.status === 'strong' ? 'text-emerald-600' : 'text-amber-600'}>{label}</span></div>
-        {shift ? <div className="text-[11px] text-muted-foreground">Shifted {shift.fromStrike} → {shift.toStrike} at {clock(shift.ts)} ({shift.metric})</div> : <div className="text-[11px] text-muted-foreground">Not shifted today</div>}
+        <div className="font-bold">{side === 'support' ? 'SUPPORT' : 'RESISTANCE'} {ev?.label ?? a.levels[side].strike}</div>
+        <div className="flex flex-wrap items-center gap-2 text-[11px]">
+          <span className="font-semibold">{ev?.text ?? ''}</span>
+          <span className={`rounded px-1.5 py-0.5 font-semibold capitalize ${DIRECTION_CLASS[dir]}`}>{dir}</span>
+          <span className="text-muted-foreground">since {ev ? clock(ev.ts) : '–'}</span>
+        </div>
+      </div>
+    );
+  };
+  // The tool's header strip: Risky / Moderate / Max Pain / Max Gain on each side. The side the banner rules out shows NA.
+  const tradeStrip = (which: 'short' | 'long') => {
+    if (!a) return null;
+    const e = a.extensions;
+    const v = which === 'short'
+      ? { risky: e.eorMinus1, moderate: e.eor, maxPain: e.eorPlus[1], maxGain: e.eos }
+      : { risky: e.eosPlus1, moderate: e.eos, maxPain: e.eosMinus[1], maxGain: e.eor };
+    const ruledOut = (which === 'long' && kind === 'blood_bath') || (which === 'short' && kind === 'bull_run');
+    const cell = (name: string, l: { value: number | null }) => <span key={name}><span className="text-muted-foreground">{name} </span><strong className="tabular-nums">{ruledOut || l.value === null ? 'NA' : num(l.value)}</strong></span>;
+    return (
+      <div className={`rounded-md border px-3 py-2 text-xs ${which === 'short' ? 'border-red-600/50 bg-red-500/10' : 'border-emerald-600/50 bg-emerald-500/10'}`}>
+        <div className="mb-1 text-[11px] font-semibold uppercase text-muted-foreground">{which === 'short' ? 'Short at resistance' : 'Long at support'} · proxy ({a.method.label}){ruledOut ? ' · ruled out by the banner' : ''}</div>
+        <div className="flex flex-wrap gap-x-4 gap-y-0.5">{cell(which === 'short' ? 'Risky (EOR-1)' : 'Risky (EOS+1)', v.risky)}{cell(which === 'short' ? 'Moderate (EOR)' : 'Moderate (EOS)', v.moderate)}{cell(which === 'short' ? 'Max Pain (EOR+2)' : 'Max Pain (EOS-2)', v.maxPain)}{cell(which === 'short' ? 'Max Gain (EOS)' : 'Max Gain (EOR)', v.maxGain)}</div>
       </div>
     );
   };
@@ -159,13 +181,10 @@ export function LtpTab() {
           {!a ? <p className="rounded-md border border-dashed border-border px-4 py-6 text-center text-sm text-muted-foreground">{state.analysis.empty ? '' : state.analysis.flags.join(' ')}</p> : (
             <>
               <div className={`rounded-md px-4 py-2 text-center text-sm font-bold uppercase tracking-wide text-white ${bannerClass}`}>
-                {name} · {bias}
-                <span className="ml-3 text-[11px] font-normal normal-case opacity-90">COA 1.0 scenario {a.coa1.scenario.number} · {state.date}{state.viewingStoredDay ? ' (stored day)' : ''} · snapshot {clock(state.snapshotTs)}</span>
+                {name} {bannerText}
+                <span className="ml-3 text-[11px] font-normal normal-case opacity-90">COA 1.0 scenario {a.coa1.scenario.number} ({bias}) · {state.date}{state.viewingStoredDay ? ' (stored day)' : ''} · snapshot {clock(state.snapshotTs)}</span>
               </div>
-              <div className="grid gap-2 text-sm sm:grid-cols-2">
-                <div className="rounded-md border border-red-600/50 bg-red-500/10 px-3 py-2"><span className="text-xs text-muted-foreground">EOR now (proxy: {a.extensions.eor.method.replace(/_/g, ' ')}) @ {a.extensions.eor.strike} </span><strong className="text-base tabular-nums">{num(a.extensions.eor.value)}</strong></div>
-                <div className="rounded-md border border-emerald-600/50 bg-emerald-500/10 px-3 py-2"><span className="text-xs text-muted-foreground">EOS now (proxy: {a.extensions.eos.method.replace(/_/g, ' ')}) @ {a.extensions.eos.strike} </span><strong className="text-base tabular-nums">{num(a.extensions.eos.value)}</strong></div>
-              </div>
+              <div className="grid gap-2 sm:grid-cols-2">{tradeStrip('short')}{tradeStrip('long')}</div>
               <div className="grid gap-2 text-xs sm:grid-cols-2 lg:grid-cols-4">
                 <div className="rounded-md border border-border bg-card px-3 py-1.5"><span className="text-muted-foreground">Top reversal </span><strong>{a.coa1.top ? `${a.coa1.top.label.replace(/ \(.*/, '')} ${num(a.coa1.top.value)}` : '–'}</strong> <span className="text-muted-foreground">proxy · hits {a.coa1.hits.top.count}</span></div>
                 <div className="rounded-md border border-border bg-card px-3 py-1.5"><span className="text-muted-foreground">Bottom reversal </span><strong>{a.coa1.bottom ? `${a.coa1.bottom.label.replace(/ \(.*/, '')} ${num(a.coa1.bottom.value)}` : '–'}</strong> <span className="text-muted-foreground">proxy · hits {a.coa1.hits.bottom.count}</span></div>
@@ -213,16 +232,18 @@ export function LtpTab() {
               {panel === 'lines' ? (
                 state.lines0920 ? (
                   <div className="grid gap-3 sm:grid-cols-2">
-                    <p className="text-[11px] text-muted-foreground sm:col-span-2">Computed once from the first snapshot at or after 09:20 and never changed. Display only: nothing is traded. Entries and targets are proxies.</p>
+                    <p className="text-[11px] text-muted-foreground sm:col-span-2">Computed once from the first snapshot at or after 09:20 and never changed. Display only: nothing is traded. Max Pain is where the idea fails, so it also serves as the stop. All values are proxies ({state.lines0920.method.replace(/_/g, ' ')}).</p>
                     {state.lines0920.delaySeconds > 120 ? <p className="rounded-md bg-amber-500/10 px-3 py-1.5 text-xs sm:col-span-2">Late: the first snapshot at or after 09:20 was {clock(state.lines0920.snapshotTs)} ({Math.round(state.lines0920.delaySeconds / 60)} min late), so these are not true 09:20 lines.</p> : null}
-                    {(['risky', 'moderate'] as const).map((p) => (
-                      <div key={p} className="rounded-lg border border-border bg-card p-3 text-xs">
-                        <div className="mb-1 text-[11px] font-medium capitalize text-muted-foreground">{p} profile · from {clock(state.lines0920!.snapshotTs)}</div>
-                        {state.lines0920!.profiles[p].length ? state.lines0920!.profiles[p].map((e) => (
-                          <div key={e.label} className="flex flex-wrap justify-between gap-2 tabular-nums"><span>{e.side === 'short' ? 'Short' : 'Long'} at {e.label} (proxy)</span><span>entry {num(e.entry)} · stop {num(e.stop)} · target {num(e.target)} · risk {num(e.riskPoints)}</span></div>
-                        )) : <span className="text-muted-foreground">No entry: a required reversal value is missing.</span>}
-                      </div>
-                    ))}
+                    {(['short', 'long'] as const).map((side) => {
+                      const t = state.lines0920![side];
+                      const rows: [string, typeof t.risky, number | null][] = [[side === 'short' ? 'Risky (EOR-1)' : 'Risky (EOS+1)', t.risky, t.riskPoints.risky], [side === 'short' ? 'Moderate (EOR)' : 'Moderate (EOS)', t.moderate, t.riskPoints.moderate], [side === 'short' ? 'Max Pain (EOR+2)' : 'Max Pain (EOS-2)', t.maxPain, null], [side === 'short' ? 'Max Gain (EOS)' : 'Max Gain (EOR)', t.maxGain, null]];
+                      return (
+                        <div key={side} className="rounded-lg border border-border bg-card p-3 text-xs">
+                          <div className="mb-1 text-[11px] font-medium text-muted-foreground">{side === 'short' ? 'Short at resistance' : 'Long at support'} · from {clock(state.lines0920!.snapshotTs)}{t.available ? '' : ' · not available (a value is missing)'}</div>
+                          {rows.map(([label, l, risk]) => <div key={label} className="flex justify-between gap-2 tabular-nums"><span>{label}</span><span>{num(l.value)}{risk !== null ? <span className="ml-2 text-muted-foreground">risk {num(risk)}</span> : null}</span></div>)}
+                        </div>
+                      );
+                    })}
                   </div>
                 ) : <p className="text-xs text-muted-foreground">Not available yet (needs a snapshot at or after 09:20 IST).</p>
               ) : null}
@@ -240,15 +261,18 @@ export function LtpTab() {
               {panel === 'charts' ? <Suspense fallback={<p className="text-xs text-muted-foreground">Loading charts…</p>}><LtpCharts analysis={a} lines0920={state.lines0920} only="rest" /></Suspense> : null}
 
               {panel === 'shifts' ? (
-                a.events.length ? (
-                  <div className="overflow-x-auto rounded-lg border border-border bg-card">
-                    <table className="w-full text-xs tabular-nums"><tbody>
-                      {[...a.events].reverse().map((e, i) => (
-                        <tr key={`${e.ts}-${i}`} className="border-t border-border first:border-t-0"><td className="px-3 py-1">{clock(e.ts)}</td><td className="px-3 py-1 capitalize">{e.side}</td><td className="px-3 py-1">{e.metric}</td><td className="px-3 py-1">{e.fromStrike} → {e.toStrike}</td><td className="px-3 py-1 text-muted-foreground">{e.cause === 'second-became-highest' ? 'second-highest became highest' : 'other'}</td></tr>
-                      ))}
-                    </tbody></table>
-                  </div>
-                ) : <p className="text-xs text-muted-foreground">No level has shifted today.</p>
+                <div className="grid gap-3 lg:grid-cols-2">
+                  {(['resistance', 'support'] as const).map((side) => (
+                    <div key={side} className="overflow-x-auto rounded-lg border border-border bg-card">
+                      <div className="border-b border-border px-3 py-1.5 text-xs font-semibold capitalize">{side} log · now {a.direction[side].current}</div>
+                      <table className="w-full text-xs tabular-nums"><tbody>
+                        {[...a.direction[side].events].reverse().map((e, i) => (
+                          <tr key={`${e.ts}-${i}`} className="border-t border-border first:border-t-0"><td className="px-3 py-1">{clock(e.ts)}</td><td className="px-3 py-1">{e.label}</td><td className="px-3 py-1">{e.text}</td><td className={`px-3 py-1 capitalize ${e.direction === 'bullish' ? 'text-emerald-600' : e.direction === 'bearish' ? 'text-red-600' : 'text-muted-foreground'}`}>{e.direction}</td></tr>
+                        ))}
+                      </tbody></table>
+                    </div>
+                  ))}
+                </div>
               ) : null}
 
               {panel === 'calibration' ? <Calibration underlying={underlying} date={state.date} /> : null}

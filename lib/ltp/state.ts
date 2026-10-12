@@ -50,9 +50,10 @@ export async function buildState(store: LtpStore, opts: StateOptions): Promise<L
 
   // The 9:20 lines are frozen: the first time they can be computed they are saved, and from then on the saved copy is shown.
   let lines0920 = (await store.getLines0920(date, underlying)) as Lines0920 | null;
+  if (lines0920 && !lines0920.short) lines0920 = null; // saved before the layout changed: recompute for display, leave the old row alone
   if (!lines0920) {
     lines0920 = freezeLines0920(snaps, ivMove);
-    if (lines0920) await store.saveLines0920(date, underlying, lines0920);
+    if (lines0920 && !(await store.getLines0920(date, underlying))) await store.saveLines0920(date, underlying, lines0920);
   }
 
   // The weekly range comes from the first stored day of the current expiry (the first day of the expiry week we have data for), saved once.

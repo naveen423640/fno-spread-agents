@@ -31,7 +31,7 @@ describe('freezeLines0920 (C9)', () => {
     expect(lines.date).toBe(DAY);
   });
 
-  it('computes EOR, EOR+1, EOR+2, EOS, EOS-1, EOS-2 from that snapshot', () => {
+  it('computes the whole EOR and EOS family from that snapshot', () => {
     const l = freezeLines0920(day, writerBreakeven)!;
     expect(l.eor.value).toBe(24200 + 55);
     expect(l.eorPlus1.value).toBe(24250 + 45);
@@ -48,41 +48,36 @@ describe('freezeLines0920 (C9)', () => {
     expect(freezeLines0920(changed, writerBreakeven)).toEqual(freezeLines0920(day, writerBreakeven));
   });
 
-  it('risky entries are EOR (short) and EOS (long); moderate are EOR+1 and EOS-1; stops are EOR+2 + 10 and EOS-2 - 10; risk is in points', () => {
+  it('lays the lines out like the real tool: short risky EOR-1, moderate EOR, Max Pain EOR+2, Max Gain EOS; long risky EOS+1, moderate EOS, Max Pain EOS-2, Max Gain EOR', () => {
     const l = freezeLines0920(day, writerBreakeven)!;
-    expect(l.bearishAllowed).toBe(true);
-    expect(l.bullishAllowed).toBe(true);
-    // Short stop: EOR+2 (24335) + 10 = 24345. Long stop: EOS-2 (23775) - 10 = 23765.
-    expect(l.profiles.risky).toContainEqual({ side: 'short', label: 'EOR', entry: 24255, stop: 24345, target: 24200 - 100, riskPoints: 90 });
-    expect(l.profiles.moderate).toContainEqual({ side: 'short', label: 'EOR+1', entry: 24295, stop: 24345, target: 24250 - 100, riskPoints: 50 });
-    expect(l.profiles.risky).toContainEqual({ side: 'long', label: 'EOS', entry: 23860, stop: 23765, target: 23900 + 100, riskPoints: 95 });
-    expect(l.profiles.moderate).toContainEqual({ side: 'long', label: 'EOS-1', entry: 23820, stop: 23765, target: 23850 + 100, riskPoints: 55 });
-    expect(l.profiles.risky).toHaveLength(2);
-    expect(l.profiles.moderate).toHaveLength(2);
+    // CE LTPs 24150:100 (default) 24200:55 24250:45 24300:35. PE LTPs 23950:100 (default) 23900:40 23850:30 23800:25.
+    expect(l.short.risky.value).toBe(24150 + 100);
+    expect(l.short.moderate.value).toBe(24200 + 55);
+    expect(l.short.maxPain.value).toBe(24300 + 35);
+    expect(l.short.maxGain.value).toBe(23900 - 40);
+    expect(l.long.risky.value).toBe(23950 - 100);
+    expect(l.long.moderate.value).toBe(23900 - 40);
+    expect(l.long.maxPain.value).toBe(23800 - 25);
+    expect(l.long.maxGain.value).toBe(24200 + 55);
+    expect(l.short.available && l.long.available).toBe(true);
   });
 
-  it('a missing EOR+1 blocks bearish trades for the day, and bullish ones stay', () => {
-    const missing = [chain('09:20', 0, { ce: { 24250: { ltp: null } } })];
-    const l = freezeLines0920(missing, writerBreakeven)!;
-    expect(l.bearishAllowed).toBe(false);
-    expect(l.bullishAllowed).toBe(true);
-    expect(l.profiles.risky.every((e) => e.side === 'long')).toBe(true);
-    expect(l.profiles.moderate.every((e) => e.side === 'long')).toBe(true);
+  it('risk is the distance from each entry to Max Pain, in points', () => {
+    const l = freezeLines0920(day, writerBreakeven)!;
+    expect(l.short.riskPoints).toEqual({ risky: 24335 - 24250, moderate: 24335 - 24255 });
+    expect(l.long.riskPoints).toEqual({ risky: 23850 - 23775, moderate: 23860 - 23775 });
   });
 
-  it('a missing EOS-1 blocks bullish trades, and a missing EOR blocks bearish ones', () => {
-    const noEosMinus1 = freezeLines0920([chain('09:20', 0, { pe: { 23850: { ltp: null } } })], writerBreakeven)!;
-    expect(noEosMinus1.bullishAllowed).toBe(false);
-    expect(noEosMinus1.bearishAllowed).toBe(true);
-    const noEor = freezeLines0920([chain('09:20', 0, { ce: { 24200: { ltp: null } } })], writerBreakeven)!;
-    expect(noEor.bearishAllowed).toBe(false);
-  });
-
-  it('shows entries with no stop (and no risk figure) when EOR+2 or EOS-2 is missing, rather than inventing one', () => {
+  it('a missing EOR+2 takes the short side out for the day, and the long side stays', () => {
     const l = freezeLines0920([chain('09:20', 0, { ce: { 24300: { ltp: null } } })], writerBreakeven)!;
-    const short = l.profiles.risky.find((e) => e.side === 'short')!;
-    expect(short.stop).toBeNull();
-    expect(short.riskPoints).toBeNull();
+    expect(l.short.available).toBe(false);
+    expect(l.short.riskPoints.moderate).toBeNull();
+    expect(l.long.available).toBe(true);
+  });
+
+  it('a missing EOS-2 takes the long side out, and a missing EOR takes out the short side', () => {
+    expect(freezeLines0920([chain('09:20', 0, { pe: { 23800: { ltp: null } } })], writerBreakeven)!.long.available).toBe(false);
+    expect(freezeLines0920([chain('09:20', 0, { ce: { 24200: { ltp: null } } })], writerBreakeven)!.short.available).toBe(false);
   });
 
   it('uses a late first snapshot and records the delay, and returns null before 09:20 or with no usable chain', () => {
