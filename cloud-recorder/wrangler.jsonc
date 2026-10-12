@@ -8,7 +8,7 @@
   // Every minute from 08:30 to 16:29 IST on weekdays (03:00 to 10:59 UTC). The recorder itself only records 09:15 to 15:30 IST and skips holidays.
   "triggers": { "crons": ["* 3-10 * * 1-5"] },
   // Not a secret: your FYERS app id. The access token goes in through PUT /token and ADMIN_SECRET through `wrangler secret put`.
-  "vars": { "FYERS_CLIENT_ID": "SET-YOUR-FYERS-APP-ID" },
+  "vars": { "FYERS_CLIENT_ID": "S6D79OFRXR-100" },
   "d1_databases": [{ "binding": "DB", "database_name": "ltp-recorder", "database_id": "90c9e5d1-9583-4f8b-a8e7-15e5ebb921b9" }],
   "observability": { "enabled": true }
 }
