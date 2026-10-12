@@ -92,13 +92,13 @@ describe('EOS / EOR and their extensions', () => {
 
 describe('weakStrike for a level based on one metric (real tool: "72500 - WTT - 73000", never the level itself)', () => {
   it('names the second-highest strike of the deciding metric, not of the other metric that peaks elsewhere', () => {
-    // Volume peaks at 24200 (closer to the line) with its second at 24250: WTT-24250. OI peaks at 24300 with its second at 24200 (WTB): not the label.
-    const s = makeChain({ spot: SPOT, step: 50, ce: { 24200: { volume: 100000, oi: 1000 }, 24250: { volume: 90000, oi: 1000 }, 24300: { volume: 1000, oi: 100000 } } });
+    // Volume peaks at 24200 (closer to the line) with its second at 24150: WTB-24150. OI peaks at 24300 with its second at 24200 at 95% (WTB, a higher pct): not the label.
+    const s = makeChain({ spot: SPOT, step: 50, ce: { 24200: { volume: 100000, oi: 95000 }, 24150: { volume: 90000, oi: 1000 }, 24300: { volume: 1000, oi: 100000 } } });
     const l = computeLevels(s)!;
     const st = statusOf('resistance', l.resistance, l.line);
     expect(l.resistance.decidedBy).toBe('volume');
-    expect(st.status).toBe('wtt');
-    expect(weakStrike(st, l.resistance)).toBe(24250);
+    expect(st.status).toBe('wtb');
+    expect(weakStrike(st, l.resistance)).toBe(24150);
   });
   it('names the crossing metric\'s strike when the deciding metric is strong and the other crosses the level', () => {
     const s = makeChain({ spot: SPOT, step: 50, pe: { 23900: { volume: 100000, oi: 1000 }, 23700: { volume: 1000, oi: 100000 }, 24000: { volume: 1000, oi: 90000 } } });
