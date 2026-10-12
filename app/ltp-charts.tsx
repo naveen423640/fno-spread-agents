@@ -37,6 +37,15 @@ function LineCanvas({ series, guides, height }: { series: Series[]; guides: Guid
     series.forEach((s, i) => {
       const line = chart.addSeries(LineSeries, { color: s.color, lineWidth: 2, title: s.title, priceLineVisible: false });
       line.setData(s.points);
+      // Keep every guide inside the visible price range, even when it is far from the price.
+      if (i === 0 && guides.length) {
+        const prices = guides.map((g) => g.price);
+        line.applyOptions({ autoscaleInfoProvider: (original: () => { priceRange: { minValue: number; maxValue: number } | null } | null) => {
+          const r = original();
+          if (!r?.priceRange) return r;
+          return { ...r, priceRange: { minValue: Math.min(r.priceRange.minValue, ...prices), maxValue: Math.max(r.priceRange.maxValue, ...prices) } };
+        } });
+      }
       if (i === 0) for (const g of guides) line.createPriceLine({ price: g.price, color: g.color, lineWidth: 1, lineStyle: g.style ?? LineStyle.Dashed, axisLabelVisible: true, title: g.title });
     });
     chart.timeScale().fitContent();
@@ -71,16 +80,29 @@ function ChartCard({ title, note, series, guides, height = 220 }: { title: strin
 }
 
 export function LtpCharts({ analysis, lines0920, only = 'all', height }: { analysis: UsableAnalysis; lines0920: Lines0920 | null; only?: 'all' | 'spot' | 'rest'; height?: number }) {
-  const { series: s, extensions } = analysis;
+  const { series: s } = analysis;
+  const { coa1, levels } = analysis;
+  const val = (l: { value: number | null } | null | undefined) => (l && l.value !== null ? l.value : null);
+  const g = (price: number | null, color: string, title: string, style?: LineStyle): Guide[] => (price === null ? [] : [{ price, color, title, style }]);
+  const name = (l: { label: string } | null) => (l ? l.label.replace(/ \(.*/, '') : '');
+  const l0 = lines0920;
   const guides: Guide[] = [
-    ...(extensions.eos.value !== null ? [{ price: extensions.eos.value, color: GREEN, title: 'EOS (proxy)' }] : []),
-    ...(extensions.eor.value !== null ? [{ price: extensions.eor.value, color: RED, title: 'EOR (proxy)' }] : []),
-    ...(lines0920?.eos.value != null ? [{ price: lines0920.eos.value, color: GREEN, title: '9:20 EOS (proxy)', style: LineStyle.Dotted }] : []),
-    ...(lines0920?.eor.value != null ? [{ price: lines0920.eor.value, color: RED, title: '9:20 EOR (proxy)', style: LineStyle.Dotted }] : []),
+    // The scenario's own top and bottom reversal levels (solid), then the support / resistance strikes (thin dashed).
+    ...g(val(coa1.top), RED, `Top ${name(coa1.top)} (proxy)`, LineStyle.Solid),
+    ...g(val(coa1.bottom), GREEN, `Bottom ${name(coa1.bottom)} (proxy)`, LineStyle.Solid),
+    ...g(levels.resistance.strike, '#f87171', `Resistance ${levels.resistance.strike}`, LineStyle.Dashed),
+    ...g(levels.support.strike, '#4ade80', `Support ${levels.support.strike}`, LineStyle.Dashed),
+    // The frozen 9:20 lines (dotted): both profiles' entries, and the stops.
+    ...(l0 ? [
+      ...g(val(l0.eor), RED, '9:20 EOR (proxy)', LineStyle.Dotted), ...g(val(l0.eorPlus1), '#fb923c', '9:20 EOR+1 (proxy)', LineStyle.Dotted),
+      ...g(val(l0.eos), GREEN, '9:20 EOS (proxy)', LineStyle.Dotted), ...g(val(l0.eosMinus1), '#2dd4bf', '9:20 EOS-1 (proxy)', LineStyle.Dotted),
+      ...g(l0.profiles.risky.find((e) => e.side === 'short')?.stop ?? null, AMBER, '9:20 stop above', LineStyle.Dotted),
+      ...g(l0.profiles.risky.find((e) => e.side === 'long')?.stop ?? null, AMBER, '9:20 stop below', LineStyle.Dotted),
+    ] : []),
   ];
   return (
     <div className={only === 'all' ? 'grid gap-3 lg:grid-cols-3' : only === 'rest' ? 'grid gap-3 lg:grid-cols-2' : 'grid gap-3'}>
-      {only !== 'rest' ? <ChartCard height={height} title="Spot with reversal lines" note="Dashed: current EOS / EOR proxies. Dotted: the frozen 9:20 proxies." series={[{ color: BLUE, title: 'Spot', points: toPoints(s.spot, (r) => r.spot) }]} guides={guides} /> : null}
+      {only !== 'rest' ? <ChartCard height={height} title="Spot with reversal lines" note="Solid: the scenario's top and bottom reversal (proxy). Dashed: support and resistance strikes. Dotted: the frozen 9:20 lines and stops (proxy)." series={[{ color: BLUE, title: 'Spot', points: toPoints(s.spot, (r) => r.spot) }]} guides={guides} /> : null}
       {only !== 'spot' ? <><ChartCard
         title="Weakness %" note={`Second-highest as a percent of the highest. Above ${LTP_CONFIG.weakThresholdPct}% the level is weak.`}
         series={[
