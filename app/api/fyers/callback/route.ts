@@ -17,9 +17,15 @@ export async function GET(request: Request) {
   const clientId = process.env.FYERS_CLIENT_ID;
   const secretKey = process.env.FYERS_SECRET_KEY;
 
-  if (!authCode || !state || !expectedState || state !== expectedState) {
-    return Response.json({ error: 'FYERS login state was missing or invalid. Start again from Connect FYERS.' }, { status: 400 });
-  }
+  // Three different causes get three different answers, so a failed login says what to change.
+  const failure = !authCode || !state
+    ? 'FYERS did not send back a login code. Start again from Connect FYERS and finish the FYERS login.'
+    : !expectedState
+      ? 'The login cookie is missing. Finish the FYERS login in the same browser tab where you pressed Connect FYERS, without opening a second tab or another browser.'
+      : state !== expectedState
+        ? 'This login belongs to an earlier attempt. Start again with a single click on Connect FYERS and finish it before trying anything else.'
+        : null;
+  if (failure) return Response.json({ error: failure }, { status: 400 });
 
   if (!clientId || !secretKey) {
     return Response.json({ error: 'FYERS_CLIENT_ID and FYERS_SECRET_KEY are not configured for this deployment.' }, { status: 500 });
