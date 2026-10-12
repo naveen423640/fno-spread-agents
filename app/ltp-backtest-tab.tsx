@@ -12,6 +12,8 @@ const BLOCKED: Record<string, string> = {
   coa2_agree: 'COA2 must agree', soc_opposes: 'opposing SOC', daily_trade_cap: 'trade cap', max_concurrent: 'trade open', daily_loss_cap: 'loss cap', book_quote: 'no option quote',
 };
 
+const INDICES = [{ id: 'NSE:NIFTY50-INDEX', name: 'NIFTY' }, { id: 'NSE:NIFTYBANK-INDEX', name: 'BANKNIFTY' }, { id: 'BSE:SENSEX-INDEX', name: 'SENSEX' }];
+
 type Bound = { min: number; max: number; integer?: boolean } | { values: (string | boolean)[] };
 type Options = { days: string[]; versions: { version: string; changelog: string; active: boolean }[]; activeVersion: string; tunables: Record<string, Bound>; experiments: { id: string; status: string; hypothesis: string; diff: Record<string, unknown>; baseVersion: string }[] };
 type WithBaseline = BacktestResult & { baseline?: { label: string; summary: BacktestResult['summary'] } };
@@ -23,6 +25,7 @@ export function LtpBacktestTab() {
   const [experiment, setExperiment] = useState('');
   const [changes, setChanges] = useState<Record<string, string>>({});
   const [compare, setCompare] = useState(false);
+  const [indices, setIndices] = useState<string[]>(INDICES.map((i) => i.id));
   const days = options?.days ?? [];
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
@@ -56,6 +59,7 @@ export function LtpBacktestTab() {
       if (experiment) q.set('experiment', experiment);
       if (Object.keys(overrides).length) q.set('overrides', JSON.stringify(overrides));
       if (compare) q.set('compare', '1');
+      q.set('underlyings', indices.join(','));
       const res = await fetch(`/api/ltp/agent/backtest?${q}`, { cache: 'no-store' });
       const body = (await res.json()) as WithBaseline | { error: string };
       if ('error' in body) throw new Error(body.error);
@@ -74,8 +78,11 @@ export function LtpBacktestTab() {
           <select value={from} onChange={(e) => { setFrom(e.target.value); if (to < e.target.value) setTo(e.target.value); }} className="rounded-md border border-border bg-background px-2 py-1">{days.map((d) => <option key={d} value={d}>{d}</option>)}</select></label>
         <label className="flex items-center gap-1.5">To
           <select value={to} onChange={(e) => setTo(e.target.value)} className="rounded-md border border-border bg-background px-2 py-1">{days.filter((d) => d >= from).map((d) => <option key={d} value={d}>{d}</option>)}</select></label>
-        <Button size="sm" onClick={() => void run()} disabled={running || !from}>{running ? 'Running…' : 'Run backtest'}</Button>
-        <span className="text-muted-foreground">{days.length ? `${days.length} recorded day${days.length === 1 ? '' : 's'}. About 20 seconds per day; at most 5 days at a time.` : 'No recorded days yet.'}</span>
+        <span className="flex items-center gap-2">Index{INDICES.map((i) => (
+          <label key={i.id} className="flex items-center gap-1"><input type="checkbox" checked={indices.includes(i.id)} onChange={(e) => setIndices(e.target.checked ? [...indices, i.id] : indices.filter((x) => x !== i.id))} />{i.name}</label>
+        ))}</span>
+        <Button size="sm" onClick={() => void run()} disabled={running || !from || !indices.length}>{running ? 'Running…' : 'Run backtest'}</Button>
+        <span className="text-muted-foreground">{days.length ? `${days.length} recorded day${days.length === 1 ? '' : 's'}. About 20 seconds per day for all three indices; at most 5 days at a time.` : 'No recorded days yet.'}</span>
       </div>
       {options ? (
         <div className="grid gap-2 rounded-lg border border-border bg-card p-3 text-xs">

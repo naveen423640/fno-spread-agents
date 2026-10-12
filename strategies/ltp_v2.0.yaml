@@ -39,7 +39,7 @@ block_on_opposing_soc: true
 graph_consistent_required: true # skip a signal when the live scenario and the knowledge graph disagree (docs/data/ltp-knowledge-graph.json)
 decide_by_graph: true # the sides to trade come from the mind-map outcome, not from scenarios_traded / block_scenarios
 
-stop_rule: nine_twenty # EOR+2 / EOS-2 beyond the entry, plus the buffer; or next_level
+stop_rule: one_diversion # one strike step (NIFTY 50 points) from the entry for every setup; or nine_twenty, next_level
 stop_buffer_pts: 10
 time_exit: "15:15"
 exit_on_level_shift: false

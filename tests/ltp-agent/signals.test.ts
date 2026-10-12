@@ -124,6 +124,39 @@ describe('v2.0 decides from the mind-map outcome, not from the first-level scena
   });
 });
 
+describe('v2.0 keeps one diversion as the stop for every setup: one strike step (50 points in NIFTY)', () => {
+  const v20s = parseStrategy(readFileSync('strategies/ltp_v2.0.yaml', 'utf8'));
+  it('the strategy says so, and v0.1 keeps the 9:20 style stop', () => {
+    expect(v20s.stop_rule).toBe('one_diversion');
+    expect(v01.stop_rule).toBe('nine_twenty');
+  });
+  it('a long from EOS: stop one step below the entry, a short from EOR one step above, planned risk 50', () => {
+    const long = evaluate(fakeAnalysis({ spot: 24012, spots: [24092, 24012] }), v20s, idle).find((x) => x.direction === 'long')!;
+    expect(long).toMatchObject({ entry: 24012, stop: 23962, plannedRiskPts: 50, taken: true });
+    const short = evaluate(fakeAnalysis({ spot: 24198, spots: [24120, 24198] }), v20s, idle).find((x) => x.direction === 'short')!;
+    expect(short).toMatchObject({ entry: 24198, stop: 24248, plannedRiskPts: 50, taken: true });
+  });
+  it('the risky and the very risky entries use the same one-diversion stop', () => {
+    const risky = evaluate(fakeAnalysis({ pressure: { support: 'B', resistance: 'B' }, spot: EXT.eorMinus1 - 2, spots: [EXT.eorMinus1 - 60, EXT.eorMinus1 - 2] }), v20s, idle).find((x) => x.setup === 'risky_tug')!;
+    expect(risky).toMatchObject({ direction: 'short', stop: EXT.eorMinus1 - 2 + 50, plannedRiskPts: 50 });
+    const eod = evaluate(fakeAnalysis({ pressure: { support: 'HB', resistance: 'B' }, spot: 24108, spots: [24040, 24108] }), v20s, idle).find((x) => x.setup === 'very_risky_eod')!;
+    expect(eod).toMatchObject({ direction: 'short', stop: 24158, plannedRiskPts: 50 });
+  });
+  it('the SOC and 9:20 setups too', () => {
+    const soc = { type: '1h' as const, side: 'support' as const, bias: 'bearish' as const, from: 'EOR' as const, startedAt: 0, minutes: 70, spread: 3, targetStrike: 23900, zone: { low: 23900, high: 24000 }, target: 24090 };
+    const onlySoc = { ...v20s, setups_enabled: { ...v20s.setups_enabled, coa1_reversal: false, risky_tug: false, very_risky_eod: false } };
+    expect(evaluate(fakeAnalysis({ spot: 24198, spots: [24120, 24198], soc }), onlySoc, idle).find((x) => x.setup === 'soc')).toMatchObject({ direction: 'short', stop: 24248, plannedRiskPts: 50 });
+    const nine = { ...v20s, setups_enabled: { ...v20s.setups_enabled, coa1_reversal: false, risky_tug: false, very_risky_eod: false, soc: false } };
+    const c = evaluate(fakeAnalysis({ spot: 24148, spots: [24060, 24148], lines: fakeLines(), hhmm: '09:30' }), nine, idle).find((x) => x.setup === 'nine_twenty')!;
+    expect(c).toMatchObject({ stop: c.entry + (c.direction === 'short' ? 50 : -50), plannedRiskPts: 50 });
+  });
+  it('the step is the index\'s own: 100 points in BANKNIFTY, and the Watch list uses it from the level', () => {
+    const a = fakeAnalysis({ underlying: 'NSE:NIFTYBANK-INDEX', step: 100, spot: 24012, spots: [24092, 24012] });
+    expect(evaluate(a, v20s, idle).find((x) => x.direction === 'long')).toMatchObject({ stop: 23912, plannedRiskPts: 100 });
+    expect(watchLevels(fakeAnalysis(), v20s, idle).find((x) => x.direction === 'long')).toMatchObject({ entry: EXT.eos, stop: EXT.eos - 50 });
+  });
+});
+
 describe('very high push: a very risky trade at the nearest end of diversion', () => {
   const v20e = parseStrategy(readFileSync('strategies/ltp_v2.0.yaml', 'utf8'));
   const veryRisky = (opts: FakeOpts, strategy: Strategy = v20e) => evaluate(fakeAnalysis(opts), strategy, idle).filter((x) => x.setup === 'very_risky_eod');

@@ -1134,6 +1134,14 @@
    "detail": "Bears winning gives a risky short, bulls winning a risky long, at the level the live tool shows as Risky. Sides pulling against each other are contested: no risky trade. A plain push against a stable side is only a mild lead: no risky trade. Do not skip on the first-level scenario: decide from the mind-map outcome."
   },
   {
+   "id": "rule:one-diversion-stop",
+   "type": "rule",
+   "label": "Every trade risks one diversion: the stop is one strike step from the entry (NIFTY 50 points, BANKNIFTY and SENSEX 100)",
+   "source": "user",
+   "status": "confirmed",
+   "detail": "Applies to every setup in v2.0 (reversal, 9:20, SOC, risky, very risky). Earlier versions keep the 9:20 style stop."
+  },
+  {
    "id": "rule:very-risky-eod",
    "type": "rule",
    "label": "Very high push allows very risky trades at the nearest end of diversion (EOD)",

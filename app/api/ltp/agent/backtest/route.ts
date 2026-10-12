@@ -6,6 +6,7 @@ import { TUNABLE_FIELDS } from '@/lib/ltp-agent/strategy';
 import { DEFAULT_VERSION } from '@/lib/ltp-agent/default-version';
 import { listVersions } from '@/lib/ltp-agent/versions';
 import type { SessionAnalysis } from '@/lib/ltp/analyze';
+import { UNDERLYINGS } from '@/lib/ltp/recorder';
 import { createLtpStore } from '@/lib/ltp/store';
 
 const NO_STORE = { 'Cache-Control': 'no-store' };
@@ -35,6 +36,9 @@ export async function GET(request: Request) {
     if (!from || !to || !/^\d{4}-\d{2}-\d{2}$/.test(from) || !/^\d{4}-\d{2}-\d{2}$/.test(to)) return Response.json({ error: 'Give day=YYYY-MM-DD or from and to.' }, { status: 400, headers: NO_STORE });
     const days = recorded.filter((d) => d >= from && d <= to);
     if (days.length > MAX_DAYS) return Response.json({ error: `At most ${MAX_DAYS} days per run.` }, { status: 400, headers: NO_STORE });
+    const asked = params.get('underlyings');
+    const underlyings = asked ? asked.split(',').filter((u) => UNDERLYINGS.includes(u)) : undefined;
+    if (asked && !underlyings?.length) return Response.json({ error: 'Choose at least one index.' }, { status: 400, headers: NO_STORE });
     let overrides: Record<string, unknown> | undefined;
     const rawOverrides = params.get('overrides');
     if (rawOverrides) {
@@ -42,10 +46,10 @@ export async function GET(request: Request) {
     }
     const { strategy, label } = await resolveBacktestStrategy(journal, { version: params.get('version') ?? undefined, experiment: params.get('experiment') ?? undefined, overrides });
     const cache = new Map<string, SessionAnalysis>();
-    const result = await runBacktest({ store, strategy, days, label, cache });
+    const result = await runBacktest({ store, strategy, days, underlyings, label, cache });
     if (!params.get('compare')) return Response.json(result, { headers: NO_STORE });
     const active = await resolveBacktestStrategy(journal, {});
-    const baseline = await runBacktest({ store, strategy: active.strategy, days, label: active.label, cache });
+    const baseline = await runBacktest({ store, strategy: active.strategy, days, underlyings, label: active.label, cache });
     return Response.json({ ...result, baseline: { label: baseline.label, summary: baseline.summary } }, { headers: NO_STORE });
   } catch (error) {
     const message = error instanceof Error ? error.message : '';

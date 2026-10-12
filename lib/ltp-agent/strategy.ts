@@ -20,7 +20,7 @@ export const strategySchema = z.object({
   block_on_opposing_soc: z.boolean(),
   graph_consistent_required: z.boolean().default(false), // skip a signal when the live scenario and the knowledge graph disagree
   decide_by_graph: z.boolean().default(false), // which sides may be traded comes from the mind-map outcome (a top gives shorts, a bottom gives longs), not from the first-level scenario number
-  stop_rule: z.enum(['nine_twenty', 'next_level']),
+  stop_rule: z.enum(['nine_twenty', 'next_level', 'one_diversion']),
   stop_buffer_pts: z.number().nonnegative(),
   time_exit: hhmm,
   exit_on_level_shift: z.boolean(),

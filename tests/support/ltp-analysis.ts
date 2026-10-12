@@ -19,7 +19,7 @@ export const DIVERSIONS = {
   bullish: [point('diversion', 24050, 24120), point('end_of_diversion', 24050, 24040), point('diversion', 24100, 24170), point('end_of_diversion', 24100, 24090)],
 };
 export type FakeOpts = {
-  date?: string; hhmm?: string; underlying?: string; spot?: number; spots?: number[];
+  step?: number; date?: string; hhmm?: string; underlying?: string; spot?: number; spots?: number[];
   support?: Status; resistance?: Status; pressure?: { support: Pressure; resistance: Pressure }; soc?: UsableAnalysis['soc']; coa2?: Partial<UsableAnalysis['coa2']>;
   lines?: Lines0920 | null; missing?: (keyof typeof EXT)[]; supportDirection?: 'bullish' | 'bearish' | 'neutral'; resistanceDirection?: 'bullish' | 'bearish' | 'neutral';
 };
@@ -42,7 +42,7 @@ export function fakeAnalysis(o: FakeOpts = {}): UsableAnalysis {
   const dir = (d?: 'bullish' | 'bearish' | 'neutral') => ({ events: [], current: d ?? 'neutral' });
   const spots = o.spots ?? [spot + 80, spot];
   return {
-    empty: false, usable: true, asOf: istTs(date, o.hhmm ?? '10:42'), date, underlying: o.underlying ?? 'NSE:NIFTY50-INDEX', expiry: '2026-10-13', spot, step: 50,
+    empty: false, usable: true, asOf: istTs(date, o.hhmm ?? '10:42'), date, underlying: o.underlying ?? 'NSE:NIFTY50-INDEX', expiry: '2026-10-13', spot, step: o.step ?? 50,
     levels: { line: { low: 24000, high: 24050, exact: false }, support: { strike: 24000, decidedBy: 'volume+oi', byVolume: null, byOi: null }, resistance: { strike: 24250, decidedBy: 'volume+oi', byVolume: null, byOi: null } },
     strength: { support: { strike: 24000, status: o.support ?? 'strong', pct: { volume: 50, oi: 50 }, byMetric: {} as never }, resistance: { strike: 24250, status: o.resistance ?? 'strong', pct: { volume: 50, oi: 50 }, byMetric: {} as never } },
     method: { id: 'test', label: 'test' }, extensions: e,

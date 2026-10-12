@@ -56,6 +56,7 @@ function build(a: UsableAnalysis, strategy: Strategy, ctx: EvalContext, mode: 't
   const moderate = strategy.entry_profile === 'moderate';
 
   const coaStop = (direction: Direction, label: string): number | null => {
+    if (strategy.stop_rule === 'one_diversion') return null; // set from the entry in judge()
     if (strategy.stop_rule === 'nine_twenty') {
       const base = direction === 'long' ? rungs['EOS-2'] : rungs['EOR+2'];
       return base === null ? null : direction === 'long' ? base - buffer : base + buffer;
@@ -141,7 +142,8 @@ function build(a: UsableAnalysis, strategy: Strategy, ctx: EvalContext, mode: 't
     const allowed = hasLevel && (strategy.decide_by_graph || strategy.scenarios_traded[String(scenario.number) as '1'][r.direction]);
     const blocked = !strategy.decide_by_graph && strategy.block_scenarios.includes(scenario.number);
     const start = r.setup === 'nine_twenty' ? strategy.window.nine_twenty_start : strategy.window.start;
-    const stop = r.stop;
+    // v2.0: every setup risks exactly one diversion (one strike step) from the entry.
+    const stop = strategy.stop_rule === 'one_diversion' ? (r.direction === 'long' ? entry - a.step : entry + a.step) : r.stop;
     const target = r.target;
     const planOk = stop !== null && target !== null && (r.direction === 'long' ? stop < entry && entry < target : target < entry && entry < stop);
     const coa2 = a.coa2.result;

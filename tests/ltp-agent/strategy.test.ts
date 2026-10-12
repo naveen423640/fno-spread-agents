@@ -118,8 +118,8 @@ describe('ltp_v2.0.yaml: the course rules plus the knowledge graph as a guard', 
     expect(v20).toMatchObject({ graph_consistent_required: true, decide_by_graph: true });
     expect(v20.setups_enabled).toMatchObject({ risky_tug: true, very_risky_eod: true });
     expect(v01s).toMatchObject({ graph_consistent_required: false, decide_by_graph: false });
-    const { version: _a, name: _b, graph_consistent_required: _c, decide_by_graph: _g, setups_enabled: se20, ...rest20 } = v20;
-    const { version: _d, name: _e, graph_consistent_required: _f, decide_by_graph: _h, setups_enabled: se01, ...rest01 } = v01s;
+    const { version: _a, name: _b, graph_consistent_required: _c, decide_by_graph: _g, stop_rule: _s1, setups_enabled: se20, ...rest20 } = v20;
+    const { version: _d, name: _e, graph_consistent_required: _f, decide_by_graph: _h, stop_rule: _s2, setups_enabled: se01, ...rest01 } = v01s;
     expect(rest20).toEqual(rest01);
     expect({ ...se20, risky_tug: false, very_risky_eod: false }).toEqual(se01);
   });
