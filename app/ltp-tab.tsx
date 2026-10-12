@@ -161,6 +161,10 @@ export function LtpTab() {
                 {name} · {bias}
                 <span className="ml-3 text-[11px] font-normal normal-case opacity-90">COA 1.0 scenario {a.coa1.scenario.number} · {state.date}{state.viewingStoredDay ? ' (stored day)' : ''} · snapshot {clock(state.snapshotTs)}</span>
               </div>
+              <div className="grid gap-2 text-sm sm:grid-cols-2">
+                <div className="rounded-md border border-red-600/50 bg-red-500/10 px-3 py-2"><span className="text-xs text-muted-foreground">EOR now (proxy: {a.extensions.eor.method.replace(/_/g, ' ')}) @ {a.extensions.eor.strike} </span><strong className="text-base tabular-nums">{num(a.extensions.eor.value)}</strong></div>
+                <div className="rounded-md border border-emerald-600/50 bg-emerald-500/10 px-3 py-2"><span className="text-xs text-muted-foreground">EOS now (proxy: {a.extensions.eos.method.replace(/_/g, ' ')}) @ {a.extensions.eos.strike} </span><strong className="text-base tabular-nums">{num(a.extensions.eos.value)}</strong></div>
+              </div>
               <div className="grid gap-2 text-xs sm:grid-cols-2 lg:grid-cols-4">
                 <div className="rounded-md border border-border bg-card px-3 py-1.5"><span className="text-muted-foreground">Top reversal </span><strong>{a.coa1.top ? `${a.coa1.top.label.replace(/ \(.*/, '')} ${num(a.coa1.top.value)}` : '–'}</strong> <span className="text-muted-foreground">proxy · hits {a.coa1.hits.top.count}</span></div>
                 <div className="rounded-md border border-border bg-card px-3 py-1.5"><span className="text-muted-foreground">Bottom reversal </span><strong>{a.coa1.bottom ? `${a.coa1.bottom.label.replace(/ \(.*/, '')} ${num(a.coa1.bottom.value)}` : '–'}</strong> <span className="text-muted-foreground">proxy · hits {a.coa1.hits.bottom.count}</span></div>

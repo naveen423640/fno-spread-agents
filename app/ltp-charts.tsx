@@ -90,6 +90,7 @@ export function LtpCharts({ analysis, lines0920, only = 'all', height }: { analy
     // The scenario's own top and bottom reversal levels (solid), then the support / resistance strikes (thin dashed).
     ...g(val(coa1.top), RED, `Top ${name(coa1.top)} (proxy)`, LineStyle.Solid),
     ...g(val(coa1.bottom), GREEN, `Bottom ${name(coa1.bottom)} (proxy)`, LineStyle.Solid),
+    ...g(val(analysis.extensions.eor), '#dc2626', 'EOR now (proxy)', LineStyle.LargeDashed), ...g(val(analysis.extensions.eos), '#16a34a', 'EOS now (proxy)', LineStyle.LargeDashed),
     ...g(levels.resistance.strike, '#f87171', `Resistance ${levels.resistance.strike}`, LineStyle.Dashed),
     ...g(levels.support.strike, '#4ade80', `Support ${levels.support.strike}`, LineStyle.Dashed),
     // The frozen 9:20 lines (dotted): both profiles' entries, and the stops.
