@@ -1,5 +1,6 @@
 // LTP agent commands (paper trading only; nothing here can place an order).
 //   npm run agent-run                              every minute: asks the running app to step the agent (the app reads the recorded snapshots)
+//   npm run agent-review -- --date 2026-10-12      asks the running app to review that day's closed trades (needs ANTHROPIC_API_KEY in the app's environment)
 //   npm run agent-replay -- --from 2026-10-12 --to 2026-10-12 --version 0.1 [--db <file>] [--underlying <symbol>]
 //                                                  re-runs the agent over recorded days into a throwaway journal and prints what it would have done
 // `run` needs the app running, like the recorder. `agent-replay` reads the app's local database read-only and needs neither the app nor FYERS.
@@ -26,6 +27,13 @@ async function post(action: string): Promise<string> {
   return `${new Date().toISOString()} v${body.version}${body.paused ? ' PAUSED' : ''} ${parts.join('  ')}`;
 }
 
+async function review(date?: string): Promise<string> {
+  const response = await fetch(`${base}/api/ltp/agent/review`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(date ? { date } : {}) });
+  const body = (await response.json().catch(() => ({}))) as { error?: string; date?: string; reviewed?: number; failed?: number; skipped?: string };
+  if (!response.ok || body.error) return `${new Date().toISOString()} ${body.error ?? `HTTP ${response.status}`}`;
+  return `${new Date().toISOString()} review ${body.date}: ${body.reviewed} reviewed, ${body.failed} failed${body.skipped === 'no_api_key' ? ' (skipped: no ANTHROPIC_API_KEY, the journal stays unreviewed)' : ''}`;
+}
+
 function istParts(now = new Date()) {
   const parts = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Kolkata', weekday: 'short', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(now);
   const get = (type: string) => parts.find((p) => p.type === type)?.value ?? '';
@@ -35,6 +43,7 @@ function istParts(now = new Date()) {
 async function run() {
   console.log(`LTP agent running against ${base}. Press Ctrl+C to stop.`);
   let finishedFor = '';
+  let reviewedFor = '';
   for (;;) {
     const { weekday, minute } = istParts();
     const trading = !['Sat', 'Sun'].includes(weekday);
@@ -42,6 +51,7 @@ async function run() {
       if (trading && minute >= 9 * 60 + 15 && minute <= 15 * 60 + 30) console.log(await post('step'));
       const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
       if (trading && minute >= 15 * 60 + 31 && finishedFor !== today) { console.log(`end of day: ${await post('finish_day')}`); finishedFor = today; }
+      if (trading && minute >= 15 * 60 + 35 && reviewedFor !== today) { console.log(await review(today)); reviewedFor = today; }
     } catch (error) { console.error(`${new Date().toISOString()} could not reach the app: ${error instanceof Error ? error.message : 'unknown error'}`); }
     // Wake a few seconds after the next minute boundary, so the recorder has stored that minute.
     await new Promise((resolve) => setTimeout(resolve, 60_000 - (Date.now() % 60_000) + 6_000));
@@ -90,6 +100,7 @@ async function replay() {
 async function main() {
   if (command === 'run') await run();
   else if (command === 'replay') await replay();
-  else { console.error('Usage: ltp-agent <run | replay>'); process.exitCode = 1; }
+  else if (command === 'review') console.log(await review(option('date')));
+  else { console.error('Usage: ltp-agent <run | replay | review>'); process.exitCode = 1; }
 }
 void main();
