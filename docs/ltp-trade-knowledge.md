@@ -12,10 +12,15 @@ Every rule has a source tag: **[course]** from the free course or its practice t
 
 ## Rules from the owner
 
-1. **[user, 2026-10-13]** When the pressure is high (no bottom: Blood Bath, or no top: Bull Run), **risky trades can be taken**. *Details to confirm: which level and which direction counts as the risky trade in each case.*
+1. **[user, 2026-10-13, confirmed]** When the pressure is high (no bottom: Blood Bath, or no top: Bull Run), **risky trades can be taken**:
+   - **No bottom (Blood Bath):** the risky trade is a **short**, entered earlier at **EOR-1** instead of waiting for EOR. There is no long from a bottom.
+   - **No top (Bull Run):** the risky trade is a **long**, entered earlier at **EOS+1** instead of waiting for EOS. There is no short from a top.
+   - The tool's own wording agrees for the extreme case: with both sides highly bearish "EOR-1 can also be a good level as top"; with both highly bullish "EOS+1 can also be a good level as bottom" (`docs/ltp-coa-verification.md`).
+   - *Still to settle:* in which cases exactly (see Open).
 
 ## Open
 
+- Rule 1: does it apply to **every** case where the tool shows no bottom or no top (one side highly bearish, both sides bearish, both highly bearish), or only to the highly bearish / highly bullish ones?
 - Which scenarios allow only the safe entry, and which also allow the risky one.
 - What counts as the moderate entry and the safe entry in each scenario.
 - Stops, targets and time limits per tier.
