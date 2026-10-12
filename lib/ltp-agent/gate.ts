@@ -15,6 +15,7 @@ import type { JournalStore } from './journal-store';
 import { createMemoryJournal } from './memory-journal';
 import { metricsOf, percentileOf } from './metrics';
 import { assertLearning } from './phase';
+import { ensureSplit } from './versions';
 import { applyDiff, type Strategy } from './strategy';
 
 export const MIN_HOLDOUT_TRADES = 30;
@@ -74,10 +75,12 @@ export async function runExperiment(deps: { store: LtpStore; journal: JournalSto
   if (experiment.status !== 'proposed') throw new Error(`Experiment ${id} is ${experiment.status}; only a proposed experiment can be run.`);
   if (deps.current.version !== experiment.baseVersion) throw new Error(`Experiment ${id} was proposed against version ${experiment.baseVersion}, but ${deps.current.version} is active.`);
   await assertLearning(deps.journal, experiment.baseVersion);
-  await deps.journal.saveExperiment({ ...experiment, status: 'running' });
+  // An owner idea added before there were two recorded days has no held-out days yet: take them now (the version's stored split).
+  const split = experiment.split.holdout.length ? experiment.split : await ensureSplit(deps, experiment.baseVersion);
+  await deps.journal.saveExperiment({ ...experiment, split, status: 'running' });
   const triedCount = (await deps.journal.listExperiments()).length;
-  const results = await runGate({ store: deps.store, current: deps.current, candidate: applyDiff(deps.current, experiment.diff), holdoutDays: experiment.split.holdout, underlyings: deps.underlyings, method: deps.method, seeds: deps.seeds, bootstrapIterations: deps.bootstrapIterations, triedCount, now: deps.now });
-  const done: Experiment = { ...experiment, status: results.buy.passed || results.sell.passed ? 'awaiting_approval' : 'rejected_by_gate', results, triedCount };
+  const results = await runGate({ store: deps.store, current: deps.current, candidate: applyDiff(deps.current, experiment.diff), holdoutDays: split.holdout, underlyings: deps.underlyings, method: deps.method, seeds: deps.seeds, bootstrapIterations: deps.bootstrapIterations, triedCount, now: deps.now });
+  const done: Experiment = { ...experiment, split, status: results.buy.passed || results.sell.passed ? 'awaiting_approval' : 'rejected_by_gate', results, triedCount };
   await deps.journal.saveExperiment(done);
   return done;
 }

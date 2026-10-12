@@ -2,7 +2,7 @@ import { getDatabaseBinding } from '@/db';
 import { checkRequestOrigin } from '@/lib/agent-service/guard';
 import { createD1AgentStore } from '@/lib/agents/store';
 import { runExperiment } from '@/lib/ltp-agent/gate';
-import { proposeExperiments } from '@/lib/ltp-agent/experiments';
+import { addOwnerExperiments, proposeExperiments } from '@/lib/ltp-agent/experiments';
 import { createJournalStore } from '@/lib/ltp-agent/journal-store';
 import { phaseOf, PhaseLockedError } from '@/lib/ltp-agent/phase';
 import { buildReviewerLlm } from '@/lib/ltp-agent/reviewer';
@@ -12,7 +12,7 @@ import { createLtpStore } from '@/lib/ltp/store';
 
 const NO_STORE = { 'Cache-Control': 'no-store' };
 
-// GET: phase, versions and every experiment. POST { action, id?, version? }: propose | run | approve | reject | rollback | pause | resume.
+// GET: phase, versions and every experiment. POST { action, id?, version? }: propose | add_owner_ideas | run | approve | reject | rollback | pause | resume.
 // Nothing here reaches FYERS and nothing here places an order; the agent is paper only.
 export async function GET() {
   try {
@@ -41,6 +41,12 @@ export async function POST(request: Request) {
         if (!llm) return Response.json({ error: 'ANTHROPIC_API_KEY is not set for the app, so no proposals can be made.' }, { status: 503, headers: NO_STORE });
         const strategy = await loadActiveStrategy(journal);
         return Response.json(await proposeExperiments({ llm, journal }, strategy, await ensureSplit({ store, journal }, strategy.version)), { headers: NO_STORE });
+      }
+      case 'add_owner_ideas': {
+        const strategy = await loadActiveStrategy(journal);
+        // With fewer than two recorded days there is no split yet: the experiment is kept with an empty one and takes its held-out days when it is run.
+        const split = await ensureSplit({ store, journal }, strategy.version).catch(() => ({ discovery: [], holdout: [] }));
+        return Response.json({ experiments: await addOwnerExperiments(journal, strategy, split) }, { headers: NO_STORE });
       }
       case 'run': return Response.json(await runExperiment({ store, journal, current: await loadActiveStrategy(journal) }, id), { headers: NO_STORE });
       case 'approve': return Response.json(await approveExperiment({ store, journal }, id), { headers: NO_STORE });

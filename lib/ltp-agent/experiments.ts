@@ -68,3 +68,25 @@ export async function proposeExperiments(deps: { llm: LlmClient; journal: Journa
   }
   return { experiments: kept, dropped };
 }
+
+// The owner's own ideas, as experiments to run in the Backtest tab and through the gate. They are not data-driven, so the 100-trade lock on
+// proposals (which keeps the model from over-fitting) does not apply; the gate and the approval still do. Asking again adds only what is missing.
+export const OWNER_IDEAS: { hypothesis: string; diff: Record<string, unknown>; expectedEffect: string }[] = [
+  { hypothesis: 'Sell the breakdown: when the tug of war is bearish and the price falls through the support strike, short it (stop one diversion, target two) instead of waiting for a rally into a level', diff: { 'setups_enabled.breakdown': true }, expectedEffect: 'trades on one-way bearish days that the rally-into-a-level setups miss' },
+  { hypothesis: 'Buy the breakup: when the tug of war is bullish and the price rises through the resistance strike, go long (stop one diversion, target two) instead of waiting for a dip into a level', diff: { 'setups_enabled.breakup': true }, expectedEffect: 'trades on one-way bullish days that the dip-into-a-level setups miss' },
+];
+
+export async function addOwnerExperiments(journal: JournalStore, current: Strategy, split: Split): Promise<Experiment[]> {
+  const existing = await journal.listExperiments();
+  const kept: Experiment[] = [];
+  for (const idea of OWNER_IDEAS) {
+    if (existing.some((e) => e.baseVersion === current.version && JSON.stringify(e.diff) === JSON.stringify(idea.diff))) continue;
+    const experiment: Experiment = {
+      id: nextExperimentId([...existing, ...kept]), hypothesis: idea.hypothesis, diff: idea.diff, expectedEffect: idea.expectedEffect, evidence: ['owner idea, 2026-10-13'],
+      baseVersion: current.version, split, status: 'proposed', triedCount: existing.length + kept.length + 1, createdTs: Math.floor(Date.now() / 1000),
+    };
+    await journal.saveExperiment(experiment);
+    kept.push(experiment);
+  }
+  return kept;
+}

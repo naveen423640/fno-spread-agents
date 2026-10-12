@@ -171,4 +171,15 @@ describe('runExperiment moves an experiment through the gate', () => {
   });
 });
 
+describe('an experiment added before there were two recorded days gets its held-out days when it is run', () => {
+  it('an empty split is split at run time and stored on the experiment; with fewer than 2 days it says so and stays proposed', async () => {
+    const { store, journal } = freshStores();
+    await seedClosedTrades(journal, { n: 100, days: ['2026-09-01'] });
+    for (const s of pathDay(WINNER)) await store.insertSnapshot(s);
+    await journal.saveExperiment({ id: 'EXP-001', hypothesis: 'h', diff: { touch_tolerance_pts: 8 }, expectedEffect: 'e', evidence: [], baseVersion: '0.1', split: { discovery: [], holdout: [] }, status: 'proposed', triedCount: 1, createdTs: 1 });
+    await expect(runExperiment({ store, journal, current: v01, method: writerBreakeven }, 'EXP-001')).rejects.toThrow(/Splitting needs/);
+    expect((await journal.getExperiment('EXP-001'))?.status).toBe('proposed');
+  });
+});
+
 void istTs;

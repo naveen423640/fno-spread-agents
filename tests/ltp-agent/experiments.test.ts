@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 import { holdoutDaysFor } from '@/lib/ltp-agent/holdout';
-import { experimentFileName, nextExperimentId, parseProposals, proposeExperiments, serializeExperiment } from '@/lib/ltp-agent/experiments';
+import { addOwnerExperiments, experimentFileName, nextExperimentId, parseProposals, proposeExperiments, serializeExperiment } from '@/lib/ltp-agent/experiments';
 import { writeExperimentFile } from '@/lib/ltp-agent/experiment-files';
 import { PhaseLockedError } from '@/lib/ltp-agent/phase';
 import { parseStrategy } from '@/lib/ltp-agent/strategy';
@@ -161,5 +161,25 @@ describe('holdoutDaysFor tells the reviewer which days are off limits', () => {
     await journal.setState('split_0.1', JSON.stringify({ discovery: ['2026-10-01'], holdout: ['2026-10-02', '2026-10-03'] }));
     expect(await holdoutDaysFor(journal, '0.1')).toEqual(['2026-10-02', '2026-10-03']);
     expect(await holdoutDaysFor(journal, '0.2')).toEqual([]);
+  });
+});
+
+describe('the owner\'s own experiment ideas', () => {
+  it('sell the breakdown and buy the breakup become EXP-001 and EXP-002, proposed on the current version, even before 100 trades', async () => {
+    const { journal } = freshStores();
+    const r = await addOwnerExperiments(journal, v01, split);
+    expect(r.map((e) => [e.id, e.status, e.baseVersion, e.diff])).toEqual([
+      ['EXP-001', 'proposed', '0.1', { 'setups_enabled.breakdown': true }],
+      ['EXP-002', 'proposed', '0.1', { 'setups_enabled.breakup': true }],
+    ]);
+    expect(r[0]).toMatchObject({ split, evidence: ['owner idea, 2026-10-13'], triedCount: 1 });
+    expect((await journal.listExperiments()).map((e) => e.id)).toEqual(['EXP-001', 'EXP-002']);
+  });
+  it('asking again adds nothing; an idea already proposed on this version is not duplicated, and ids carry on after other experiments', async () => {
+    const journal = await learning();
+    await proposeExperiments({ llm: fakeLlm([reply(proposal({ touch_tolerance_pts: 8 }))]).llm, journal }, v01, split);
+    expect((await addOwnerExperiments(journal, v01, split)).map((e) => e.id)).toEqual(['EXP-002', 'EXP-003']);
+    expect(await addOwnerExperiments(journal, v01, split)).toEqual([]);
+    expect(await journal.listExperiments()).toHaveLength(3);
   });
 });
