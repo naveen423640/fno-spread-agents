@@ -2,6 +2,7 @@
 import type { UsableAnalysis } from './analyze';
 import { LTP_CONFIG } from './config';
 import type { ChainView } from './state';
+import type { ConditionInfo } from './conditions';
 import { istHhmm, minutesOf } from './time';
 
 export type CellMark = 'max' | 'second_weak';
@@ -84,3 +85,17 @@ export function popupTitle(a: Pick<UsableAnalysis, 'soc' | 'direction'>, name: s
 export const logLabel = (e: { status: string; label: string }): string => (e.status === 'strong' ? `${e.label} -` : e.label);
 // HH:MM:SS in IST. Rows are recorded once a minute, so the seconds are :00.
 export const logTime = (ts: number): string => `${istHhmm(ts)}:00`;
+
+const PRESSURE_WORD: Record<string, string> = { S: 'stable strong', B: 'bearish', U: 'bullish', HB: 'highly bearish', HU: 'highly bullish' };
+export const phaseAge = (minutes: number): string => (minutes < 60 ? `${minutes}m` : minutes % 60 === 0 ? `${minutes / 60}h` : `${Math.floor(minutes / 60)}h ${minutes % 60}m`);
+// One line for a side: its condition number (S for support, R for resistance), the pressure, the phases so far and how long the current one has lasted.
+export function conditionSummary(prefix: 'S' | 'R', c: ConditionInfo): string {
+  const phases = `${c.phases} phase${c.phases === 1 ? '' : 's'}`;
+  const age = `${phaseAge(c.currentPhaseMinutes)} in this phase${c.continuation ? ' (continuation)' : ''}`;
+  return `${prefix}${c.number}${c.exact ? '' : '~'}: ${PRESSURE_WORD[c.pressure]} · ${phases} · ${age}${c.exact ? '' : ' · closest listed condition'}`;
+}
+// "Scenario 6-S5/R1 · support bearish · resistance bearish", with the State of Confusion when there is one.
+export function scenarioHeadline(a: Pick<UsableAnalysis, 'coa1' | 'soc'>): string {
+  const soc = a.soc ? ` · ${a.soc.bias === 'bullish' ? 'Bullish' : 'Bearish'} SOC ${a.soc.type}` : '';
+  return `Scenario ${a.coa1.label} · support ${PRESSURE_WORD[a.coa1.conditions.support.pressure]} · resistance ${PRESSURE_WORD[a.coa1.conditions.resistance.pressure]}${soc}`;
+}

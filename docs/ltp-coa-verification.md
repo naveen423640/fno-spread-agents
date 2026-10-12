@@ -51,157 +51,157 @@ Verify this table: it is our reading, not the tool's. `init` = stable strong at 
 
 | # | The tool's wording | Our event log |
 |---|---|---|
-| 0 | STRONG SINCE MORNING | `init` |
-| 1 | STRONG BUT SHIFTED FROM TOP TO BOTTOM (SINGLE SHIFTING) | `init, down` |
-| 2 | STRONG BUT SHIFTED FROM BOTTOM TO TOP (SINGLE SHIFTING) | `init, up` |
-| 3 | INITIALLY WTB THEN BECAME STRONG | `wtb, fromWtb` |
-| 4 | INITIALLY WTT THEN BECAME STRONG | `wtt, fromWtt` |
-| 5 | SHIFTED FROM TOP TO BOTTOM AND AGAIN SHIFTED TO BOTTOM AND NOW STRONG (DOUBLE SHIFTING) | `init, down, wtt, fromWtt, down` |
-| 6 | SHIFTED FROM BOTTOM TO TOP AND AGAIN SHIFTED TO TOP AND NOW STRONG (DOUBLE SHIFTING) | `init, up, wtb, fromWtb, up` |
-| 7 | SHIFTED FROM TOP TO BOTTOM BECAME STRONG, THEN AGAIN SHIFTED FROM BOTTOM TO TOP AT ANY PLACE AND NOW STRONG | `init, down, wtb, wtt, fromWtt, up, wtt, wtb, fromWtb` |
-| 8 | SHIFTED FROM TOP TO BOTTOM [WTT % IS THERE IN CONTINUATION] AND THEN BECAME WTT AT NEW PLACE AND ALSO SHIFTED THERE AND NOW STRONG | `init, down, wtt, wtt, up` |
-| 9 | SHIFTED FROM TOP TO BOTTOM [WTT % IS THERE IN CONTINUATION] AND THEN BECAME WTT AT NEW PLACE AND THEN BECAME STRONG (NOT SHIFTED) | `init, down, wtt, wtt, fromWtt` |
-| 10 | SHIFTED FROM BOTTOM TO TOP BECAME STRONG, THEN AGAIN SHIFTED FROM TOP TO BOTTOM AT ANY PLACE AND NOW STRONG | `init, up, wtt, wtb, fromWtb, down, wtb, wtt, fromWtt` |
-| 11 | SHIFTED FROM BOTTOM TO TOP [WTB % IS THERE IN CONTINUATION] AND THEN BECAME WTB AT NEW PLACE AND ALSO SHIFTED THERE AND NOW STRONG | `init, up, wtb, wtb, down` |
-| 12 | SHIFTED FROM BOTTOM TO TOP [WTB % IS THERE IN CONTINUATION] AND THEN BECAME WTB AT NEW PLACE AND THEN BECAME STRONG (NOT SHIFTED) | `init, up, wtb, wtb, fromWtb` |
+| 1 | STRONG SINCE MORNING | `init` |
+| 2 | STRONG BUT SHIFTED FROM TOP TO BOTTOM (SINGLE SHIFTING) | `init, down` |
+| 3 | STRONG BUT SHIFTED FROM BOTTOM TO TOP (SINGLE SHIFTING) | `init, up` |
+| 4 | INITIALLY WTB THEN BECAME STRONG | `wtb, fromWtb` |
+| 5 | INITIALLY WTT THEN BECAME STRONG | `wtt, fromWtt` |
+| 6 | SHIFTED FROM TOP TO BOTTOM AND AGAIN SHIFTED TO BOTTOM AND NOW STRONG (DOUBLE SHIFTING) | `init, down, wtt, fromWtt, down` |
+| 7 | SHIFTED FROM BOTTOM TO TOP AND AGAIN SHIFTED TO TOP AND NOW STRONG (DOUBLE SHIFTING) | `init, up, wtb, fromWtb, up` |
+| 8 | SHIFTED FROM TOP TO BOTTOM BECAME STRONG, THEN AGAIN SHIFTED FROM BOTTOM TO TOP AT ANY PLACE AND NOW STRONG | `init, down, wtb, wtt, fromWtt, up, wtt, wtb, fromWtb` |
+| 9 | SHIFTED FROM TOP TO BOTTOM [WTT % IS THERE IN CONTINUATION] AND THEN BECAME WTT AT NEW PLACE AND ALSO SHIFTED THERE AND NOW STRONG | `init, down, wtt, wtt, up` |
+| 10 | SHIFTED FROM TOP TO BOTTOM [WTT % IS THERE IN CONTINUATION] AND THEN BECAME WTT AT NEW PLACE AND THEN BECAME STRONG (NOT SHIFTED) | `init, down, wtt, wtt, fromWtt` |
+| 11 | SHIFTED FROM BOTTOM TO TOP BECAME STRONG, THEN AGAIN SHIFTED FROM TOP TO BOTTOM AT ANY PLACE AND NOW STRONG | `init, up, wtt, wtb, fromWtb, down, wtb, wtt, fromWtt` |
+| 12 | SHIFTED FROM BOTTOM TO TOP [WTB % IS THERE IN CONTINUATION] AND THEN BECAME WTB AT NEW PLACE AND ALSO SHIFTED THERE AND NOW STRONG | `init, up, wtb, wtb, down` |
+| 13 | SHIFTED FROM BOTTOM TO TOP [WTB % IS THERE IN CONTINUATION] AND THEN BECAME WTB AT NEW PLACE AND THEN BECAME STRONG (NOT SHIFTED) | `init, up, wtb, wtb, fromWtb` |
 
 **Weak toward bottom (5)**
 
 | # | The tool's wording | Our event log |
 |---|---|---|
-| 0 | WEAK TOWARDS BOTTOM | `wtb` |
-| 1 | SHIFTED FROM TOP TO BOTTOM AND NOW AGAIN WTB | `wtb, down, wtb` |
-| 2 | SHIFTED FROM BOTTOM TO TOP AND IN THAT CONTINUATION, IT IS LOOKING WTB | `init, up, wtb` |
-| 3 | SHIFTED FROM BOTTOM TO TOP BECAME STRONG AND AGAIN BECAME WTB AT ANY PLACE | `wtt, up, wtb, fromWtb, wtb` |
-| 4 | SHIFTED FROM BOTTOM TO TOP [WTB % IS THERE IN CONTINUATION] AND THEN WTB AT NEW PLACE | `init, up, wtb, wtb` |
+| 1 | WEAK TOWARDS BOTTOM | `wtb` |
+| 2 | SHIFTED FROM TOP TO BOTTOM AND NOW AGAIN WTB | `wtb, down, wtb` |
+| 3 | SHIFTED FROM BOTTOM TO TOP AND IN THAT CONTINUATION, IT IS LOOKING WTB | `init, up, wtb` |
+| 4 | SHIFTED FROM BOTTOM TO TOP BECAME STRONG AND AGAIN BECAME WTB AT ANY PLACE | `wtt, up, wtb, fromWtb, wtb` |
+| 5 | SHIFTED FROM BOTTOM TO TOP [WTB % IS THERE IN CONTINUATION] AND THEN WTB AT NEW PLACE | `init, up, wtb, wtb` |
 
 **Weak toward top (5)**
 
 | # | The tool's wording | Our event log |
 |---|---|---|
-| 0 | WEAK TOWARDS TOP | `wtt` |
-| 1 | SHIFTED FROM BOTTOM TO TOP AND NOW AGAIN WTT | `wtt, up, wtt` |
-| 2 | SHIFTED FROM TOP TO BOTTOM AND IN THAT CONTINUATION, IT IS LOOKING WTT | `init, down, wtt` |
-| 3 | SHIFTED FROM TOP TO BOTTOM BECAME STRONG AND AGAIN BECAME WTT AT ANY PLACE | `wtb, down, wtt, fromWtt, wtt` |
-| 4 | SHIFTED FROM TOP TO BOTTOM [WTT % IS THERE IN CONTINUATION] AND THEN WTT AT NEW PLACE | `init, down, wtt, wtt` |
+| 1 | WEAK TOWARDS TOP | `wtt` |
+| 2 | SHIFTED FROM BOTTOM TO TOP AND NOW AGAIN WTT | `wtt, up, wtt` |
+| 3 | SHIFTED FROM TOP TO BOTTOM AND IN THAT CONTINUATION, IT IS LOOKING WTT | `init, down, wtt` |
+| 4 | SHIFTED FROM TOP TO BOTTOM BECAME STRONG AND AGAIN BECAME WTT AT ANY PLACE | `wtb, down, wtt, fromWtt, wtt` |
+| 5 | SHIFTED FROM TOP TO BOTTOM [WTT % IS THERE IN CONTINUATION] AND THEN WTT AT NEW PLACE | `init, down, wtt, wtt` |
 
 ## 5. Every result
 
-Cells read `top / bottom`; `–` means none (Bull Run has no top, Blood Bath no bottom). Cells in brackets are the rare scenario (do not trade; the levels shown are the risky ones). Rows are the support condition number, columns the resistance condition number from section 4.
+Cells read `top / bottom`; `–` means none (Bull Run has no top, Blood Bath no bottom). Cells in brackets are the rare scenario (do not trade; the levels shown are the risky ones). Rows are the support condition number, columns the resistance condition number from section 4 (numbered from 1, as in the tool's lists). The live LTP screen shows them as a label: scenario-S/R, for example 6-S3/R1.
 
 ### Box 1.1: support Strong, resistance Strong
 
-| Support \ Resistance | R0 | R1 | R2 | R3 | R4 | R5 | R6 | R7 | R8 | R9 | R10 | R11 | R12 |
+| Support \ Resistance | R1 | R2 | R3 | R4 | R5 | R6 | R7 | R8 | R9 | R10 | R11 | R12 | R13 |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| **S0** | EOR / EOS | EOR / EOS-1 | EOR+1 / EOS | EOR+1 / EOS | EOR / EOS-1 | EOR / – | – / EOS | EOR+1 / EOS | EOR+1 / EOS | EOR / EOS-1 | EOR / EOS-1 | EOR / EOS-1 | EOR+1 / EOS |
-| **S1** | EOR / EOS-1 | EOR / – | EOR+1 / EOS-1 | EOR+1 / EOS-1 | EOR / – | EOR / – | EOR+1 / EOS | EOR+1 / EOS-1 | EOR+1 / EOS-1 | EOR / – | EOR / – | EOR / – | EOR+1 / EOS-1 |
-| **S2** | EOR+1 / EOS | EOR+1 / EOS-1 | – / EOS | – / EOS | EOR+1 / EOS-1 | EOR / EOS-1 | – / EOS | – / EOS | – / EOS | EOR+1 / EOS-1 | EOR+1 / EOS-1 | EOR+1 / EOS-1 | – / EOS |
-| **S3** | EOR+1 / EOS | EOR+1 / EOS-1 | – / EOS | – / EOS | EOR+1 / EOS-1 | EOR / EOS-1 | – / EOS | – / EOS | – / EOS | EOR+1 / EOS-1 | EOR+1 / EOS-1 | EOR+1 / EOS-1 | – / EOS |
-| **S4** | EOR / EOS-1 | EOR / – | EOR+1 / EOS-1 | EOR+1 / EOS-1 | EOR / – | EOR / – | EOR+1 / EOS | EOR+1 / EOS-1 | EOR+1 / EOS-1 | EOR / – | EOR / – | EOR / – | EOR+1 / EOS-1 |
-| **S5** | EOR / – | EOR / – | EOR / EOS-1 | EOR / EOS-1 | EOR / – | EOR / – | (EOR+1 / EOS-1) | EOR / EOS-1 | EOR / EOS-1 | EOR / – | EOR / – | EOR / – | EOR / EOS-1 |
-| **S6** | – / EOS | EOR+1 / EOS | – / EOS | – / EOS | EOR+1 / EOS | (EOR+1 / EOS-1) | – / EOS | – / EOS | – / EOS | EOR+1 / EOS | EOR+1 / EOS | EOR+1 / EOS | – / EOS |
-| **S7** | EOR+1 / EOS | EOR+1 / EOS-1 | – / EOS | – / EOS | EOR+1 / EOS-1 | EOR / EOS-1 | – / EOS | – / EOS | – / EOS | EOR+1 / EOS-1 | EOR+1 / EOS-1 | EOR+1 / EOS-1 | – / EOS |
-| **S8** | EOR+1 / EOS | EOR+1 / EOS-1 | – / EOS | – / EOS | EOR+1 / EOS-1 | EOR / EOS-1 | – / EOS | – / EOS | – / EOS | EOR+1 / EOS-1 | EOR+1 / EOS-1 | EOR+1 / EOS-1 | – / EOS |
-| **S9** | EOR / EOS-1 | EOR / – | EOR+1 / EOS-1 | EOR+1 / EOS-1 | EOR / – | EOR / – | EOR+1 / EOS | EOR+1 / EOS-1 | EOR+1 / EOS-1 | EOR / – | EOR / – | EOR / – | EOR+1 / EOS-1 |
-| **S10** | EOR / EOS-1 | EOR / – | EOR+1 / EOS-1 | EOR+1 / EOS-1 | EOR / – | EOR / – | EOR+1 / EOS | EOR+1 / EOS-1 | EOR+1 / EOS-1 | EOR / – | EOR / – | EOR / – | EOR+1 / EOS-1 |
-| **S11** | EOR / EOS-1 | EOR / – | EOR+1 / EOS-1 | EOR+1 / EOS-1 | EOR / – | EOR / – | EOR+1 / EOS | EOR+1 / EOS-1 | EOR+1 / EOS-1 | EOR / – | EOR / – | EOR / – | EOR+1 / EOS-1 |
-| **S12** | EOR+1 / EOS | EOR+1 / EOS-1 | – / EOS | – / EOS | EOR+1 / EOS-1 | EOR / EOS-1 | – / EOS | – / EOS | – / EOS | EOR+1 / EOS-1 | EOR+1 / EOS-1 | EOR+1 / EOS-1 | – / EOS |
-
-### Box 1.2: support Strong, resistance WTB
-
-| Support \ Resistance | R0 | R1 | R2 | R3 | R4 |
-|---|---|---|---|---|---|
-| **S0** | EOR / EOS-1 | EOR / – | EOR+1 / EOS | EOR / EOS-1 | EOR / EOS-1 |
-| **S1** | EOR / – | EOR / – | EOR+1 / EOS-1 | EOR / – | EOR / – |
-| **S2** | EOR+1 / EOS-1 | EOR / EOS-1 | – / EOS | EOR+1 / EOS-1 | EOR+1 / EOS-1 |
-| **S3** | EOR+1 / EOS-1 | EOR / EOS-1 | – / EOS | EOR+1 / EOS-1 | EOR+1 / EOS-1 |
-| **S4** | EOR / – | EOR / – | EOR+1 / EOS-1 | EOR / – | EOR / – |
-| **S5** | EOR / – | EOR / – | EOR / EOS-1 | EOR / – | EOR / – |
-| **S6** | EOR+1 / EOS | (EOR+1 / EOS-1) | – / EOS | EOR+1 / EOS | EOR+1 / EOS |
-| **S7** | EOR+1 / EOS-1 | EOR / EOS-1 | – / EOS | EOR+1 / EOS-1 | EOR+1 / EOS-1 |
-| **S8** | EOR+1 / EOS-1 | EOR / EOS-1 | – / EOS | EOR+1 / EOS-1 | EOR+1 / EOS-1 |
-| **S9** | EOR / – | EOR / – | EOR+1 / EOS-1 | EOR / – | EOR / – |
-| **S10** | EOR / – | EOR / – | EOR+1 / EOS-1 | EOR / – | EOR / – |
-| **S11** | EOR / – | EOR / – | EOR+1 / EOS-1 | EOR / – | EOR / – |
-| **S12** | EOR+1 / EOS-1 | EOR / EOS-1 | – / EOS | EOR+1 / EOS-1 | EOR+1 / EOS-1 |
-
-### Box 1.3: support Strong, resistance WTT
-
-| Support \ Resistance | R0 | R1 | R2 | R3 | R4 |
-|---|---|---|---|---|---|
-| **S0** | WTT-1 / EOS | – / EOS | EOR / EOS-1 | WTT-1 / EOS | WTT-1 / EOS |
-| **S1** | WTT-1 / EOS-1 | WTT-1 / EOS | EOR / – | WTT-1 / EOS-1 | WTT-1 / EOS-1 |
-| **S2** | – / EOS | – / EOS | EOR+1 / EOS-1 | – / EOS | – / EOS |
-| **S3** | – / EOS | – / EOS | EOR+1 / EOS-1 | – / EOS | – / EOS |
-| **S4** | WTT-1 / EOS-1 | WTT-1 / EOS | EOR / – | WTT-1 / EOS-1 | WTT-1 / EOS-1 |
-| **S5** | WTT-1 / EOS-1 | (WTT-1 / EOS-1) | EOR / – | WTT-1 / EOS-1 | WTT-1 / EOS-1 |
-| **S6** | – / EOS | – / EOS | EOR+1 / EOS | – / EOS | – / EOS |
-| **S7** | – / EOS | – / EOS | EOR+1 / EOS-1 | – / EOS | – / EOS |
-| **S8** | – / EOS | – / EOS | EOR+1 / EOS-1 | – / EOS | – / EOS |
-| **S9** | WTT-1 / EOS-1 | WTT-1 / EOS | EOR / – | WTT-1 / EOS-1 | WTT-1 / EOS-1 |
-| **S10** | WTT-1 / EOS-1 | WTT-1 / EOS | EOR / – | WTT-1 / EOS-1 | WTT-1 / EOS-1 |
-| **S11** | WTT-1 / EOS-1 | WTT-1 / EOS | EOR / – | WTT-1 / EOS-1 | WTT-1 / EOS-1 |
-| **S12** | – / EOS | – / EOS | EOR+1 / EOS-1 | – / EOS | – / EOS |
-
-### Box 1.4: support WTB, resistance Strong
-
-| Support \ Resistance | R0 | R1 | R2 | R3 | R4 | R5 | R6 | R7 | R8 | R9 | R10 | R11 | R12 |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| **S0** | EOR / WTB+1 | EOR / – | EOR+1 / WTB+1 | EOR+1 / WTB+1 | EOR / – | EOR / – | EOR+1 / WTB+1 | EOR+1 / WTB+1 | EOR+1 / WTB+1 | EOR / – | EOR / – | EOR / – | EOR+1 / WTB+1 |
-| **S1** | EOR / – | EOR / – | EOR / WTB+1 | EOR / WTB+1 | EOR / – | EOR / – | (EOR+1 / WTB+1) | EOR / WTB+1 | EOR / WTB+1 | EOR / – | EOR / – | EOR / – | EOR / WTB+1 |
-| **S2** | EOR+1 / EOS | EOR+1 / EOS-1 | – / EOS | – / EOS | EOR+1 / EOS-1 | EOR / EOS-1 | – / EOS | – / EOS | – / EOS | EOR+1 / EOS-1 | EOR+1 / EOS-1 | EOR+1 / EOS-1 | – / EOS |
-| **S3** | EOR / WTB+1 | EOR / – | EOR+1 / WTB+1 | EOR+1 / WTB+1 | EOR / – | EOR / – | EOR+1 / WTB+1 | EOR+1 / WTB+1 | EOR+1 / WTB+1 | EOR / – | EOR / – | EOR / – | EOR+1 / WTB+1 |
-| **S4** | EOR / WTB+1 | EOR / – | EOR+1 / WTB+1 | EOR+1 / WTB+1 | EOR / – | EOR / – | EOR+1 / WTB+1 | EOR+1 / WTB+1 | EOR+1 / WTB+1 | EOR / – | EOR / – | EOR / – | EOR+1 / WTB+1 |
-
-### Box 1.5: support WTT, resistance Strong
-
-| Support \ Resistance | R0 | R1 | R2 | R3 | R4 | R5 | R6 | R7 | R8 | R9 | R10 | R11 | R12 |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| **S0** | EOR+1 / EOS | EOR+1 / EOS-1 | – / EOS | – / EOS | EOR+1 / EOS-1 | EOR / EOS-1 | – / EOS | – / EOS | – / EOS | EOR+1 / EOS-1 | EOR+1 / EOS-1 | EOR+1 / EOS-1 | – / EOS |
-| **S1** | – / EOS | EOR+1 / EOS | – / EOS | – / EOS | EOR+1 / EOS | (EOR+1 / EOS-1) | – / EOS | – / EOS | – / EOS | EOR+1 / EOS | EOR+1 / EOS | EOR+1 / EOS | – / EOS |
+| **S1** | EOR / EOS | EOR / EOS-1 | EOR+1 / EOS | EOR+1 / EOS | EOR / EOS-1 | EOR / – | – / EOS | EOR+1 / EOS | EOR+1 / EOS | EOR / EOS-1 | EOR / EOS-1 | EOR / EOS-1 | EOR+1 / EOS |
 | **S2** | EOR / EOS-1 | EOR / – | EOR+1 / EOS-1 | EOR+1 / EOS-1 | EOR / – | EOR / – | EOR+1 / EOS | EOR+1 / EOS-1 | EOR+1 / EOS-1 | EOR / – | EOR / – | EOR / – | EOR+1 / EOS-1 |
 | **S3** | EOR+1 / EOS | EOR+1 / EOS-1 | – / EOS | – / EOS | EOR+1 / EOS-1 | EOR / EOS-1 | – / EOS | – / EOS | – / EOS | EOR+1 / EOS-1 | EOR+1 / EOS-1 | EOR+1 / EOS-1 | – / EOS |
 | **S4** | EOR+1 / EOS | EOR+1 / EOS-1 | – / EOS | – / EOS | EOR+1 / EOS-1 | EOR / EOS-1 | – / EOS | – / EOS | – / EOS | EOR+1 / EOS-1 | EOR+1 / EOS-1 | EOR+1 / EOS-1 | – / EOS |
+| **S5** | EOR / EOS-1 | EOR / – | EOR+1 / EOS-1 | EOR+1 / EOS-1 | EOR / – | EOR / – | EOR+1 / EOS | EOR+1 / EOS-1 | EOR+1 / EOS-1 | EOR / – | EOR / – | EOR / – | EOR+1 / EOS-1 |
+| **S6** | EOR / – | EOR / – | EOR / EOS-1 | EOR / EOS-1 | EOR / – | EOR / – | (EOR+1 / EOS-1) | EOR / EOS-1 | EOR / EOS-1 | EOR / – | EOR / – | EOR / – | EOR / EOS-1 |
+| **S7** | – / EOS | EOR+1 / EOS | – / EOS | – / EOS | EOR+1 / EOS | (EOR+1 / EOS-1) | – / EOS | – / EOS | – / EOS | EOR+1 / EOS | EOR+1 / EOS | EOR+1 / EOS | – / EOS |
+| **S8** | EOR+1 / EOS | EOR+1 / EOS-1 | – / EOS | – / EOS | EOR+1 / EOS-1 | EOR / EOS-1 | – / EOS | – / EOS | – / EOS | EOR+1 / EOS-1 | EOR+1 / EOS-1 | EOR+1 / EOS-1 | – / EOS |
+| **S9** | EOR+1 / EOS | EOR+1 / EOS-1 | – / EOS | – / EOS | EOR+1 / EOS-1 | EOR / EOS-1 | – / EOS | – / EOS | – / EOS | EOR+1 / EOS-1 | EOR+1 / EOS-1 | EOR+1 / EOS-1 | – / EOS |
+| **S10** | EOR / EOS-1 | EOR / – | EOR+1 / EOS-1 | EOR+1 / EOS-1 | EOR / – | EOR / – | EOR+1 / EOS | EOR+1 / EOS-1 | EOR+1 / EOS-1 | EOR / – | EOR / – | EOR / – | EOR+1 / EOS-1 |
+| **S11** | EOR / EOS-1 | EOR / – | EOR+1 / EOS-1 | EOR+1 / EOS-1 | EOR / – | EOR / – | EOR+1 / EOS | EOR+1 / EOS-1 | EOR+1 / EOS-1 | EOR / – | EOR / – | EOR / – | EOR+1 / EOS-1 |
+| **S12** | EOR / EOS-1 | EOR / – | EOR+1 / EOS-1 | EOR+1 / EOS-1 | EOR / – | EOR / – | EOR+1 / EOS | EOR+1 / EOS-1 | EOR+1 / EOS-1 | EOR / – | EOR / – | EOR / – | EOR+1 / EOS-1 |
+| **S13** | EOR+1 / EOS | EOR+1 / EOS-1 | – / EOS | – / EOS | EOR+1 / EOS-1 | EOR / EOS-1 | – / EOS | – / EOS | – / EOS | EOR+1 / EOS-1 | EOR+1 / EOS-1 | EOR+1 / EOS-1 | – / EOS |
 
-### Box 1.6: support WTB, resistance WTB
+### Box 1.2: support Strong, resistance WTB
 
-| Support \ Resistance | R0 | R1 | R2 | R3 | R4 |
+| Support \ Resistance | R1 | R2 | R3 | R4 | R5 |
 |---|---|---|---|---|---|
-| **S0** | EOR / – | EOR / – | EOR+1 / WTB+1 | EOR / – | EOR / – |
-| **S1** | EOR / – | EOR / – | EOR / WTB+1 | EOR / – | EOR / – |
-| **S2** | EOR+1 / EOS-1 | EOR / EOS-1 | – / EOS | EOR+1 / EOS-1 | EOR+1 / EOS-1 |
-| **S3** | EOR / – | EOR / – | EOR+1 / WTB+1 | EOR / – | EOR / – |
-| **S4** | EOR / – | EOR / – | EOR+1 / WTB+1 | EOR / – | EOR / – |
-
-### Box 1.7: support WTT, resistance WTT
-
-| Support \ Resistance | R0 | R1 | R2 | R3 | R4 |
-|---|---|---|---|---|---|
-| **S0** | – / EOS | – / EOS | EOR+1 / EOS-1 | – / EOS | – / EOS |
-| **S1** | – / EOS | – / EOS | EOR+1 / EOS | – / EOS | – / EOS |
-| **S2** | WTT-1 / EOS-1 | WTT-1 / EOS | EOR / – | WTT-1 / EOS-1 | WTT-1 / EOS-1 |
-| **S3** | – / EOS | – / EOS | EOR+1 / EOS-1 | – / EOS | – / EOS |
-| **S4** | – / EOS | – / EOS | EOR+1 / EOS-1 | – / EOS | – / EOS |
-
-### Box 1.8: support WTB, resistance WTT
-
-| Support \ Resistance | R0 | R1 | R2 | R3 | R4 |
-|---|---|---|---|---|---|
-| **S0** | WTT-1 / WTB+1 | WTT-1 / WTB+1 | EOR / – | WTT-1 / WTB+1 | WTT-1 / WTB+1 |
-| **S1** | WTT-1 / WTB+1 | (WTT-1 / WTB+1) | EOR / – | WTT-1 / WTB+1 | WTT-1 / WTB+1 |
-| **S2** | – / EOS | – / EOS | EOR+1 / EOS-1 | – / EOS | – / EOS |
-| **S3** | WTT-1 / WTB+1 | WTT-1 / WTB+1 | EOR / – | WTT-1 / WTB+1 | WTT-1 / WTB+1 |
-| **S4** | WTT-1 / WTB+1 | WTT-1 / WTB+1 | EOR / – | WTT-1 / WTB+1 | WTT-1 / WTB+1 |
-
-### Box 1.9: support WTT, resistance WTB
-
-| Support \ Resistance | R0 | R1 | R2 | R3 | R4 |
-|---|---|---|---|---|---|
-| **S0** | EOR+1 / EOS-1 | EOR / EOS-1 | – / EOS | EOR+1 / EOS-1 | EOR+1 / EOS-1 |
-| **S1** | EOR+1 / EOS | (EOR+1 / EOS-1) | – / EOS | EOR+1 / EOS | EOR+1 / EOS |
+| **S1** | EOR / EOS-1 | EOR / – | EOR+1 / EOS | EOR / EOS-1 | EOR / EOS-1 |
 | **S2** | EOR / – | EOR / – | EOR+1 / EOS-1 | EOR / – | EOR / – |
 | **S3** | EOR+1 / EOS-1 | EOR / EOS-1 | – / EOS | EOR+1 / EOS-1 | EOR+1 / EOS-1 |
 | **S4** | EOR+1 / EOS-1 | EOR / EOS-1 | – / EOS | EOR+1 / EOS-1 | EOR+1 / EOS-1 |
+| **S5** | EOR / – | EOR / – | EOR+1 / EOS-1 | EOR / – | EOR / – |
+| **S6** | EOR / – | EOR / – | EOR / EOS-1 | EOR / – | EOR / – |
+| **S7** | EOR+1 / EOS | (EOR+1 / EOS-1) | – / EOS | EOR+1 / EOS | EOR+1 / EOS |
+| **S8** | EOR+1 / EOS-1 | EOR / EOS-1 | – / EOS | EOR+1 / EOS-1 | EOR+1 / EOS-1 |
+| **S9** | EOR+1 / EOS-1 | EOR / EOS-1 | – / EOS | EOR+1 / EOS-1 | EOR+1 / EOS-1 |
+| **S10** | EOR / – | EOR / – | EOR+1 / EOS-1 | EOR / – | EOR / – |
+| **S11** | EOR / – | EOR / – | EOR+1 / EOS-1 | EOR / – | EOR / – |
+| **S12** | EOR / – | EOR / – | EOR+1 / EOS-1 | EOR / – | EOR / – |
+| **S13** | EOR+1 / EOS-1 | EOR / EOS-1 | – / EOS | EOR+1 / EOS-1 | EOR+1 / EOS-1 |
+
+### Box 1.3: support Strong, resistance WTT
+
+| Support \ Resistance | R1 | R2 | R3 | R4 | R5 |
+|---|---|---|---|---|---|
+| **S1** | WTT-1 / EOS | – / EOS | EOR / EOS-1 | WTT-1 / EOS | WTT-1 / EOS |
+| **S2** | WTT-1 / EOS-1 | WTT-1 / EOS | EOR / – | WTT-1 / EOS-1 | WTT-1 / EOS-1 |
+| **S3** | – / EOS | – / EOS | EOR+1 / EOS-1 | – / EOS | – / EOS |
+| **S4** | – / EOS | – / EOS | EOR+1 / EOS-1 | – / EOS | – / EOS |
+| **S5** | WTT-1 / EOS-1 | WTT-1 / EOS | EOR / – | WTT-1 / EOS-1 | WTT-1 / EOS-1 |
+| **S6** | WTT-1 / EOS-1 | (WTT-1 / EOS-1) | EOR / – | WTT-1 / EOS-1 | WTT-1 / EOS-1 |
+| **S7** | – / EOS | – / EOS | EOR+1 / EOS | – / EOS | – / EOS |
+| **S8** | – / EOS | – / EOS | EOR+1 / EOS-1 | – / EOS | – / EOS |
+| **S9** | – / EOS | – / EOS | EOR+1 / EOS-1 | – / EOS | – / EOS |
+| **S10** | WTT-1 / EOS-1 | WTT-1 / EOS | EOR / – | WTT-1 / EOS-1 | WTT-1 / EOS-1 |
+| **S11** | WTT-1 / EOS-1 | WTT-1 / EOS | EOR / – | WTT-1 / EOS-1 | WTT-1 / EOS-1 |
+| **S12** | WTT-1 / EOS-1 | WTT-1 / EOS | EOR / – | WTT-1 / EOS-1 | WTT-1 / EOS-1 |
+| **S13** | – / EOS | – / EOS | EOR+1 / EOS-1 | – / EOS | – / EOS |
+
+### Box 1.4: support WTB, resistance Strong
+
+| Support \ Resistance | R1 | R2 | R3 | R4 | R5 | R6 | R7 | R8 | R9 | R10 | R11 | R12 | R13 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| **S1** | EOR / WTB+1 | EOR / – | EOR+1 / WTB+1 | EOR+1 / WTB+1 | EOR / – | EOR / – | EOR+1 / WTB+1 | EOR+1 / WTB+1 | EOR+1 / WTB+1 | EOR / – | EOR / – | EOR / – | EOR+1 / WTB+1 |
+| **S2** | EOR / – | EOR / – | EOR / WTB+1 | EOR / WTB+1 | EOR / – | EOR / – | (EOR+1 / WTB+1) | EOR / WTB+1 | EOR / WTB+1 | EOR / – | EOR / – | EOR / – | EOR / WTB+1 |
+| **S3** | EOR+1 / EOS | EOR+1 / EOS-1 | – / EOS | – / EOS | EOR+1 / EOS-1 | EOR / EOS-1 | – / EOS | – / EOS | – / EOS | EOR+1 / EOS-1 | EOR+1 / EOS-1 | EOR+1 / EOS-1 | – / EOS |
+| **S4** | EOR / WTB+1 | EOR / – | EOR+1 / WTB+1 | EOR+1 / WTB+1 | EOR / – | EOR / – | EOR+1 / WTB+1 | EOR+1 / WTB+1 | EOR+1 / WTB+1 | EOR / – | EOR / – | EOR / – | EOR+1 / WTB+1 |
+| **S5** | EOR / WTB+1 | EOR / – | EOR+1 / WTB+1 | EOR+1 / WTB+1 | EOR / – | EOR / – | EOR+1 / WTB+1 | EOR+1 / WTB+1 | EOR+1 / WTB+1 | EOR / – | EOR / – | EOR / – | EOR+1 / WTB+1 |
+
+### Box 1.5: support WTT, resistance Strong
+
+| Support \ Resistance | R1 | R2 | R3 | R4 | R5 | R6 | R7 | R8 | R9 | R10 | R11 | R12 | R13 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| **S1** | EOR+1 / EOS | EOR+1 / EOS-1 | – / EOS | – / EOS | EOR+1 / EOS-1 | EOR / EOS-1 | – / EOS | – / EOS | – / EOS | EOR+1 / EOS-1 | EOR+1 / EOS-1 | EOR+1 / EOS-1 | – / EOS |
+| **S2** | – / EOS | EOR+1 / EOS | – / EOS | – / EOS | EOR+1 / EOS | (EOR+1 / EOS-1) | – / EOS | – / EOS | – / EOS | EOR+1 / EOS | EOR+1 / EOS | EOR+1 / EOS | – / EOS |
+| **S3** | EOR / EOS-1 | EOR / – | EOR+1 / EOS-1 | EOR+1 / EOS-1 | EOR / – | EOR / – | EOR+1 / EOS | EOR+1 / EOS-1 | EOR+1 / EOS-1 | EOR / – | EOR / – | EOR / – | EOR+1 / EOS-1 |
+| **S4** | EOR+1 / EOS | EOR+1 / EOS-1 | – / EOS | – / EOS | EOR+1 / EOS-1 | EOR / EOS-1 | – / EOS | – / EOS | – / EOS | EOR+1 / EOS-1 | EOR+1 / EOS-1 | EOR+1 / EOS-1 | – / EOS |
+| **S5** | EOR+1 / EOS | EOR+1 / EOS-1 | – / EOS | – / EOS | EOR+1 / EOS-1 | EOR / EOS-1 | – / EOS | – / EOS | – / EOS | EOR+1 / EOS-1 | EOR+1 / EOS-1 | EOR+1 / EOS-1 | – / EOS |
+
+### Box 1.6: support WTB, resistance WTB
+
+| Support \ Resistance | R1 | R2 | R3 | R4 | R5 |
+|---|---|---|---|---|---|
+| **S1** | EOR / – | EOR / – | EOR+1 / WTB+1 | EOR / – | EOR / – |
+| **S2** | EOR / – | EOR / – | EOR / WTB+1 | EOR / – | EOR / – |
+| **S3** | EOR+1 / EOS-1 | EOR / EOS-1 | – / EOS | EOR+1 / EOS-1 | EOR+1 / EOS-1 |
+| **S4** | EOR / – | EOR / – | EOR+1 / WTB+1 | EOR / – | EOR / – |
+| **S5** | EOR / – | EOR / – | EOR+1 / WTB+1 | EOR / – | EOR / – |
+
+### Box 1.7: support WTT, resistance WTT
+
+| Support \ Resistance | R1 | R2 | R3 | R4 | R5 |
+|---|---|---|---|---|---|
+| **S1** | – / EOS | – / EOS | EOR+1 / EOS-1 | – / EOS | – / EOS |
+| **S2** | – / EOS | – / EOS | EOR+1 / EOS | – / EOS | – / EOS |
+| **S3** | WTT-1 / EOS-1 | WTT-1 / EOS | EOR / – | WTT-1 / EOS-1 | WTT-1 / EOS-1 |
+| **S4** | – / EOS | – / EOS | EOR+1 / EOS-1 | – / EOS | – / EOS |
+| **S5** | – / EOS | – / EOS | EOR+1 / EOS-1 | – / EOS | – / EOS |
+
+### Box 1.8: support WTB, resistance WTT
+
+| Support \ Resistance | R1 | R2 | R3 | R4 | R5 |
+|---|---|---|---|---|---|
+| **S1** | WTT-1 / WTB+1 | WTT-1 / WTB+1 | EOR / – | WTT-1 / WTB+1 | WTT-1 / WTB+1 |
+| **S2** | WTT-1 / WTB+1 | (WTT-1 / WTB+1) | EOR / – | WTT-1 / WTB+1 | WTT-1 / WTB+1 |
+| **S3** | – / EOS | – / EOS | EOR+1 / EOS-1 | – / EOS | – / EOS |
+| **S4** | WTT-1 / WTB+1 | WTT-1 / WTB+1 | EOR / – | WTT-1 / WTB+1 | WTT-1 / WTB+1 |
+| **S5** | WTT-1 / WTB+1 | WTT-1 / WTB+1 | EOR / – | WTT-1 / WTB+1 | WTT-1 / WTB+1 |
+
+### Box 1.9: support WTT, resistance WTB
+
+| Support \ Resistance | R1 | R2 | R3 | R4 | R5 |
+|---|---|---|---|---|---|
+| **S1** | EOR+1 / EOS-1 | EOR / EOS-1 | – / EOS | EOR+1 / EOS-1 | EOR+1 / EOS-1 |
+| **S2** | EOR+1 / EOS | (EOR+1 / EOS-1) | – / EOS | EOR+1 / EOS | EOR+1 / EOS |
+| **S3** | EOR / – | EOR / – | EOR+1 / EOS-1 | EOR / – | EOR / – |
+| **S4** | EOR+1 / EOS-1 | EOR / EOS-1 | – / EOS | EOR+1 / EOS-1 | EOR+1 / EOS-1 |
+| **S5** | EOR+1 / EOS-1 | EOR / EOS-1 | – / EOS | EOR+1 / EOS-1 | EOR+1 / EOS-1 |
 
 ## 6. The tool's explanations
 

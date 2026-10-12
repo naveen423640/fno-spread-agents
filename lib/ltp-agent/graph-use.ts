@@ -11,7 +11,7 @@ let cached: KnowledgeGraph | null = null;
 const graph = () => (cached ??= buildKnowledgeGraph());
 
 export type GraphTrace = {
-  pair: string; supportPressure: string; resistancePressure: string; top: string | null; bottom: string | null;
+  label: string; pair: string; supportPressure: string; resistancePressure: string; top: string | null; bottom: string | null;
   outcome: 'blood_bath' | 'bull_run' | 'rare' | null; consistent: boolean; rules: string[]; ownerRuleNotUsedForTrading?: true;
 };
 
@@ -34,7 +34,7 @@ export function graphTrace(a: UsableAnalysis): GraphTrace {
   const riskyRule = (outcome === 'blood_bath' && highlyBearish) || (outcome === 'bull_run' && highlyBullish);
   if (riskyRule) rules.push('risky-high-pressure');
   return {
-    pair: `${support}|${resistance}`, supportPressure: support, resistancePressure: resistance, top, bottom, outcome,
+    label: a.coa1.label, pair: `${support}|${resistance}`, supportPressure: support, resistancePressure: resistance, top, bottom, outcome,
     consistent: a.coa1.scenario.top === top && a.coa1.scenario.bottom === bottom, rules,
     // The owner's risky-trade rule is recorded for the reviewer, but the agent does not trade on it until the tool's Risky level is defined.
     ...(riskyRule ? { ownerRuleNotUsedForTrading: true as const } : {}),

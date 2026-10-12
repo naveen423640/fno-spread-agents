@@ -221,6 +221,7 @@
    "label": "STRONG SINCE MORNING",
    "status": "strong",
    "index": 0,
+   "number": 1,
    "wording": "STRONG SINCE MORNING",
    "eventLog": [
     "init"
@@ -233,6 +234,7 @@
    "label": "STRONG BUT SHIFTED FROM TOP TO BOTTOM (SINGLE SHIFTING)",
    "status": "strong",
    "index": 1,
+   "number": 2,
    "wording": "STRONG BUT SHIFTED FROM TOP TO BOTTOM (SINGLE SHIFTING)",
    "eventLog": [
     "init",
@@ -246,6 +248,7 @@
    "label": "STRONG BUT SHIFTED FROM BOTTOM TO TOP (SINGLE SHIFTING)",
    "status": "strong",
    "index": 2,
+   "number": 3,
    "wording": "STRONG BUT SHIFTED FROM BOTTOM TO TOP (SINGLE SHIFTING)",
    "eventLog": [
     "init",
@@ -259,6 +262,7 @@
    "label": "INITIALLY WTB THEN BECAME STRONG",
    "status": "strong",
    "index": 3,
+   "number": 4,
    "wording": "INITIALLY WTB THEN BECAME STRONG",
    "eventLog": [
     "wtb",
@@ -272,6 +276,7 @@
    "label": "INITIALLY WTT THEN BECAME STRONG",
    "status": "strong",
    "index": 4,
+   "number": 5,
    "wording": "INITIALLY WTT THEN BECAME STRONG",
    "eventLog": [
     "wtt",
@@ -285,6 +290,7 @@
    "label": "SHIFTED FROM TOP TO BOTTOM AND AGAIN SHIFTED TO BOTTOM AND NOW STRONG (DOUBLE SHIFTING)",
    "status": "strong",
    "index": 5,
+   "number": 6,
    "wording": "SHIFTED FROM TOP TO BOTTOM AND AGAIN SHIFTED TO BOTTOM AND NOW STRONG (DOUBLE SHIFTING)",
    "eventLog": [
     "init",
@@ -301,6 +307,7 @@
    "label": "SHIFTED FROM BOTTOM TO TOP AND AGAIN SHIFTED TO TOP AND NOW STRONG (DOUBLE SHIFTING)",
    "status": "strong",
    "index": 6,
+   "number": 7,
    "wording": "SHIFTED FROM BOTTOM TO TOP AND AGAIN SHIFTED TO TOP AND NOW STRONG (DOUBLE SHIFTING)",
    "eventLog": [
     "init",
@@ -317,6 +324,7 @@
    "label": "SHIFTED FROM TOP TO BOTTOM BECAME STRONG, THEN AGAIN SHIFTED FROM BOTTOM TO TOP AT ANY PLACE AND NOW STRONG",
    "status": "strong",
    "index": 7,
+   "number": 8,
    "wording": "SHIFTED FROM TOP TO BOTTOM BECAME STRONG, THEN AGAIN SHIFTED FROM BOTTOM TO TOP AT ANY PLACE AND NOW STRONG",
    "eventLog": [
     "init",
@@ -337,6 +345,7 @@
    "label": "SHIFTED FROM TOP TO BOTTOM [WTT % IS THERE IN CONTINUATION] AND THEN BECAME WTT AT NEW PLACE AND ALSO SHIFTED THERE AND NOW STRONG",
    "status": "strong",
    "index": 8,
+   "number": 9,
    "wording": "SHIFTED FROM TOP TO BOTTOM [WTT % IS THERE IN CONTINUATION] AND THEN BECAME WTT AT NEW PLACE AND ALSO SHIFTED THERE AND NOW STRONG",
    "eventLog": [
     "init",
@@ -353,6 +362,7 @@
    "label": "SHIFTED FROM TOP TO BOTTOM [WTT % IS THERE IN CONTINUATION] AND THEN BECAME WTT AT NEW PLACE AND THEN BECAME STRONG (NOT SHIFTED)",
    "status": "strong",
    "index": 9,
+   "number": 10,
    "wording": "SHIFTED FROM TOP TO BOTTOM [WTT % IS THERE IN CONTINUATION] AND THEN BECAME WTT AT NEW PLACE AND THEN BECAME STRONG (NOT SHIFTED)",
    "eventLog": [
     "init",
@@ -369,6 +379,7 @@
    "label": "SHIFTED FROM BOTTOM TO TOP BECAME STRONG, THEN AGAIN SHIFTED FROM TOP TO BOTTOM AT ANY PLACE AND NOW STRONG",
    "status": "strong",
    "index": 10,
+   "number": 11,
    "wording": "SHIFTED FROM BOTTOM TO TOP BECAME STRONG, THEN AGAIN SHIFTED FROM TOP TO BOTTOM AT ANY PLACE AND NOW STRONG",
    "eventLog": [
     "init",
@@ -389,6 +400,7 @@
    "label": "SHIFTED FROM BOTTOM TO TOP [WTB % IS THERE IN CONTINUATION] AND THEN BECAME WTB AT NEW PLACE AND ALSO SHIFTED THERE AND NOW STRONG",
    "status": "strong",
    "index": 11,
+   "number": 12,
    "wording": "SHIFTED FROM BOTTOM TO TOP [WTB % IS THERE IN CONTINUATION] AND THEN BECAME WTB AT NEW PLACE AND ALSO SHIFTED THERE AND NOW STRONG",
    "eventLog": [
     "init",
@@ -405,6 +417,7 @@
    "label": "SHIFTED FROM BOTTOM TO TOP [WTB % IS THERE IN CONTINUATION] AND THEN BECAME WTB AT NEW PLACE AND THEN BECAME STRONG (NOT SHIFTED)",
    "status": "strong",
    "index": 12,
+   "number": 13,
    "wording": "SHIFTED FROM BOTTOM TO TOP [WTB % IS THERE IN CONTINUATION] AND THEN BECAME WTB AT NEW PLACE AND THEN BECAME STRONG (NOT SHIFTED)",
    "eventLog": [
     "init",
@@ -421,6 +434,7 @@
    "label": "WEAK TOWARDS BOTTOM",
    "status": "wtb",
    "index": 0,
+   "number": 1,
    "wording": "WEAK TOWARDS BOTTOM",
    "eventLog": [
     "wtb"
@@ -433,6 +447,7 @@
    "label": "SHIFTED FROM TOP TO BOTTOM AND NOW AGAIN WTB",
    "status": "wtb",
    "index": 1,
+   "number": 2,
    "wording": "SHIFTED FROM TOP TO BOTTOM AND NOW AGAIN WTB",
    "eventLog": [
     "wtb",
@@ -447,6 +462,7 @@
    "label": "SHIFTED FROM BOTTOM TO TOP AND IN THAT CONTINUATION, IT IS LOOKING WTB",
    "status": "wtb",
    "index": 2,
+   "number": 3,
    "wording": "SHIFTED FROM BOTTOM TO TOP AND IN THAT CONTINUATION, IT IS LOOKING WTB",
    "eventLog": [
     "init",
@@ -461,6 +477,7 @@
    "label": "SHIFTED FROM BOTTOM TO TOP BECAME STRONG AND AGAIN BECAME WTB AT ANY PLACE",
    "status": "wtb",
    "index": 3,
+   "number": 4,
    "wording": "SHIFTED FROM BOTTOM TO TOP BECAME STRONG AND AGAIN BECAME WTB AT ANY PLACE",
    "eventLog": [
     "wtt",
@@ -477,6 +494,7 @@
    "label": "SHIFTED FROM BOTTOM TO TOP [WTB % IS THERE IN CONTINUATION] AND THEN WTB AT NEW PLACE",
    "status": "wtb",
    "index": 4,
+   "number": 5,
    "wording": "SHIFTED FROM BOTTOM TO TOP [WTB % IS THERE IN CONTINUATION] AND THEN WTB AT NEW PLACE",
    "eventLog": [
     "init",
@@ -492,6 +510,7 @@
    "label": "WEAK TOWARDS TOP",
    "status": "wtt",
    "index": 0,
+   "number": 1,
    "wording": "WEAK TOWARDS TOP",
    "eventLog": [
     "wtt"
@@ -504,6 +523,7 @@
    "label": "SHIFTED FROM BOTTOM TO TOP AND NOW AGAIN WTT",
    "status": "wtt",
    "index": 1,
+   "number": 2,
    "wording": "SHIFTED FROM BOTTOM TO TOP AND NOW AGAIN WTT",
    "eventLog": [
     "wtt",
@@ -518,6 +538,7 @@
    "label": "SHIFTED FROM TOP TO BOTTOM AND IN THAT CONTINUATION, IT IS LOOKING WTT",
    "status": "wtt",
    "index": 2,
+   "number": 3,
    "wording": "SHIFTED FROM TOP TO BOTTOM AND IN THAT CONTINUATION, IT IS LOOKING WTT",
    "eventLog": [
     "init",
@@ -532,6 +553,7 @@
    "label": "SHIFTED FROM TOP TO BOTTOM BECAME STRONG AND AGAIN BECAME WTT AT ANY PLACE",
    "status": "wtt",
    "index": 3,
+   "number": 4,
    "wording": "SHIFTED FROM TOP TO BOTTOM BECAME STRONG AND AGAIN BECAME WTT AT ANY PLACE",
    "eventLog": [
     "wtb",
@@ -548,6 +570,7 @@
    "label": "SHIFTED FROM TOP TO BOTTOM [WTT % IS THERE IN CONTINUATION] AND THEN WTT AT NEW PLACE",
    "status": "wtt",
    "index": 4,
+   "number": 5,
    "wording": "SHIFTED FROM TOP TO BOTTOM [WTT % IS THERE IN CONTINUATION] AND THEN WTT AT NEW PLACE",
    "eventLog": [
     "init",

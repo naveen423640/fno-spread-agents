@@ -12,7 +12,7 @@ type Data = { explanations: string[]; boxes: Box[] };
 const NAME: Record<string, string> = { strong: 'Strong', wtb: 'WTB (weak toward bottom)', wtt: 'WTT (weak toward top)' };
 const WORD: Record<string, string> = { S: 'stable strong', B: 'bearish', U: 'bullish', HB: 'highly bearish', HU: 'highly bullish' };
 const sentence = (s: string) => s.charAt(0) + s.slice(1).toLowerCase().replace(/\bwt([tb])\b/g, (_m, c: string) => `WT${c.toUpperCase()}`);
-const range = (n: number[]) => n.map((i) => `${i}`).join(', ');
+const range = (n: number[]) => n.map((i) => `${i + 1}`).join(', ');
 
 function trades(top: string | null, bottom: string | null, rare: boolean, pair: string): string[] {
   const [support, resistance] = pair.split('|');
@@ -34,14 +34,14 @@ export function buildScenarioMindmap(): string {
   const w = (s = '') => out.push(s);
   w('---\ntitle: The 9 scenarios of the Detailed Chart of Accuracy\nmarkmap:\n  colorFreezeLevel: 2\n  maxWidth: 420\n---\n');
   w('# The 9 scenarios: history, pressure, top and bottom, trades\n');
-  w('## How to read this\n- Pick the scenario (COA box) = the status of the two sides now\n- Each side has a history condition (S0, S1 ... for support; R0, R1 ... for resistance)\n- The history gives a pressure: stable strong, bearish, bullish, highly bearish, highly bullish\n- The pair of pressures gives the top and bottom\n- The top and bottom decide the trades\n- Source: the practice tool, 529 cases, all matched by our engine; pressure per condition is our reading, confirmed with the owner\n');
+  w('## How to read this\n- Pick the scenario (COA box) = the status of the two sides now\n- Each side has a history condition (S1, S2 ... for support; R1, R2 ... for resistance; the live label reads scenario-S/R, for example 6-S3/R1)\n- The history gives a pressure: stable strong, bearish, bullish, highly bearish, highly bullish\n- The pair of pressures gives the top and bottom\n- The top and bottom decide the trades\n- Source: the practice tool, 529 cases, all matched by our engine; pressure per condition is our reading, confirmed with the owner\n');
   data.boxes.forEach((box, bi) => {
     const nr = box.resistanceConditions.length;
     w(`## COA 1.${bi + 1}: support ${NAME[box.support]}, resistance ${NAME[box.resistance]}`);
     w('### Support history');
-    box.supportConditions.forEach((c, i) => w(`- **S${i}** ${sentence(c)} → ${WORD[pressureOf(box.support, i)]}`));
+    box.supportConditions.forEach((c, i) => w(`- **S${i + 1}** ${sentence(c)} → ${WORD[pressureOf(box.support, i)]}`));
     w('### Resistance history');
-    box.resistanceConditions.forEach((c, j) => w(`- **R${j}** ${sentence(c)} → ${WORD[pressureOf(box.resistance, j)]}`));
+    box.resistanceConditions.forEach((c, j) => w(`- **R${j + 1}** ${sentence(c)} → ${WORD[pressureOf(box.resistance, j)]}`));
     w('### Outcomes and trades');
     // Group the cases by outcome (top, bottom), then by the pressure pair behind it.
     type Group = { top: string | null; bottom: string | null; rare: boolean; pairs: Map<string, Map<number, number[]>> };
@@ -71,7 +71,7 @@ export function buildScenarioMindmap(): string {
       for (const [pair, bySupport] of g.pairs) {
         const [s, r] = pair.split('|');
         w(`    - Support ${WORD[s]}, resistance ${WORD[r]}`);
-        for (const [i, js] of bySupport) w(`      - S${i} with R${range(js)}`);
+        for (const [i, js] of bySupport) w(`      - S${i + 1} with R${range(js)}`);
       }
     }
   });

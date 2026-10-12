@@ -90,7 +90,13 @@ Other commands (the tab offers the same actions):
 
 Pause and resume paper trading from the tab. Paused means no new decisions or trades; open trades are still managed to their exit.
 
-## The strategy (v0.1 = the pure course rules)
+## The strategy: v2.0 is the default (v0.1 = the pure course rules)
+
+**v2.0** (`strategies/ltp_v2.0.yaml`) is the version the agent runs. It has the same values as v0.1 plus `graph_consistent_required: true`: a signal is skipped (reason `scenario_allowed`, with `graph_consistent: false` in the trace) when the live scenario and the knowledge graph disagree. v0.1 stays loadable for comparison. A new version starts its own 100-trade journal phase, so the learning lock restarts at v2.0.
+
+**Numbered conditions.** Each side's history is named as one of the practice tool's numbered conditions (`lib/ltp/conditions.ts`): 13 for a strong side, 5 for a weak side. The scenario label reads `scenario-S<support>/R<resistance>`, for example `6-S3/R1`, with `~` after a number when the history is not one of the listed shapes (then it is the listed condition of the same pressure). Phases are the stretches between events; a weak or strong spell under 3 minutes is a blink and ignored, a shift never is; a side that has stayed in one phase for 2 hours is in a continuation (both numbers are `LTP_CONFIG.phases`, assumed). The label, the pressure, the phase count and the phase age are in every decision's context (`conditions`) and on the LTP screen.
+
+## The strategy file (v0.1 values)
 
 `strategies/ltp_v0.1.yaml`, validated by a zod schema (unknown keys and bad values are rejected with the field path). Fields: which sides to trade in each COA 1.0 scenario (6 = shorts only, 7 = longs only, 8 and 9 both, as in the Detailed Chart of Accuracy; a side the chart gives no level for is never traded), entry profile, which setups are on, touch tolerance, time window, maximum hit number, COA 2.0 agreement, SOC filter, stop rule and buffer, time exit, level-shift exit, risk caps, book settings and fill settings.
 

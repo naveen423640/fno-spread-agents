@@ -58,7 +58,7 @@ export function buildKnowledgeGraph(): KnowledgeGraph {
     HISTORY_CONDITIONS[status].forEach((c, i) => {
       const id = `condition:${status}:${i}`;
       const pressure = pressureOf(eventsOf(c.log), status);
-      node({ id, type: 'condition', label: c.wording, status, index: i, wording: c.wording, eventLog: c.log, pressure });
+      node({ id, type: 'condition', label: c.wording, status, index: i, number: i + 1, wording: c.wording, eventLog: c.log, pressure });
       edge(id, `status:${status}`, 'applies_when_status');
       edge(id, `pressure:${pressure}`, 'has_pressure');
     });

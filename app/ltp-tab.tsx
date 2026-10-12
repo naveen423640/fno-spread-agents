@@ -12,7 +12,7 @@ import { CALIBRATION_LABELS } from '@/lib/ltp/calibration';
 import type { LtpState } from '@/lib/ltp/state';
 import type { CalibrationEntry } from '@/lib/ltp/store';
 import { istDate, istHhmm } from '@/lib/ltp/time';
-import { healthBadge, tradeLevels } from '@/lib/ltp/view';
+import { healthBadge, scenarioHeadline, tradeLevels } from '@/lib/ltp/view';
 
 import { LtpChainTable } from '@/app/ltp-chain-table';
 import { useCloudMode } from '@/app/use-cloud-mode';
@@ -209,7 +209,7 @@ function LtpLevels() {
               <div className="flex flex-wrap items-center justify-between gap-2 rounded-md bg-slate-100 px-3 py-1.5 text-xs text-slate-900">
                 <span><strong>{state.date}</strong>{state.viewingStoredDay ? ' (stored day)' : ''} · snapshot {clock(state.snapshotTs)}</span>
                 <span className="rounded-full bg-orange-500 px-4 py-1 text-sm font-bold text-white">Spot : {num(spot)}</span>
-                <span>COA 1.0 scenario <strong>{a.coa1.scenario.number}</strong> ({bias}) · Expiry {a.expiry}</span>
+                <span title="scenario - support condition / resistance condition, numbered as in the practice tool"><strong>{scenarioHeadline(a)}</strong> ({bias}) · Expiry {a.expiry}</span>
               </div>
               <div className="grid grid-cols-1 overflow-hidden rounded-md text-white md:grid-cols-[1fr_auto_1fr]">
                 <div className="bg-red-600 px-3 py-2">{tradeStrip('short')}</div>

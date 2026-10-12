@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { analyzeSession } from '@/lib/ltp/analyze';
 import { istTs } from '@/lib/ltp/time';
-import { columnPercents, highlightCells, healthBadge, logLabel, logTime, popupTitle, tradeLevels, windowLabel } from '@/lib/ltp/view';
+import { columnPercents, conditionSummary, highlightCells, healthBadge, logLabel, logTime, phaseAge, popupTitle, scenarioHeadline, tradeLevels, windowLabel } from '@/lib/ltp/view';
 import { makeChain } from '../support/ltp-chain';
 import type { ChainView } from '@/lib/ltp/state';
 
@@ -117,4 +117,28 @@ describe('the scenario popup, as in the real tool', () => {
     expect(logLabel({ status: 'wtt', label: '72500 - WTT - 73000' })).toBe('72500 - WTT - 73000');
   });
   it('the time carries seconds', () => { expect(logTime(istTs('2026-10-12', '15:10'))).toBe('15:10:00'); });
+});
+
+describe('the numbered condition shown on the LTP screen', () => {
+  const info = (over = {}) => ({ number: 5, exact: true, wording: 'INITIALLY WTT THEN BECAME STRONG', pressure: 'B' as const, phases: 2, currentPhaseMinutes: 135, continuation: true, ...over });
+  it('writes a phase age in hours and minutes', () => {
+    expect(phaseAge(0)).toBe('0m');
+    expect(phaseAge(45)).toBe('45m');
+    expect(phaseAge(60)).toBe('1h');
+    expect(phaseAge(135)).toBe('2h 15m');
+  });
+  it('summarises a side: its number, the pressure in words, the phases and how long this phase has lasted, with continuation named', () => {
+    expect(conditionSummary('S', info())).toBe('S5: bearish · 2 phases · 2h 15m in this phase (continuation)');
+    expect(conditionSummary('R', info({ number: 1, pressure: 'HU', phases: 1, currentPhaseMinutes: 20, continuation: false }))).toBe('R1: highly bullish · 1 phase · 20m in this phase');
+  });
+  it('marks an approximate condition with a tilde and says so', () => {
+    expect(conditionSummary('S', info({ exact: false }))).toMatch(/^S5~: bearish/);
+    expect(conditionSummary('S', info({ exact: false }))).toMatch(/closest listed/);
+  });
+  it('the headline is the scenario with its condition label and both pressures, plus the State of Confusion when there is one', () => {
+    const a = { coa1: { label: '6-S5/R1', scenario: { number: 6 }, conditions: { support: info(), resistance: info({ number: 1, pressure: 'B' }) } }, soc: null } as never;
+    expect(scenarioHeadline(a)).toBe('Scenario 6-S5/R1 · support bearish · resistance bearish');
+    const withSoc = { coa1: { label: '8-S1/R2', scenario: { number: 8 }, conditions: { support: info({ pressure: 'B' }), resistance: info({ pressure: 'U' }) } }, soc: { bias: 'bullish', type: '3h' } } as never;
+    expect(scenarioHeadline(withSoc)).toBe('Scenario 8-S1/R2 · support bearish · resistance bullish · Bullish SOC 3h');
+  });
 });

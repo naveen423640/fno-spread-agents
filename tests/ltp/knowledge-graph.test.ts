@@ -20,7 +20,7 @@ describe('the LTP knowledge graph', () => {
     const conditions = graph.nodes.filter((n) => n.type === 'condition');
     expect(conditions).toHaveLength(23);
     expect(conditions.filter((c) => c.status === 'strong')).toHaveLength(13);
-    for (const c of conditions) { expect(c.wording).toBeTruthy(); expect((c.eventLog as string[]).length).toBeGreaterThan(0); expect(graph.edges.some((e) => e.type === 'has_pressure' && e.from === c.id)).toBe(true); }
+    for (const c of conditions) { expect(c.number).toBe((c.index as number) + 1); expect(c.wording).toBeTruthy(); expect((c.eventLog as string[]).length).toBeGreaterThan(0); expect(graph.edges.some((e) => e.type === 'has_pressure' && e.from === c.id)).toBe(true); }
   });
   it('gives each of the nine scenarios its support and resistance status', () => {
     const scenarios = graph.nodes.filter((n) => n.type === 'scenario');

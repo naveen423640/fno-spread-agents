@@ -8,6 +8,7 @@ describe('graphTrace: which part of the knowledge graph a decision rests on', ()
     const t = graphTrace(fakeAnalysis());
     expect(t).toMatchObject({ pair: 'S|S', supportPressure: 'S', resistancePressure: 'S', top: 'EOR', bottom: 'EOS', outcome: null, consistent: true });
     expect(t.rules).toContain('top-bottom-from-pairs');
+    expect(t.label).toBe(fakeAnalysis().coa1.label); // the numbered-condition label, like 1-S1/R1
   });
   it('a weak side with matching pressure gives the variant, and the trace still agrees with the live scenario', () => {
     const t = graphTrace(fakeAnalysis({ support: 'wtb', resistance: 'wtt' })); // B|U, both weak now

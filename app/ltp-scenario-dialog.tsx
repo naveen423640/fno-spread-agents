@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import type { LoggedEvent, Reversal, UsableAnalysis } from '@/lib/ltp/analyze';
 import { tradeMapping } from '@/lib/ltp/coa1';
-import { logLabel, logTime, popupTitle, tradeLevels, type TradeCell } from '@/lib/ltp/view';
+import { conditionSummary, logLabel, logTime, popupTitle, scenarioHeadline, tradeLevels, type TradeCell } from '@/lib/ltp/view';
 
 // What opens when you click the banner, like the real tool: the scenario, then the support and resistance changes since the open with the
 // spot and the EOR / EOS family at every change.
@@ -53,7 +53,10 @@ export function LtpScenarioDialog({ open, onOpenChange, analysis, name, nowLabel
 
         {tab === 'scenario' ? (
           <div className="grid gap-2 text-sm">
-            <p><strong>Scenario {sc.number}: {sc.bias}</strong>{sc.tradable ? '' : ' · not tradable'}</p>
+            <p><strong>{scenarioHeadline(analysis)}</strong></p>
+            <p>{sc.bias}{sc.tradable ? '' : ' · not tradable'}</p>
+            <p>{conditionSummary('S', analysis.coa1.conditions.support)}<br />{analysis.coa1.conditions.support.wording}</p>
+            <p>{conditionSummary('R', analysis.coa1.conditions.resistance)}<br />{analysis.coa1.conditions.resistance.wording}</p>
             <p>Resistance is {analysis.direction.resistance.current}, support is {analysis.direction.support.current} (from each side&apos;s latest change). Allowed: {sc.allowed.join(', ') || 'none'}.</p>
             <p>Top reversal: {sc.top ?? 'N/A'} · Bottom reversal: {sc.bottom ?? 'N/A'}.</p>
             <p>At the bottom: {tradeMapping('bottom').join(', ')}. At the top: {tradeMapping('top').join(', ')}.</p>
