@@ -9,7 +9,7 @@ markmap:
 
 ## How to read this
 - Pick the scenario (COA box) = the status of the two sides now
-- Each side has a history condition (S1, S2 ... for support; R1, R2 ... for resistance; the live label reads scenario-S/R, for example 6-S3/R1)
+- Each side has a history condition (S1, S2 ... for support; R1, R2 ... for resistance; the live label reads scenario(S/R), for example 6(S3/R1))
 - The history gives a pressure: stable strong, bearish, bullish, highly bearish, highly bullish
 - The pair of pressures gives the top and bottom, and who is winning the tug of war
 - The top and bottom decide the trades; the tug of war decides whether a risky trade is also allowed
