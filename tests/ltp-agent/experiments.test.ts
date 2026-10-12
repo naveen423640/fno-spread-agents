@@ -123,6 +123,7 @@ describe('what the proposer is shown: discovery only', () => {
     const { llm, calls } = fakeLlm([reply()]);
     await proposeExperiments({ llm, journal }, v01, split);
     const prompt = calls[0].messages.map((m) => m.content).join('\n');
+    expect(prompt).toContain('RULEBOOK');
     expect(prompt).toContain('discovery note');
     expect(prompt).toContain('earlier idea');
     expect(prompt).not.toMatch(/HOLDOUT_REVIEW_TEXT|123456|holdout-trade|2026-10-05|HOLDOUT_METRIC_999/);

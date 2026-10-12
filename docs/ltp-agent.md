@@ -4,6 +4,15 @@ A paper-trading agent that trades the LTP Calculator rules (see `docs/ltp-levels
 
 **Paper only. Results are not validated for live trading.** Nothing in the agent can place, modify or cancel an order. A test (`tests/ltp-agent/import-guard.test.ts`) fails the build if any file under `lib/ltp-agent/` or `scripts/ltp-agent.ts` mentions an order term or imports anything beyond the LTP engine, the LLM client, zod, yaml and Node built-ins.
 
+## The knowledge graph
+
+`docs/data/ltp-knowledge-graph.json` (generated from the engine by `scripts/build-ltp-graph.ts`; see also `docs/ltp-scenarios.mindmap.html`) holds the scenarios, side histories, pressure classes, levels, trades and rules, each rule tagged with its source (course, tool, user, ours). The agent uses it in two ways, and never to decide a trade:
+
+- every decision's context has a `graph` entry (`lib/ltp-agent/graph-use.ts`): the pressure pair, the top and bottom the graph gives, the rules that applied, and `consistent`, which is false if the live scenario disagrees with the graph;
+- the reviewing model and the experiment-proposing model get the graph as a plain-text RULEBOOK in their instructions, with the open questions listed so they do not invent answers.
+
+The owner's risky-trade rule (a risky short in Blood Bath, a risky long in Bull Run, at the tool's own Risky level) is in the graph and shows in a decision's `graph.rules`, flagged `ownerRuleNotUsedForTrading`: the agent does not trade on it until the live tool's Risky line is defined.
+
 ## Hard rules
 
 1. **Claude never decides trades.** A deterministic rule engine plus a versioned strategy file decides, so every result can be reproduced by replay. The LLM only reviews closed trades and proposes experiments.

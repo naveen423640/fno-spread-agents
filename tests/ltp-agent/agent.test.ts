@@ -43,6 +43,7 @@ describe('a clean touch of EOS', () => {
     for (const key of ['spot', 'line', 'support', 'resistance', 'scenario', 'coa2', 'soc', 'diversions', 'lines0920', 'weekly', 'hit', 'minutesSinceShift', 'hhmm', 'daysToExpiry', 'method']) expect(c).toHaveProperty(key);
     expect(c.daysToExpiry).toBe(1);
     expect(c.support).toMatchObject({ strike: 23900, status: 'strong' });
+    expect(c.graph).toMatchObject({ pair: 'S|S', top: 'EOR', bottom: 'EOS', consistent: true });
   });
   it('both books carry the decision id and the planned risk', async () => {
     const { ctx, journal } = await setup(pathDay(WINNER.slice(0, 2)));

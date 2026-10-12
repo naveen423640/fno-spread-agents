@@ -1702,11 +1702,6 @@
   },
   {
    "from": "pair:HB|HU",
-   "to": "outcome:bull_run",
-   "type": "leads_to"
-  },
-  {
-   "from": "pair:HB|HU",
    "to": "outcome:rare",
    "type": "leads_to"
   },
@@ -1779,11 +1774,6 @@
    "from": "pair:HU|HB",
    "to": "pressure:HB",
    "type": "resistance_pressure"
-  },
-  {
-   "from": "pair:HU|HB",
-   "to": "outcome:bull_run",
-   "type": "leads_to"
   },
   {
    "from": "pair:HU|HB",

@@ -73,6 +73,7 @@ describe('reviewTrade validates the model output, retries once, then fails and s
     await reviewTrade(llm, input(), 'r1');
     const text = calls[0].messages.map((m) => m.content).join('\n');
     for (const tag of MISTAKE_TAGS) expect(text).toContain(tag);
+    expect(text).toContain('RULEBOOK'); // the knowledge graph as plain text
     expect(calls[0].role).toBe('ltp-reviewer');
     expect(text).not.toMatch(/sk-|api[_-]?key/i);
   });

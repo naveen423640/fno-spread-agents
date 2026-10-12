@@ -21,10 +21,14 @@ export function parseProposals(text: string): Proposal[] {
   return proposalSchema.parse(extractJson(text)).experiments;
 }
 
+import { rulebookText } from './graph-use';
+
 const SYSTEM = `You propose changes to the rules of a paper-trading strategy for the LTP Calculator method. You are shown the strategy, a summary of past trades and reviews, and earlier experiments (without their results).
 You may change ONLY these fields, within these bounds: ${JSON.stringify(TUNABLE_FIELDS)}.
 Every proposal is tested on days you cannot see, and most changes will not help; proposing nothing is a valid answer.
-Reply with ONLY a JSON object: {"experiments":[{"hypothesis":"...","diff":{"<field>":<value>},"expected_effect":"...","evidence":["tag or decision id from the data", ...]}]} with at most ${MAX_PROPOSALS} experiments. The diff keys must be exactly the field paths above. Do not invent evidence.`;
+Reply with ONLY a JSON object: {"experiments":[{"hypothesis":"...","diff":{"<field>":<value>},"expected_effect":"...","evidence":["tag or decision id from the data", ...]}]} with at most ${MAX_PROPOSALS} experiments. The diff keys must be exactly the field paths above. Do not invent evidence.
+
+${rulebookText()}`;
 
 export type ProposeResult = { experiments: Experiment[]; dropped: { reason: string; proposal: unknown }[]; failure?: string };
 

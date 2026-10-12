@@ -79,7 +79,7 @@ export function buildKnowledgeGraph(): KnowledgeGraph {
     });
     edge(id, `pressure:${support}`, 'support_pressure');
     edge(id, `pressure:${resistance}`, 'resistance_pressure');
-    if (plain.top) edge(id, `level:${plain.top}`, 'top_is'); else edge(id, 'outcome:bull_run', 'leads_to');
+    if (plain.top) edge(id, `level:${plain.top}`, 'top_is'); else if (!rare) edge(id, 'outcome:bull_run', 'leads_to');
     if (plain.bottom) edge(id, `level:${plain.bottom}`, 'bottom_is'); else if (!rare) edge(id, 'outcome:blood_bath', 'leads_to');
     if (rare) edge(id, 'outcome:rare', 'leads_to');
   }

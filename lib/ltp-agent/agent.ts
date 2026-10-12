@@ -1,6 +1,7 @@
 // The agent loop. `agentStep` handles one recorded minute of one underlying: it manages open trades first, then judges new signals and journals
 // every one of them (taken or skipped) at decision time. It reads only snapshots up to the minute it is given, so the live runner (one call per
 // recorded minute) and replay (one call per stored minute) are the same code and give the same journal. Paper trading only. No orders exist here.
+import { graphTrace } from './graph-use';
 import { analyzeSession, type SessionAnalysis, type UsableAnalysis } from '@/lib/ltp/analyze';
 import { ivMove, type ExtensionMethod } from '@/lib/ltp/extensions';
 import { weeklyFor } from '@/lib/ltp/state';
@@ -51,6 +52,7 @@ async function contextOf(ctx: AgentContext, a: UsableAnalysis, c: Candidate, sna
     scenario: a.coa1.scenario.number, scenarioBias: a.coa1.scenario.bias, directions: { support: a.direction.support.current, resistance: a.direction.resistance.current, banner: a.direction.banner.kind },
     coa2: { atmStrike: a.coa2.atmStrike, callTrend: a.coa2.callTrend, putTrend: a.coa2.putTrend, result: a.coa2.result }, soc: a.soc ? { type: a.soc.type, bias: a.soc.bias, side: a.soc.side, minutes: a.soc.minutes } : null,
     pctTrend: { support: a.pctTrend.support ? { trend: a.pctTrend.support.trend, bias: a.pctTrend.support.bias } : null, resistance: a.pctTrend.resistance ? { trend: a.pctTrend.resistance.trend, bias: a.pctTrend.resistance.bias } : null },
+    graph: graphTrace(a),
     diversions: a.diversions.count,
     lines0920: lines ? { snapshotTs: lines.snapshotTs, short: { risky: lines.short.risky.value, moderate: lines.short.moderate.value, maxPain: lines.short.maxPain.value, maxGain: lines.short.maxGain.value }, long: { risky: lines.long.risky.value, moderate: lines.long.moderate.value, maxPain: lines.long.maxPain.value, maxGain: lines.long.maxGain.value } } : null,
     weekly: weekly ? { s: weekly.s, l1: weekly.l1, l2: weekly.l2, l3: weekly.l3, lateStart: weekly.lateStart, spotMultiple: round2((a.spot - weekly.cmp) / weekly.s) } : null,

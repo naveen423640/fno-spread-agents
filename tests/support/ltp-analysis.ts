@@ -38,7 +38,7 @@ export function fakeAnalysis(o: FakeOpts = {}): UsableAnalysis {
     levels: { line: { low: 24000, high: 24050, exact: false }, support: { strike: 24000, decidedBy: 'volume+oi', byVolume: null, byOi: null }, resistance: { strike: 24250, decidedBy: 'volume+oi', byVolume: null, byOi: null } },
     strength: { support: { strike: 24000, status: o.support ?? 'strong', pct: { volume: 50, oi: 50 }, byMetric: {} as never }, resistance: { strike: 24250, status: o.resistance ?? 'strong', pct: { volume: 50, oi: 50 }, byMetric: {} as never } },
     method: { id: 'test', label: 'test' }, extensions: e,
-    coa1: { scenario, top, bottom, hits: { top: { level: top?.value ?? null, count: 0, label: null }, bottom: { level: bottom?.value ?? null, count: 0, label: null } } },
+    coa1: { scenario, pressure: { support: pressure(o.support ?? 'strong'), resistance: pressure(o.resistance ?? 'strong') }, top, bottom, hits: { top: { level: top?.value ?? null, count: 0, label: null }, bottom: { level: bottom?.value ?? null, count: 0, label: null } } },
     coa2: { atmStrike: 24050, callTrend: 'stable', putTrend: 'increasing', result: { status: 'ok', number: 4, outcome: 'Reversal at support; resistance may break out' }, firstHitOfExtension: false, ...o.coa2 },
     diversions: { count: 5, bullish: [], bearish: [] }, pctTrend: { support: null, resistance: null }, soc: o.soc ?? null,
     direction: { support: dir(o.supportDirection), resistance: dir(o.resistanceDirection), banner: { kind: 'mixed', text: 'Mixed' } },

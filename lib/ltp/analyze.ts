@@ -9,7 +9,7 @@ import { diversionCount, diversionPath, type DiversionPoint } from './diversions
 import { extensionLevels, ivMove, weakStrike, type ExtLevel, type Extensions, type ExtensionMethod } from './extensions';
 import type { Levels } from './levels';
 import { pctTrend, type PctTrend } from './pct-trend';
-import { pressureOf } from './pressure';
+import { pressureOf, type Pressure } from './pressure';
 import { freezeLines0920, type Lines0920 } from './lines0920';
 import { detectSoc, socTarget, type SocResult } from './soc';
 import { trackStrength, type LevelShift, type SideStrength } from './strength';
@@ -32,7 +32,7 @@ export type UsableAnalysis = {
   strength: { support: SideStrength; resistance: SideStrength };
   method: { id: string; label: string };
   extensions: Extensions;
-  coa1: { scenario: Coa1Scenario; top: ExtLevel | null; bottom: ExtLevel | null; hits: { top: Hit; bottom: Hit } };
+  coa1: { scenario: Coa1Scenario; pressure: { support: Pressure; resistance: Pressure }; top: ExtLevel | null; bottom: ExtLevel | null; hits: { top: Hit; bottom: Hit } };
   coa2: { atmStrike: number | null; callTrend: Trend | null; putTrend: Trend | null; result: Coa2Result; firstHitOfExtension: boolean };
   diversions: { count: number; bullish: DiversionPoint[]; bearish: DiversionPoint[] };
   pctTrend: { support: PctTrend | null; resistance: PctTrend | null }; // the weak side's percentage rising or falling (course ch12, ch13)
@@ -98,7 +98,8 @@ export function analyzeSession(snapshots: Snapshot[], opts: AnalysisOptions): Se
 
   // COA 1.0, read from the Detailed Chart of Accuracy: each side's pressure class comes from its history today (see pressure.ts), and the pair of
   // classes gives the top and bottom. A side that is Strong now but just came back from a weakness or a shift therefore still counts as pressure.
-  const scenario = selectDetailed(pressureOf(supportEvents, support.status), pressureOf(resistanceEvents, resistance.status), support.status, resistance.status);
+  const pressure = { support: pressureOf(supportEvents, support.status), resistance: pressureOf(resistanceEvents, resistance.status) };
+  const scenario = selectDetailed(pressure.support, pressure.resistance, support.status, resistance.status);
   const { top, bottom } = scenarioLevels(scenario, ext);
   const spots = snaps.map((s) => s.spot);
   const hit = (lv: ExtLevel | null): Hit => { const count = countHits(spots, lv?.value ?? null, cfg.hitTolerancePoints); return { level: lv?.value ?? null, count, label: hitLabel(count) }; };
@@ -133,7 +134,7 @@ export function analyzeSession(snapshots: Snapshot[], opts: AnalysisOptions): Se
   return {
     empty: false, usable: true, asOf: latest.ts, date, underlying: latest.underlying, expiry: latest.expiry, spot: latest.spot, step: latest.step,
     levels, strength: { support, resistance }, method: { id: method.id, label: method.label }, extensions: ext,
-    coa1: { scenario, top, bottom, hits },
+    coa1: { scenario, pressure, top, bottom, hits },
     coa2: { atmStrike: atm, callTrend, putTrend, result, firstHitOfExtension },
     diversions: { count: diversionCount(levels.support.strike, levels.resistance.strike, latest.step), bullish: diversionPath(latest, levels.support.strike, levels.resistance.strike, 'bullish', method), bearish: diversionPath(latest, levels.support.strike, levels.resistance.strike, 'bearish', method) },
     pctTrend: { support: weakTrend('support', support.status), resistance: weakTrend('resistance', resistance.status) },

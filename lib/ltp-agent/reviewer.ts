@@ -39,6 +39,8 @@ export function buildReviewerLlm(env: Record<string, string | undefined>, log: C
   return { ...createLlmClient({ providers: [{ ...anthropic, model }], limiter, log }), model };
 }
 
+import { rulebookText } from './graph-use';
+
 const SYSTEM = `You review ONE closed paper trade of a rule-based options strategy (the LTP Calculator rules). The rules, not you, decide trades: you only classify what happened. The EOS and EOR levels are proxy estimates, not exact values.
 Reply with ONLY a JSON object with these keys:
 - outcome_class: one of ${OUTCOME_CLASSES.join(', ')} (good_trade_bad_result = rules followed, normal variance; bad_trade = a rule or data problem; lucky_win = won despite a problem)
@@ -46,7 +48,10 @@ Reply with ONLY a JSON object with these keys:
 - what_happened: two to four sentences, using only the data given.
 - lesson: one sentence.
 - confidence: a number from 0 to 1.
-Do not invent facts that are not in the data.`;
+Do not invent facts that are not in the data.
+The decision's context has a "graph" entry: the pressure pair the rules rested on and whether the live scenario agreed with the rulebook (consistent). If consistent is false, treat it as a rule or data problem.
+
+${rulebookText()}`;
 
 const messagesFor = (input: ReviewInput): LlmMessage[] => [{ role: 'system', content: SYSTEM }, { role: 'user', content: JSON.stringify(input) }];
 
