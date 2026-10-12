@@ -51,6 +51,7 @@ export function VwapBacktestTab() {
   const [sort, setSort] = useState<{ key: SortKey; dir: 1 | -1 }>({ key: 'entryT', dir: 1 });
   const [rowsShown, setRowsShown] = useState(100);
   const [indexReports, setIndexReports] = useState<IndexReport[] | null>(null);
+  const [indexFetch, setIndexFetch] = useState<{ fetched: { symbol: string; from: string; to: string; candles: number }[]; monthsFromCache: number } | null>(null);
   const [indexBusy, setIndexBusy] = useState(false);
 
   useEffect(() => {
@@ -87,10 +88,11 @@ export function VwapBacktestTab() {
     setIndexBusy(true); setMessage(''); setLoginNeeded(false);
     try {
       const response = await fetch(`/api/vwap/index?from=${from}&to=${to}`, { cache: 'no-store' });
-      const body = (await response.json().catch(() => null)) as { reports?: IndexReport[]; error?: string; loginRequired?: boolean } | null;
+      const body = (await response.json().catch(() => null)) as { reports?: IndexReport[]; fetched?: { symbol: string; from: string; to: string; candles: number }[]; monthsFromCache?: number; error?: string; loginRequired?: boolean } | null;
       if (response.status === 401 || body?.loginRequired) { setLoginNeeded(true); setMessage(body?.error ?? 'Connect FYERS to load Nifty data.'); return; }
       if (!response.ok || !body?.reports) { setMessage(body?.error ?? 'Loading Nifty data failed.'); return; }
       setIndexReports(body.reports);
+      setIndexFetch({ fetched: body.fetched ?? [], monthsFromCache: body.monthsFromCache ?? 0 });
     } catch { setMessage('Could not reach the server.'); } finally { setIndexBusy(false); }
   }, [from, to]);
 
@@ -173,8 +175,9 @@ export function VwapBacktestTab() {
         <div className="grid gap-2 sm:col-span-4">
           <div className="flex flex-wrap items-center gap-2">
             <Button size="sm" variant="outline" disabled={indexBusy || busy !== null} onClick={() => void loadIndex()}><Download className={indexBusy ? 'animate-pulse' : ''} />{indexBusy ? 'Loading Nifty…' : 'Load Nifty 50 + Nifty future from FYERS'}</Button>
-            <span className="text-muted-foreground">Needed for the index filter. Fetches 5-minute candles for the date range above and checks whether they carry volume.</span>
+            <span className="text-muted-foreground">Needed for the index filter. Fetches only the days not already stored (and only finished sessions), then checks whether the candles carry volume.</span>
           </div>
+          {indexFetch ? <div className="text-muted-foreground">{indexFetch.fetched.length ? `Fetched from FYERS: ${indexFetch.fetched.map((f) => `${f.symbol.replace('NSE:', '')} ${f.from} to ${f.to} (${f.candles} candles)`).join('; ')}.` : 'Nothing new to fetch from FYERS.'} {indexFetch.monthsFromCache} month(s) served from the cache.</div> : null}
           {indexReports ? (
             <div className="grid gap-2 sm:grid-cols-2">
               {indexReports.map((r) => (

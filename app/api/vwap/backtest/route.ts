@@ -9,6 +9,8 @@ import { runBacktest, type BacktestResult } from '@/lib/vwap/backtest/run';
 import { loadSymbolMaster, type SymbolMaster } from '@/lib/vwap/backtest/symbol-master';
 import { createBoardCacheProvider } from '@/lib/vwap/cache-provider';
 import { assertPaperOnly } from '@/lib/execution-mode';
+import { lastCompletedSession } from '@/lib/market-session';
+import { HOLIDAYS } from '@/lib/screener/holidays';
 import { createFyersProvider, firstWithData } from '@/lib/vwap/provider';
 import { createVwapStore } from '@/lib/vwap/store';
 import { loadUniverse } from '@/lib/vwap/universe';
@@ -29,6 +31,9 @@ async function configFrom(body: Record<string, unknown> | null): Promise<Backtes
   const filters = raw.filters && typeof raw.filters === 'object' ? { ...(raw.filters as Record<string, unknown>) } : {};
   if (filters.indexSymbol === 'NIFTY_FUT') filters.indexSymbol = indexSymbolsFor(new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }))[1];
   const config = parseConfig({ ...raw, filters, randomRuns: Math.min(200, Number(raw.randomRuns ?? 100) || 100), bootstrapIterations: Math.min(2000, Number(raw.bootstrapIterations ?? 1000) || 1000), grid: null });
+  // Only finished sessions: a session still in progress is incomplete and would be forced out at its last candle.
+  const lastDone = lastCompletedSession(new Date(), HOLIDAYS);
+  if (config.to > lastDone) config.to = lastDone;
   return config;
 }
 

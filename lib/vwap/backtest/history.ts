@@ -86,8 +86,12 @@ export async function loadHistory(deps: { provider: DataProvider; entries: Unive
   return { data, skipped, loginRequired, errors };
 }
 
-// Wraps a provider with a per-symbol-month cache so a re-run does not fetch again. Today's partial session is never cached.
-export function createCachingProvider(inner: DataProvider, db: D1Like, todayIso: string): DataProvider {
+// What the caching provider did, so a caller can show "fetched these ranges, served the rest from cache".
+export type CacheStats = { fetched: { symbol: string; from: string; to: string; candles: number }[]; cacheHits: number };
+
+// Wraps a provider with a per-symbol-month cache so a re-run only fetches what is missing: a month already cached through the requested day is
+// served locally, and a longer range fetches only the days after the cached ones. Today's partial session is never cached.
+export function createCachingProvider(inner: DataProvider, db: D1Like, todayIso: string, stats?: CacheStats): DataProvider {
   return {
     name: `${inner.name}+cache`,
     async candles5m(symbol, fromDay, toDay) {
@@ -100,12 +104,14 @@ export function createCachingProvider(inner: DataProvider, db: D1Like, todayIso:
         const fetchedFrom = addDays(through, 1);
         const result = await inner.candles5m(symbol, fetchedFrom, toDay);
         if (!result.ok) return result;
+        stats?.fetched.push({ symbol, from: fetchedFrom, to: toDay, candles: result.value.length });
         candles = [...candles, ...result.value].filter((c, i, all) => all.findIndex((x) => x.t === c.t) === i).sort((a, b) => a.t - b.t);
         const stable = candles.filter((c) => istDayOf(c.t) < todayIso);
         const safeThrough = toDay < todayIso ? toDay : addDays(todayIso, -1);
         if (safeThrough >= fromDay) await db.prepare('INSERT OR REPLACE INTO vwap_m5_month (symbol, month, through, candles_json) VALUES (?, ?, ?, ?)').bind(symbol, month, safeThrough, JSON.stringify(stable.map((c) => [c.t, c.o, c.h, c.l, c.c, c.v]))).run();
         return { ok: true as const, value: candles };
       }
+      if (stats) stats.cacheHits += 1;
       return { ok: true as const, value: candles.filter((c) => istDayOf(c.t) <= toDay) };
     },
   };

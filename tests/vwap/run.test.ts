@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { gainersLosersBaseline, openToCloseBaseline, prepareMonth, randomEntryBaseline } from '@/lib/vwap/backtest/baselines';
 import { DEFAULT_CONFIG, parseConfig } from '@/lib/vwap/backtest/config';
-import { corporateActionIn, createCachingProvider, expectedFirstSession, loadHistory, monthsBetween } from '@/lib/vwap/backtest/history';
+import { corporateActionIn, createCachingProvider, type CacheStats, expectedFirstSession, loadHistory, monthsBetween } from '@/lib/vwap/backtest/history';
 import { computeSummary, distribution, equityCurve, heatmap, sliceBy } from '@/lib/vwap/backtest/metrics';
 import { DEFAULT_IV, type PricedTrade, type PricingContext } from '@/lib/vwap/backtest/pricing';
 import { applyPortfolioLimits, runBacktest } from '@/lib/vwap/backtest/run';
@@ -162,6 +162,27 @@ describe('history loading', () => {
     expect(calls).toBe(1);
     expect(second).toEqual(first);
     expect(first.ok && first.value).toHaveLength(10);
+  });
+
+  it('a longer range fetches only the days after the cached ones, and a new month fetches only that month', async () => {
+    const calls: { from: string; to: string }[] = [];
+    const all = [...session('2026-08-03', 100), ...session('2026-08-04', 101), ...session('2026-08-05', 102), ...session('2026-09-01', 103)];
+    const inner: DataProvider = { name: 'inner', candles5m: async (s, f, t) => { calls.push({ from: f, to: t }); return providerOf(all).candles5m(s, f, t); } };
+    const stats: CacheStats = { fetched: [], cacheHits: 0 };
+    const cached = createCachingProvider(inner, createD1Fake(['drizzle/0007_vwap_history.sql']), '2026-10-12', stats);
+    await cached.candles5m('NSE:X-EQ', '2026-08-01', '2026-08-04');
+    expect(calls).toEqual([{ from: '2026-08-01', to: '2026-08-04' }]);
+    const extended = await cached.candles5m('NSE:X-EQ', '2026-08-01', '2026-08-31'); // the rest of August
+    expect(calls[1]).toEqual({ from: '2026-08-05', to: '2026-08-31' });
+    expect(extended.ok && extended.value).toHaveLength(15); // three sessions of five candles, merged with what was cached
+    await cached.candles5m('NSE:X-EQ', '2026-09-01', '2026-09-30'); // a new month
+    expect(calls[2]).toEqual({ from: '2026-09-01', to: '2026-09-30' });
+    const before = calls.length;
+    await cached.candles5m('NSE:X-EQ', '2026-08-01', '2026-08-31'); // everything cached now
+    await cached.candles5m('NSE:X-EQ', '2026-09-01', '2026-09-30');
+    expect(calls).toHaveLength(before);
+    expect(stats.fetched.map((f) => `${f.from} to ${f.to}`)).toEqual(['2026-08-01 to 2026-08-04', '2026-08-05 to 2026-08-31', '2026-09-01 to 2026-09-30']);
+    expect(stats.cacheHits).toBe(2);
   });
 
   it('the caching provider never stores the day in progress', async () => {

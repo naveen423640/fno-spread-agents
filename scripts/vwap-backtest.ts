@@ -5,6 +5,8 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
+import { lastCompletedSession } from '../lib/market-session';
+import { HOLIDAYS } from '../lib/screener/holidays';
 import { createBoardCacheProvider } from '../lib/vwap/cache-provider';
 import { parseConfig } from '../lib/vwap/backtest/config';
 import { createCachingProvider, loadHistory } from '../lib/vwap/backtest/history';
@@ -28,6 +30,8 @@ async function main() {
   for (const key of ['universe', 'from', 'to', 'instrument', 'source']) { const v = arg(key); if (v) raw[key] = v; }
   const config = parseConfig(raw);
   const now = new Date();
+  const lastDone = lastCompletedSession(now, HOLIDAYS);
+  if (config.to > lastDone) { console.log(`Range end ${config.to} is after the last finished session; using ${lastDone}.`); config.to = lastDone; }
   const today = now.toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
 
   mkdirSync('.vwap-cache', { recursive: true });
