@@ -1,6 +1,6 @@
 'use client';
 
-import { Component, useEffect, useRef, type ReactNode } from 'react';
+import { Component, useEffect, useRef, useState, type ReactNode } from 'react';
 import { CandlestickSeries, createChart, LineSeries, LineStyle, type UTCTimestamp } from 'lightweight-charts';
 
 import type { UsableAnalysis } from '@/lib/ltp/analyze';
@@ -165,7 +165,10 @@ export function MagicalChart({ analysis, lines0920, height = 560 }: { analysis: 
   const e = analysis.extensions;
   const val = (l: { value: number | null } | null | undefined) => (l && l.value !== null ? l.value : null);
   const g = (price: number | null, color: string, title: string, style: LineStyle = LineStyle.Solid): Guide[] => (price === null ? [] : [{ price, color, title, style }]);
-  const l0 = lines0920;
+  // The 9:20 lines can be switched off; the choice is remembered in this browser only.
+  const [show920, setShow920] = useState(() => { try { return window.localStorage.getItem('ltp-show-920') !== 'off'; } catch { return true; } });
+  const toggle920 = () => setShow920((on) => { try { window.localStorage.setItem('ltp-show-920', on ? 'off' : 'on'); } catch { /* storage unavailable: the choice just is not remembered */ } return !on; });
+  const l0 = show920 ? lines0920 : null;
   const guides: Guide[] = [
     ...g(val(e.eorPlus[1]), '#ef4444', 'Max Pain', LineStyle.Dashed), ...g(val(e.eorPlus[0]), '#dc2626', 'EOR+1'), ...g(val(e.eor), '#dc2626', 'EOR'),
     ...g(analysis.spot, '#111827', 'Spot', LineStyle.Dotted),
@@ -180,7 +183,11 @@ export function MagicalChart({ analysis, lines0920, height = 560 }: { analysis: 
     <div className="bg-white text-slate-900">
       <div className="flex items-center justify-between border-b border-slate-200 px-3 py-1.5 text-xs font-bold">
         <span>Magical SPOT Lines <span className="ml-1 rounded bg-red-600 px-1.5 py-0.5 text-[10px] text-white">Live</span></span>
-        <span className="font-normal text-slate-500">5 min candles · proxy lines ({analysis.method.label})</span>
+        <span className="flex items-center gap-2 font-normal text-slate-500">
+          <button type="button" onClick={toggle920} disabled={!lines0920} aria-pressed={show920} title={lines0920 ? 'Show or hide the frozen 9:20 lines' : 'The 9:20 lines are not available yet'}
+            className={`rounded px-2 py-0.5 text-[11px] font-bold text-white ${lines0920 && show920 ? 'bg-amber-500' : 'bg-slate-400'} disabled:opacity-50`}>9:20 lines {lines0920 && show920 ? 'ON' : 'OFF'}</button>
+          5 min candles · proxy ({analysis.method.label})
+        </span>
       </div>
       <ChartBoundary><CandleCanvas data={data} guides={guides} height={height} /></ChartBoundary>
     </div>
