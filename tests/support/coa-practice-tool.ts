@@ -22,10 +22,10 @@ const STRONG: Kind[][] = [
   ['init', 'down', 'down'], // 5 double shifting down
   ['init', 'up', 'up'], // 6 double shifting up
   ['init', 'down', 'up'], // 7 shifted down, strong, then shifted up
-  ['init', 'down', 'wtt', 'up'], // 8 shifted down with WTT, WTT at a new place and shifted there, now strong
+  ['init', 'down', 'wtt', 'wtt', 'up'], // 8 (user-confirmed) shifted down with WTT, WTT at a new strike above, the level shifted up to it, now strong
   ['init', 'down', 'wtt', 'wtt', 'fromWtt'], // 9 shifted down with WTT, WTT at a new place, then strong
   ['init', 'up', 'down'], // 10 shifted up, strong, then shifted down
-  ['init', 'up', 'wtb', 'down'], // 11 shifted up with WTB, WTB at a new place and shifted there, now strong
+  ['init', 'up', 'wtb', 'wtb', 'down'], // 11 the mirror of 8
   ['init', 'up', 'wtb', 'wtb', 'fromWtb'], // 12 shifted up with WTB, WTB at a new place, then strong
 ];
 const WTB: Kind[][] = [
@@ -33,7 +33,7 @@ const WTB: Kind[][] = [
   ['wtb', 'down', 'wtb'], // 1 (user-confirmed) was WTB earlier, shifted down, WTB again now
   ['init', 'up', 'wtb'], // 2 shifted up and in that continuation WTB
   ['wtt', 'up', 'wtb', 'fromWtb', 'wtb'], // 3 (user-confirmed) WTT, shifted up with WTB at the old strike, WTB gone (strong), then a new WTB
-  ['init', 'up', 'wtb', 'wtb'], // 4 shifted up with WTB, then WTB at a new place
+  ['init', 'up', 'wtb', 'wtb'], // 4 (user-confirmed) shifted up, WTB continues, then the weak strike moves (a second WTB row)
 ];
 const WTT: Kind[][] = [
   ['wtt'], ['wtt', 'up', 'wtt'], ['init', 'down', 'wtt'], ['wtb', 'down', 'wtt', 'fromWtt', 'wtt'], ['init', 'down', 'wtt', 'wtt'],
