@@ -17,13 +17,19 @@ You need a Cloudflare account and `npx wrangler login`. The Workers **Paid** pla
 
 ## Every morning, before 09:15
 
-Log in to FYERS as usual and send today's access token (paste it in place of `TOKEN`; the admin secret is the one from step 4):
+Log in to FYERS as usual and put today's access token in `.env.local` as `FYERS_ACCESS_TOKEN` (the same one the local runner uses), then send it:
+
+```bash
+npm run ltp:token
+```
+
+Or, without the script (paste the token in place of `TOKEN`; the admin secret is the one from step 4):
 
 ```bash
 curl -X PUT "$LTP_RECORDER_URL/token" -H "Authorization: Bearer $LTP_RECORDER_SECRET" -H "content-type: application/json" -d '{"token":"TOKEN"}'
 ```
 
-Check it took: `curl -H "Authorization: Bearer $LTP_RECORDER_SECRET" "$LTP_RECORDER_URL/health"` shows `token.present: true`, the last snapshot time per index and the day's gaps. The token itself is never shown. If you forget, each minute is logged as a `login_required` gap and nothing is recorded; send the token later and recording resumes from that minute.
+Check it took with `npm run ltp:health` (or `curl -H "Authorization: Bearer $LTP_RECORDER_SECRET" "$LTP_RECORDER_URL/health"`), which shows `token.present: true`, the last snapshot time per index and the day's gaps. The token itself is never shown. If you forget, each minute is logged as a `login_required` gap and nothing is recorded; send the token later and recording resumes from that minute.
 
 ## Pulling the data to the Mac
 

@@ -21,6 +21,8 @@
     "ltp:record-once": "tsx scripts/ltp-recorder.ts record-once",
     "ltp:record": "tsx scripts/ltp-recorder.ts run",
     "ltp:replay": "tsx scripts/ltp-recorder.ts replay",
+    "ltp:health": "tsx --env-file-if-exists=.env.local scripts/ltp-health.ts",
+    "ltp:token": "tsx --env-file-if-exists=.env.local scripts/ltp-token.ts",
     "ltp:pull": "tsx --env-file-if-exists=.env.local scripts/ltp-pull.ts",
     "cloud:db": "wrangler d1 execute ltp-recorder --remote --config cloud-recorder/wrangler.jsonc --file drizzle/0008_ltp.sql && wrangler d1 execute ltp-recorder --remote --config cloud-recorder/wrangler.jsonc --file drizzle/0009_ltp_bidask.sql && wrangler d1 execute ltp-recorder --remote --config cloud-recorder/wrangler.jsonc --file cloud-recorder/schema.sql",
     "cloud:deploy": "wrangler deploy --config cloud-recorder/wrangler.jsonc",
