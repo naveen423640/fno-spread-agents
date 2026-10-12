@@ -20,6 +20,8 @@ export type ClosedRecord = { decision: DecisionRecord; outcomes: OutcomeRow[]; r
 export type ClosedFilter = { version?: string; from?: string; to?: string; excludeDays?: string[] };
 
 export type JournalStore = ReturnType<typeof createJournalStore>;
+// What the agent loop needs from a journal: the database one, or the in-memory one used by replays and the gate.
+export type AgentJournal = Pick<JournalStore, 'recordDecision' | 'decisionById' | 'decisionsForDay' | 'openTrades' | 'recordTrade' | 'updateTradePosition' | 'recordOutcome' | 'outcomesForDay'>;
 
 const parse = <T>(text: string | number | null) => JSON.parse(text as string) as T;
 

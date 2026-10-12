@@ -1,19 +1,20 @@
 // The agent loop. `agentStep` handles one recorded minute of one underlying: it manages open trades first, then judges new signals and journals
 // every one of them (taken or skipped) at decision time. It reads only snapshots up to the minute it is given, so the live runner (one call per
 // recorded minute) and replay (one call per stored minute) are the same code and give the same journal. Paper trading only. No orders exist here.
-import { analyzeSession, type UsableAnalysis } from '@/lib/ltp/analyze';
+import { analyzeSession, type SessionAnalysis, type UsableAnalysis } from '@/lib/ltp/analyze';
 import { ivMove, type ExtensionMethod } from '@/lib/ltp/extensions';
 import { weeklyFor } from '@/lib/ltp/state';
 import type { LtpStore } from '@/lib/ltp/store';
 import { istDate, istHhmm } from '@/lib/ltp/time';
 import type { Snapshot } from '@/lib/ltp/types';
 import { closePosition, markPosition, openPosition, resolveExit, type Book, type Direction, type ExitReason, type Position } from './books';
-import type { DecisionRecord, JournalStore, TradeRow } from './journal-store';
+import type { AgentJournal, DecisionRecord, TradeRow } from './journal-store';
 import { reasonText } from './reason';
 import { evaluate, type Candidate } from './signals';
 import type { Strategy } from './strategy';
 
-export type AgentContext = { store: LtpStore; journal: JournalStore; strategy: Strategy; paused: boolean; method?: ExtensionMethod };
+// `analysisCache` lets two strategies replayed over the same days share the engine work (the analysis does not depend on the strategy).
+export type AgentContext = { store: LtpStore; journal: AgentJournal; strategy: Strategy; paused: boolean; method?: ExtensionMethod; analysisCache?: Map<string, SessionAnalysis> };
 export type StepResult = { decisions: number; opened: number; closed: number };
 type StoredTrade = { position: Position; plan: { stop: number; target: number; direction: Direction }; entryLevels: { support: number; resistance: number } };
 
@@ -63,7 +64,10 @@ export async function agentStep(ctx: AgentContext, underlying: string, ts: numbe
   const cur = snaps[snaps.length - 1];
   if (!cur || cur.ts !== ts) return { decisions: 0, opened: 0, closed: 0 };
   const prev = snaps.length > 1 ? snaps[snaps.length - 2] : null;
-  const result = analyzeSession(snaps, { now: ts, method: ctx.method ?? ivMove });
+  const method = ctx.method ?? ivMove;
+  const cacheKey = `${underlying}|${ts}|${method.id}`;
+  const result = ctx.analysisCache?.get(cacheKey) ?? analyzeSession(snaps, { now: ts, method });
+  ctx.analysisCache?.set(cacheKey, result);
   const analysis = !result.empty && result.usable ? result : null;
 
   const closed = await manageOpen(ctx, underlying, date, cur, prev, analysis, null);
