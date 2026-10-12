@@ -7,7 +7,7 @@ import { dayCounts } from './agent';
 import { watchLevels } from './signals';
 import type { Book, ClosedTrade, ExitReason, Position } from './books';
 import type { FillQuality } from './fills';
-import type { JournalStore, OutcomeRow } from './journal-store';
+import type { DecisionRecord, JournalStore, OutcomeRow } from './journal-store';
 import { phaseOf } from './phase';
 import { summarizeTrades, summaryTradeOf, type WeeklySummary } from './reviewer';
 import { loadActiveStrategy } from './strategy-store';
@@ -32,6 +32,17 @@ export type AgentState = {
 
 const num = (v: unknown) => (typeof v === 'number' ? v : null);
 
+// One taken decision, as the tab shows it: the why sentence, the plan, and each book's state.
+export function tradeView(d: DecisionRecord, books: TodayTrade['books']): TodayTrade {
+  const e = d.expectation as Record<string, unknown>;
+  return { decisionId: d.decisionId, ts: d.ts, underlying: d.underlying, setup: d.setup, direction: d.direction, reason: d.reason, entry: num(e.entry), stop: num(e.stop), target: num(e.target), plannedRiskPts: num(e.plannedRiskPts), rewardPts: num(e.rewardPts), books };
+}
+
+export function closedBookView(o: OutcomeRow): BookToday {
+  const t: ClosedTrade = o.outcome;
+  return { status: 'closed', fillQuality: t.fillQuality, plannedRiskInr: t.plannedRiskInr, netPnl: t.netPnl, exitReason: t.exitReason, ...(t.marginEstimate ? { marginEstimate: t.marginEstimate.inr } : {}) };
+}
+
 export async function buildAgentState(deps: { store: LtpStore; journal: JournalStore; holidays: ReadonlySet<string> }, opts: { date?: string; nowTs: number }): Promise<AgentState> {
   const { store, journal } = deps;
   const date = opts.date ?? istDate(opts.nowTs);
@@ -51,15 +62,11 @@ export async function buildAgentState(deps: { store: LtpStore; journal: JournalS
   const today: AgentState['today'] = { date, open: [], closed: [], skipped: [] };
   for (const d of decisions) {
     if (!d.taken) { today.skipped.push({ decisionId: d.decisionId, ts: d.ts, underlying: d.underlying, setup: d.setup, direction: d.direction, skipReason: d.skipReason ?? '', reason: d.reason }); continue; }
-    const e = d.expectation as Record<string, unknown>;
     const books: TodayTrade['books'] = {};
     for (const [book, p] of Object.entries(open.get(d.decisionId) ?? {}) as [Book, Position][]) books[book] = { status: 'open', fillQuality: p.fillQuality, plannedRiskInr: p.plannedRiskInr, mtm: mtmOf(p), ...(p.marginEstimate ? { marginEstimate: p.marginEstimate.inr } : {}) };
-    for (const [book, o] of Object.entries(outcomes.get(d.decisionId) ?? {}) as [Book, OutcomeRow][]) {
-      const t: ClosedTrade = o.outcome;
-      books[book] = { status: 'closed', fillQuality: t.fillQuality, plannedRiskInr: t.plannedRiskInr, netPnl: t.netPnl, exitReason: t.exitReason, ...(t.marginEstimate ? { marginEstimate: t.marginEstimate.inr } : {}) };
-    }
+    for (const [book, o] of Object.entries(outcomes.get(d.decisionId) ?? {}) as [Book, OutcomeRow][]) books[book] = closedBookView(o);
     if (!Object.keys(books).length) continue;
-    const trade: TodayTrade = { decisionId: d.decisionId, ts: d.ts, underlying: d.underlying, setup: d.setup, direction: d.direction, reason: d.reason, entry: num(e.entry), stop: num(e.stop), target: num(e.target), plannedRiskPts: num(e.plannedRiskPts), rewardPts: num(e.rewardPts), books };
+    const trade = tradeView(d, books);
     (Object.values(books).some((b) => b.status === 'open') ? today.open : today.closed).push(trade);
   }
 

@@ -20,6 +20,7 @@ import { LTP_CONFIG } from '@/lib/ltp/config';
 
 const LtpCharts = lazy(() => import('@/app/ltp-charts').then((m) => ({ default: m.LtpCharts })));
 const LtpAgentTab = lazy(() => import('@/app/ltp-agent-tab').then((m) => ({ default: m.LtpAgentTab })));
+const LtpBacktestTab = lazy(() => import('@/app/ltp-backtest-tab').then((m) => ({ default: m.LtpBacktestTab })));
 const MagicalChart = lazy(() => import('@/app/ltp-charts').then((m) => ({ default: m.MagicalChart })));
 
 type CalibrationReply = { error?: string; entries?: CalibrationEntry[]; summary?: Record<string, MethodSummary> };
@@ -336,15 +337,15 @@ function Calibration({ underlying, date }: { underlying: string; date: string })
 
 // The LTP tab has two sides: the levels screen, and the paper-trading agent that trades the same rules.
 export function LtpTab() {
-  const [side, setSide] = useState<'levels' | 'agent'>('levels');
+  const [side, setSide] = useState<'levels' | 'agent' | 'backtest'>('levels');
   return (
     <div>
       <div className="mx-auto flex max-w-[1800px] gap-1 border-b border-border px-2 pt-2">
-        {([['levels', 'LTP Levels'], ['agent', 'LTP Agent']] as const).map(([id, label]) => (
+        {([['levels', 'LTP Levels'], ['agent', 'LTP Agent'], ['backtest', 'LTP Backtest']] as const).map(([id, label]) => (
           <button key={id} type="button" onClick={() => setSide(id)} className={`rounded-t-md px-4 py-1.5 text-sm font-semibold ${side === id ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'}`}>{label}</button>
         ))}
       </div>
-      {side === 'levels' ? <LtpLevels /> : <Suspense fallback={<p className="p-4 text-xs text-muted-foreground">Loading the agent…</p>}><LtpAgentTab /></Suspense>}
+      {side === 'levels' ? <LtpLevels /> : <Suspense fallback={<p className="p-4 text-xs text-muted-foreground">Loading…</p>}>{side === 'agent' ? <LtpAgentTab /> : <LtpBacktestTab />}</Suspense>}
     </div>
   );
 }

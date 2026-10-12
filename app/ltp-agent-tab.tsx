@@ -4,41 +4,16 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Pause, Play, RefreshCw } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
-import type { AgentState, TodayTrade, WatchRow } from '@/lib/ltp-agent/state';
+import type { AgentState, WatchRow } from '@/lib/ltp-agent/state';
 import { istHhmm } from '@/lib/ltp/time';
+import { colour, inr, short, TradeCard } from '@/app/ltp-agent-parts/trade-card';
 import { AgentExperiments } from '@/app/ltp-agent-parts/experiments';
 import { AgentJournal } from '@/app/ltp-agent-parts/journal';
 import { LineChart } from '@/app/ltp-agent-parts/line-chart';
 
 const BADGE = { green: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400', amber: 'bg-amber-500/15 text-amber-700 dark:text-amber-400', red: 'bg-red-500/15 text-red-700 dark:text-red-400' };
-const inr = (v: number) => `${v < 0 ? '-' : ''}₹${new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 }).format(Math.abs(v))}`;
-const short = (u: string) => u.split(':')[1]?.replace('-INDEX', '') ?? u;
-const colour = (v: number) => (v > 0 ? 'text-emerald-600' : v < 0 ? 'text-red-600' : 'text-muted-foreground');
 type Section = 'today' | 'performance' | 'journal' | 'experiments';
 const SECTIONS: [Section, string][] = [['today', 'Today'], ['performance', 'Performance'], ['journal', 'Journal'], ['experiments', 'Experiments']];
-
-function TradeCard({ t }: { t: TodayTrade }) {
-  return (
-    <div className="grid gap-2 rounded-lg border border-border bg-card p-3 text-xs">
-      <div className="flex flex-wrap items-baseline gap-x-3"><strong className="text-sm">{short(t.underlying)} {t.direction.toUpperCase()}</strong><span className="text-muted-foreground">{t.setup} · {istHhmm(t.ts)} IST</span></div>
-      <p>{t.reason}</p>
-      <p className="tabular-nums text-muted-foreground">Entry {t.entry ?? '–'} · stop {t.stop ?? '–'} · target {t.target ?? '–'} · risk {t.plannedRiskPts?.toFixed(0) ?? '–'} pts · reward {t.rewardPts?.toFixed(0) ?? '–'} pts</p>
-      <div className="grid gap-2 sm:grid-cols-2">
-        {(['buy', 'sell'] as const).map((b) => {
-          const book = t.books[b];
-          if (!book) return <div key={b} className="rounded-md border border-dashed border-border px-2 py-1.5 text-muted-foreground"><strong className="uppercase">{b}</strong> not opened (no usable quote)</div>;
-          const value = book.status === 'open' ? book.mtm ?? 0 : book.netPnl ?? 0;
-          return (
-            <div key={b} className="rounded-md border border-border px-2 py-1.5">
-              <div className="flex items-center justify-between"><strong className="uppercase">{b} book</strong><span className={`tabular-nums font-semibold ${colour(value)}`}>{inr(value)} {book.status === 'open' ? 'open (before charges)' : 'net'}</span></div>
-              <div className="text-muted-foreground">{book.status === 'closed' ? `closed: ${book.exitReason}` : 'open'} · risk {inr(book.plannedRiskInr)}{book.marginEstimate ? ` · margin ≈ ${inr(book.marginEstimate)} (estimate)` : ''} · <span className={book.fillQuality === 'ltp_fallback' ? 'font-semibold text-amber-600' : ''}>fills: {book.fillQuality === 'quote' ? 'bid/ask' : 'LTP fallback (no quote)'}</span></div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
 
 const BLOCKED: Record<string, string> = {
   scenario_allowed: 'the current scenario does not allow this side', time_window: 'outside the trading window right now', valid_plan: 'no usable stop or target', hit_number: 'too many touches of this level already today',

@@ -122,6 +122,10 @@ If the signal passes but neither book can open (no usable quote), it is journale
 
 The tab's **Today** view starts with "Where the agent would trade now": for each underlying, the levels it is watching (COA 1.0, 9:20 and SOC), how far each is from the spot, the stop and target planned at each, the risk and reward in points, and whether it would trade there on a touch or which rule stops it (for example, the current scenario does not allow that side). The first level that would trade is spelled out as the next trade level. Nothing is journaled or booked from this view.
 
+## The Backtest tab
+
+LTP tab, third sub-tab. Pick one to five recorded days and replay them through any strategy to see what the agent *would* have traded, trade by trade with the reason, plus every skipped signal and why. The strategy can be a stored version (including every version you approve later), an experiment from the agent in any status (its change applied on the version it was proposed against, so you can see what an idea would have done on days the gate never used), and/or your own changes to the ten tunable fields. "Also run the active version" shows the two side by side. The replay runs in a throwaway in-memory journal: nothing is written to the live journal, the active version never changes, and FYERS is not called. Notes warn when a day's recording started late, when fills had no quote, and when a trade was closed only because the recording had a gap. A few days of results are not evidence; the gate is the test. The same replay is available from the shell as `npm run agent-replay`.
+
 ## Books, fills and costs
 
 Every signal is booked in both books, so the comparison is fair.
