@@ -95,7 +95,7 @@ function build(a: UsableAnalysis, strategy: Strategy, ctx: EvalContext, mode: 't
   if (strategy.setups_enabled.soc && a.soc) {
     const direction: Direction = a.soc.bias === 'bearish' ? 'short' : 'long';
     const { label, value } = primaryLevel(direction);
-    if (value !== null && touched(value) && !coaDirections.has(direction)) raws.push({ setup: 'soc', direction, level: { label, value }, stop: coaStop(direction, label), target: coaTarget(direction) });
+    if (value !== null && touched(value) && !coaDirections.has(direction)) raws.push({ setup: 'soc', direction, level: { label, value }, stop: coaStop(direction, label), target: a.soc.target }); // the diversion of the zone (course ch14)
   }
 
   return raws.map((r) => judge(r));
@@ -104,7 +104,9 @@ function build(a: UsableAnalysis, strategy: Strategy, ctx: EvalContext, mode: 't
     const inBand = Math.abs(spot - r.level.value) <= tol;
     const hit = countHits(spots, r.level.value, tol) + (mode === 'watch' && !inBand ? 1 : 0);
     const entry = mode === 'watch' ? r.level.value : spot;
-    const allowed = strategy.scenarios_traded[String(scenario.number) as '1'][r.direction];
+    // The Detailed Chart gives no top (Bull Run) or no bottom (Blood Bath) in some pairs: that side has no trade whatever the strategy table says.
+    const hasLevel = (r.direction === 'long' ? scenario.bottom : scenario.top) !== null;
+    const allowed = strategy.scenarios_traded[String(scenario.number) as '1'][r.direction] && hasLevel;
     const blocked = strategy.block_scenarios.includes(scenario.number);
     const start = r.setup === 'nine_twenty' ? strategy.window.nine_twenty_start : strategy.window.start;
     const stop = r.stop;

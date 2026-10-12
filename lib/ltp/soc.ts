@@ -1,8 +1,9 @@
 // C8 State of Confusion. Applies only when one side is weak and the opposite side is Strong. The clock starts when the weak side first
 // became weak (the start of its current unbroken weak run). The "range" of pct is read as the spread max - min over the run.
 import { LTP_CONFIG, type LtpConfig } from './config';
+import type { ExtensionMethod } from './extensions';
 import type { LevelShift, SideStrength, StrengthPoint } from './strength';
-import type { LevelSide } from './types';
+import type { LevelSide, Snapshot } from './types';
 
 export type SocResult = {
   type: '1h' | '2h' | '3h';
@@ -56,3 +57,6 @@ export function detectSoc(history: StrengthPoint[], events: LevelShift[], cfg: L
   const bearish = weakSide === 'support';
   return { type, side: weakSide, bias: bearish ? 'bearish' : 'bullish', from: bearish ? 'EOR' : 'EOS', startedAt: start, minutes, spread, targetStrike: bearish ? zone.low : zone.high, zone };
 }
+
+// Where the confusion resolves: the diversion of the zone's smallest strike (support SOC, falling: put side) or largest strike (resistance SOC, rising: call side).
+export const socTarget = (soc: SocResult, snap: Snapshot, method: ExtensionMethod): number | null => method.reversal(snap, soc.targetStrike, soc.bias === 'bearish' ? 'PE' : 'CE');

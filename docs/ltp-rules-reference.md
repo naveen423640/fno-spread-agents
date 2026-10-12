@@ -199,18 +199,18 @@ Status key: **matches**, **differs**, **missing**, **unknown** (the site gives n
 | 1 | Search both strikes of the pair, towards OTM; closest of highest-volume and highest-OI; tie means both | matches | |
 | 2 | Yellow box above 75% of the highest | matches | exactly 75% is strong |
 | 3 | Status when the level is based on **both** metrics (away needs both; toward in either; opposite means toward wins) | matches | |
-| 4 | Status when the level is based on **one** metric | **differs** | The app treats volume and OI symmetrically, each against its own highest strike. The site: the deciding metric's own box counts in either direction; the other metric counts only if its box lies on the line side of the level. Matters whenever volume and OI peak at different strikes. |
+| 4 | Status when the level is based on **one** metric | **fixed 2026-10-12** | The app treats volume and OI symmetrically, each against its own highest strike. The site: the deciding metric's own box counts in either direction; the other metric counts only if its box lies on the line side of the level. Matters whenever volume and OI peak at different strikes. |
 | 5 | Ignore the yellow box at the strike a level just left until it vanishes and reappears | matches | |
 | 6 | Percentage trend (rising or falling) as a bullish or bearish signal | missing | Only the discrete events (shift, weak, weak turns strong) are used. |
 | 7 | Side direction from the latest event (shift down bearish, WTT bullish, WTT-to-strong bearish, ...) | matches | reproduced the captured logs |
 | 8 | "Highly" pressure (double shifting, shift then weak the same way) | missing | HB and HU are not distinguished from B and U. |
 | 9 | Nine-scenario top and bottom (basic) | matches | |
-| 10 | Detailed chart: S|U gives EOR+1 top, B|S gives EOS-1 bottom, etc. | **differs** | The app picks the level from the scenario's status labels. When the pressure comes from history while the side is now strong, the needed level (EOR+1, or EOS-1) is missing and the app falls back to EOR or EOS. |
-| 11 | Scenarios 8 and 9 tradable in the detailed chart | differs | The strategy blocks 8 and 9 on purpose (your brief). Worth reconsidering. |
+| 10 | Detailed chart: S|U gives EOR+1 top, B|S gives EOS-1 bottom, etc. | **fixed 2026-10-12** (`lib/ltp/pressure.ts`, `coa1-detailed.ts`; "highly" classes included) | The app picks the level from the scenario's status labels. When the pressure comes from history while the side is now strong, the needed level (EOR+1, or EOS-1) is missing and the app falls back to EOR or EOS. |
+| 11 | Scenarios 8 and 9 tradable in the detailed chart | **fixed 2026-10-12** (strategy v0.1 now trades both) | The strategy blocks 8 and 9 on purpose (your brief). Worth reconsidering. |
 | 12 | Banner from pressure classes; Blood Bath and Bull Run | matches | Blood Bath or Bull Run when both sides point the same way. Highly bearish or bullish with a strong other side is not handled. |
 | 13 | Rare scenario (highly bearish with highly bullish): do not trade | missing | |
 | 14 | SOC conditions and timing | partly | One-hour, two-hour and three-hour logic is there; "stable" read as the spread of the percentage. Needs checking against what the tool prints ("Bullish SOC - 3 hours"). |
-| 15 | SOC target: diversion of the smallest (or largest) strike in the zone | **differs** | The agent targets the opposite extension (EOS or EOR) instead. |
+| 15 | SOC target: diversion of the smallest (or largest) strike in the zone | **fixed 2026-10-12** (`socTarget`; the SOC setup's target) | The agent targets the opposite extension (EOS or EOR) instead. |
 | 16 | COA 2.0 on the **ATM strike's** call and put OI change from 09:15 | **differs** | The app uses call OI at the resistance strike and put OI at the support strike, and OI rather than OI change (same slope, different percentages). Needs your decision: your original brief said resistance and support strikes; the course says ATM. |
 | 17 | COA 2.0 window and "not on the first hit of an extension" | matches | The "use it when consolidating or at diversions" advice is not modelled. |
 | 18 | Weekly range | matches | Computed for every index; the course says only those with a weekly expiry. |

@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
-import { detectSoc } from '@/lib/ltp/soc';
+import { writerBreakeven } from '@/lib/ltp/extensions';
+import { detectSoc, socTarget, type SocResult } from '@/lib/ltp/soc';
 import type { LevelShift, SideStrength, StrengthPoint } from '@/lib/ltp/strength';
 import type { Status } from '@/lib/ltp/types';
+import { makeChain } from '../support/ltp-chain';
 
 const T0 = Date.parse('2026-10-12T10:00:00+05:30') / 1000;
 const side = (status: Status, pct: number | null, strike: number): SideStrength => ({
@@ -72,5 +74,20 @@ describe('State of Confusion (C8)', () => {
   it('returns null for an empty history or one where the latest snapshot has no strength', () => {
     expect(detectSoc([], [])).toBeNull();
     expect(detectSoc([{ ts: T0, levels: null, support: null, resistance: null }], [])).toBeNull();
+  });
+});
+
+describe('State of Confusion target (course ch14)', () => {
+  const snap = makeChain({ spot: 24037, step: 50, pe: { 23900: { ltp: 40 }, 23850: { ltp: 30 } }, ce: { 24200: { ltp: 55 }, 24250: { ltp: 45 } } });
+  const soc = (bias: 'bearish' | 'bullish', targetStrike: number): SocResult => ({ type: '1h', side: bias === 'bearish' ? 'support' : 'resistance', bias, from: bias === 'bearish' ? 'EOR' : 'EOS', startedAt: T0, minutes: 70, spread: 3, targetStrike, zone: { low: targetStrike, high: targetStrike } });
+
+  it('a support SOC (bearish) falls to the diversion of the smallest strike in the zone: the put-side reversal there', () => {
+    expect(socTarget(soc('bearish', 23850), snap, writerBreakeven)).toBe(23850 - 30);
+  });
+  it('a resistance SOC (bullish) rises to the diversion of the largest strike in the zone: the call-side reversal there', () => {
+    expect(socTarget(soc('bullish', 24250), snap, writerBreakeven)).toBe(24250 + 45);
+  });
+  it('is null when the option has no price', () => {
+    expect(socTarget(soc('bearish', 23000), snap, writerBreakeven)).toBeNull();
   });
 });

@@ -52,8 +52,8 @@ describe('the nine COA 1.0 scenarios: which side is traded, at which level', () 
     ['wtt', 'strong', 5, 'EOS', true, 'EOR+1', true],
     ['wtb', 'wtb', 6, 'EOS', false, 'EOR', true], // Blood Bath: no longs
     ['wtt', 'wtt', 7, 'EOS', true, 'EOR', false], // Bull Run: no shorts
-    ['wtb', 'wtt', 8, 'EOS', false, 'EOR', false],
-    ['wtt', 'wtb', 9, 'EOS', false, 'EOR', false],
+    ['wtb', 'wtt', 8, 'WTB+1', true, 'WTT-1', true], // tradable in the Detailed Chart of Accuracy
+    ['wtt', 'wtb', 9, 'EOS-1', true, 'EOR+1', true],
   ];
   const valueOf: Record<string, number> = { EOS: EXT.eos, 'EOS-1': EXT.eosMinus1, 'WTB+1': EXT.wtbPlus1, EOR: EXT.eor, 'WTT-1': EXT.wttMinus1, 'EOR+1': EXT.eorPlus1 };
   for (const [support, resistance, n, longLevel, longTaken, shortLevel, shortTaken] of table) {
@@ -70,6 +70,15 @@ describe('the nine COA 1.0 scenarios: which side is traded, at which level', () 
     const moderate = { ...v01, entry_profile: 'moderate' as const };
     expect(only(run({ spot: EXT.eosMinus1 + 2, spots: [24100, EXT.eosMinus1 + 2] }, moderate)).level).toMatchObject({ label: 'EOS-1', value: EXT.eosMinus1 });
     expect(only(run({ spot: EXT.eorPlus1 - 2, spots: [24100, EXT.eorPlus1 - 2] }, moderate)).level).toMatchObject({ label: 'EOR+1', value: EXT.eorPlus1 });
+  });
+});
+
+describe('a side the Detailed Chart gives no level for is never traded', () => {
+  it('no bottom: the long is skipped as scenario_allowed even though the strategy table allows longs in this scenario', () => {
+    const a = fakeAnalysis({ spot: EXT.eos + 2, spots: [EXT.eos + 90, EXT.eos + 2] });
+    a.coa1.scenario = { ...a.coa1.scenario, bottom: null };
+    const c = evaluate(a, v01, idle).find((x) => x.direction === 'long')!;
+    expect(c).toMatchObject({ taken: false, skipReason: 'scenario_allowed' });
   });
 });
 
@@ -106,7 +115,7 @@ describe('every rule is the first failure somewhere, and the trace stops there',
     failing(only(run({ ...atEos, coa2: { result: { status: 'outside_window' as const } } }, { ...v01, require_coa2_agree: true })), 'coa2_agree');
   });
   it('soc_opposes: a bearish SOC blocks a long; with the filter off it does not', () => {
-    const soc = { type: '1h' as const, side: 'support' as const, bias: 'bearish' as const, from: 'EOR' as const, startedAt: 0, minutes: 70, spread: 3, targetStrike: 23900, zone: { low: 23900, high: 24000 } };
+    const soc = { type: '1h' as const, side: 'support' as const, bias: 'bearish' as const, from: 'EOR' as const, startedAt: 0, minutes: 70, spread: 3, targetStrike: 23900, zone: { low: 23900, high: 24000 }, target: 24090 };
     failing(only(run({ ...atEos, soc })), 'soc_opposes');
     expect(only(run({ ...atEos, soc }, { ...v01, block_on_opposing_soc: false })).taken).toBe(true);
   });
@@ -137,8 +146,17 @@ describe('the 9:20 setup', () => {
 });
 
 describe('the SOC setup', () => {
-  const soc = (bias: 'bearish' | 'bullish') => ({ type: '1h' as const, side: bias === 'bearish' ? ('support' as const) : ('resistance' as const), bias, from: bias === 'bearish' ? ('EOR' as const) : ('EOS' as const), startedAt: 0, minutes: 70, spread: 3, targetStrike: 23900, zone: { low: 23900, high: 24000 } });
+  const soc = (bias: 'bearish' | 'bullish') => ({ type: '1h' as const, side: bias === 'bearish' ? ('support' as const) : ('resistance' as const), bias, from: bias === 'bearish' ? ('EOR' as const) : ('EOS' as const), startedAt: 0, minutes: 70, spread: 3, targetStrike: 23900, zone: { low: 23900, high: 24000 }, target: bias === 'bearish' ? 24090 : 24120 });
   const socOnly = { ...v01, setups_enabled: { ...v01.setups_enabled, coa1_reversal: false } };
+  it('the SOC trade targets the diversion of the zone (soc.target), not the opposite extension', () => {
+    const bearish = only(run({ ...atEor, soc: { ...soc('bearish'), target: 24090 } }, socOnly));
+    expect(bearish).toMatchObject({ setup: 'soc', direction: 'short', target: 24090, taken: true });
+    const bullish = only(run({ ...atEos, soc: { ...soc('bullish'), target: 24120 } }, socOnly));
+    expect(bullish).toMatchObject({ setup: 'soc', direction: 'long', target: 24120, taken: true });
+  });
+  it('a SOC without a diversion price has no plan and is skipped as valid_plan', () => {
+    expect(only(run({ ...atEor, soc: { ...soc('bearish'), target: null } }, socOnly)).skipReason).toBe('valid_plan');
+  });
   it('a bearish SOC trades a short at EOR, a bullish one a long at EOS (taken)', () => {
     expect(only(run({ ...atEor, soc: soc('bearish') }, socOnly))).toMatchObject({ setup: 'soc', direction: 'short', level: { label: 'EOR' }, taken: true });
     expect(only(run({ ...atEos, soc: soc('bullish') }, socOnly))).toMatchObject({ setup: 'soc', direction: 'long', level: { label: 'EOS' }, taken: true });

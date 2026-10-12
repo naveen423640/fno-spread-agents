@@ -17,7 +17,7 @@ describe('ltp_v0.1.yaml is the pure course rules with the defaults of the brief'
     expect(s.max_hit_number).toBe(2);
     expect(s.require_coa2_agree).toBe(false);
     expect(s.block_on_opposing_soc).toBe(true);
-    expect(s.block_scenarios).toEqual([8, 9]);
+    expect(s.block_scenarios).toEqual([]);
     expect(s.time_exit).toBe('15:15');
     expect(s.exit_on_level_shift).toBe(false);
     expect(s.risk).toMatchObject({ max_trades_per_day: 3, max_concurrent: 1 });
@@ -25,12 +25,12 @@ describe('ltp_v0.1.yaml is the pure course rules with the defaults of the brief'
   it('setups: COA 1.0 reversal, 9:20 and SOC on; end of diversion off', () => {
     expect(s.setups_enabled).toEqual({ coa1_reversal: true, nine_twenty: true, soc: true, end_of_diversion: false });
   });
-  it('scenarios traded follow the course table: both sides in 1 to 5, shorts only in 6 (Blood Bath), longs only in 7 (Bull Run), nothing in 8 and 9', () => {
+  it('scenarios traded follow the course table: both sides in 1 to 5, shorts only in 6 (Blood Bath), longs only in 7 (Bull Run), both sides in 8 and 9 (Detailed Chart)', () => {
     for (const n of ['1', '2', '3', '4', '5']) expect(s.scenarios_traded[n as '1']).toEqual({ long: true, short: true });
     expect(s.scenarios_traded['6']).toEqual({ long: false, short: true });
     expect(s.scenarios_traded['7']).toEqual({ long: true, short: false });
-    expect(s.scenarios_traded['8']).toEqual({ long: false, short: false });
-    expect(s.scenarios_traded['9']).toEqual({ long: false, short: false });
+    expect(s.scenarios_traded['8']).toEqual({ long: true, short: true });
+    expect(s.scenarios_traded['9']).toEqual({ long: true, short: true });
   });
   it('books and fills', () => {
     expect(s.books).toEqual({ buy: { strike: 'atm' }, sell: { hedge_width: 4 } });

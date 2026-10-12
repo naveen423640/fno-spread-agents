@@ -1,5 +1,6 @@
 import type { UsableAnalysis } from '@/lib/ltp/analyze';
-import { scenarioLevels, selectCoa1 } from '@/lib/ltp/coa1';
+import { scenarioLevels } from '@/lib/ltp/coa1';
+import { selectDetailed, type Pressure } from '@/lib/ltp/coa1-detailed';
 import type { ExtLevel, Extensions } from '@/lib/ltp/extensions';
 import type { Lines0920, TradeLines } from '@/lib/ltp/lines0920';
 import type { Status } from '@/lib/ltp/types';
@@ -26,7 +27,9 @@ export function fakeAnalysis(o: FakeOpts = {}): UsableAnalysis {
     eosMinus: [ext('EOS-1', v('eosMinus1')), ext('EOS-2', v('eosMinus2'))], eorPlus: [ext('EOR+1', v('eorPlus1')), ext('EOR+2', v('eorPlus2'))],
     wtbPlus1: ext('WTB+1', v('wtbPlus1')), wttMinus1: ext('WTT-1', v('wttMinus1')),
   };
-  const scenario = selectCoa1(o.support ?? 'strong', o.resistance ?? 'strong');
+  // A side that is weak now is B (WTB) or U (WTT); Strong is S. The Detailed Chart of Accuracy then gives the levels.
+  const pressure = (st: Status): Pressure => (st === 'wtb' ? 'B' : st === 'wtt' ? 'U' : 'S');
+  const scenario = selectDetailed(pressure(o.support ?? 'strong'), pressure(o.resistance ?? 'strong'), o.support ?? 'strong', o.resistance ?? 'strong');
   const { top, bottom } = scenarioLevels(scenario, e);
   const dir = (d?: 'bullish' | 'bearish' | 'neutral') => ({ events: [], current: d ?? 'neutral' });
   const spots = o.spots ?? [spot + 80, spot];

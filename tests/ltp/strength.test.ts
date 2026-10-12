@@ -76,6 +76,42 @@ describe('combining volume and OI', () => {
   });
 });
 
+describe('a level based on one metric only (course ch09)', () => {
+  // Volume peaks at 24300 (closer to the line, so it sets the level); OI peaks farther out at 24100. Support searches 24450 and below.
+  it('the deciding metric alone decides, in either direction: its box away from the line still makes the level weak', () => {
+    const s = chain({ 24300: { volume: 100000, oi: 1000 }, 24200: { volume: 90000, oi: 1000 }, 24100: { volume: 1000, oi: 100000 } });
+    const r = status('support', s);
+    expect(r.byMetric.volume).toMatchObject({ weak: true, direction: 'wtb', toward: false });
+    expect(r.status).toBe('wtb'); // a level based on both metrics would stay Strong here
+  });
+
+  it('the other metric counts only when its box crosses the level on the line side: support turns WTT', () => {
+    // OI's second-highest is at 24400, between the line and the level 24300.
+    const s = chain({ 24300: { volume: 100000, oi: 1000 }, 24100: { volume: 1000, oi: 100000 }, 24400: { volume: 1000, oi: 90000 } });
+    expect(status('support', s).status).toBe('wtt');
+  });
+
+  it('the other metric does not count when its box stays beyond the level, even though it is weak', () => {
+    const s = chain({ 24300: { volume: 100000, oi: 1000 }, 24100: { volume: 1000, oi: 100000 }, 24000: { volume: 1000, oi: 90000 } });
+    const r = status('support', s);
+    expect(r.byMetric.oi.weak).toBe(true);
+    expect(r.status).toBe('strong');
+  });
+
+  it('a toward-the-line box of the other metric that stops short of the level does not count either', () => {
+    // OI level 24100 with second 24200: toward the line for OI, but still below the support level 24300.
+    const s = chain({ 24300: { volume: 100000, oi: 1000 }, 24100: { volume: 1000, oi: 100000 }, 24200: { volume: 1000, oi: 90000 } });
+    expect(status('support', s).status).toBe('strong');
+  });
+
+  it('resistance mirrors it: the other metric crossing below the level makes it WTB', () => {
+    const crossing = chain({}, { 24500: { volume: 100000, oi: 1000 }, 24700: { volume: 1000, oi: 100000 }, 24450: { volume: 1000, oi: 90000 } });
+    expect(status('resistance', crossing).status).toBe('wtb');
+    const awayBox = chain({}, { 24500: { volume: 100000, oi: 1000 }, 24600: { volume: 90000, oi: 1000 }, 24700: { volume: 1000, oi: 100000 } });
+    expect(status('resistance', awayBox).status).toBe('wtt'); // the deciding metric's own box, away from the line
+  });
+});
+
 describe('shifts (C3)', () => {
   const sup = (second: number, top = 100000, ts = 0) => chain({ 24400: { volume: top, oi: top }, 24300: { volume: second, oi: second } }, {}, ts);
 

@@ -1,17 +1,19 @@
 // Runs the whole engine over one session's snapshots and returns everything the tab shows. Pure: `now` is passed in, and only snapshots at or
 // before it are read, so a stored day can be replayed exactly as it would have looked live.
 import { classifyTrend, selectCoa2, type Coa2Result, type Trend } from './coa2';
-import { countHits, hitLabel, scenarioLevels, selectCoa1, type Coa1Scenario } from './coa1';
+import { countHits, hitLabel, scenarioLevels, type Coa1Scenario } from './coa1';
+import { selectDetailed } from './coa1-detailed';
 import { LTP_CONFIG, type LtpConfig } from './config';
 import { banner, currentDirection, sideEvents, type Banner, type Direction, type SideEvent, type SideState } from './direction';
 import { diversionCount, diversionPath, type DiversionPoint } from './diversions';
 import { extensionLevels, ivMove, weakStrike, type ExtLevel, type Extensions, type ExtensionMethod } from './extensions';
 import type { Levels } from './levels';
+import { pressureOf } from './pressure';
 import { freezeLines0920, type Lines0920 } from './lines0920';
-import { detectSoc, type SocResult } from './soc';
+import { detectSoc, socTarget, type SocResult } from './soc';
 import { trackStrength, type LevelShift, type SideStrength } from './strength';
 import { istDate, istHhmm } from './time';
-import { valueAt, type Snapshot, type Status } from './types';
+import { valueAt, type Snapshot } from './types';
 
 // An event with what the real tool's popup shows beside it: the spot and the EOR/EOS family at that moment (null: no data, 'broken': already passed).
 export type Reversal = number | 'broken' | null;
@@ -31,7 +33,7 @@ export type UsableAnalysis = {
   coa1: { scenario: Coa1Scenario; top: ExtLevel | null; bottom: ExtLevel | null; hits: { top: Hit; bottom: Hit } };
   coa2: { callTrend: Trend | null; putTrend: Trend | null; result: Coa2Result; firstHitOfExtension: boolean };
   diversions: { count: number; bullish: DiversionPoint[]; bearish: DiversionPoint[] };
-  soc: SocResult | null;
+  soc: (SocResult & { target: number | null }) | null; // target: the diversion price where the confusion is expected to resolve (proxy)
   direction: { support: { events: LoggedEvent[]; current: Direction }; resistance: { events: LoggedEvent[]; current: Direction }; banner: Banner };
   lines0920: Lines0920 | null;
   events: LevelShift[];
@@ -88,11 +90,9 @@ export function analyzeSession(snapshots: Snapshot[], opts: AnalysisOptions): Se
     banner: banner(currentDirection(supportEvents), currentDirection(resistanceEvents)),
   };
 
-  // COA 1.0: the scenario follows each side's direction (WTT and "WTB to Strong" are bullish, WTB and "WTT to Strong" bearish, Strong with no pressure neutral),
-  // which is how the real tool picks it. A side that is Strong but just came back from a weakness therefore counts as pressure.
-  const asStatus = (d: Direction): Status => (d === 'bullish' ? 'wtt' : d === 'bearish' ? 'wtb' : 'strong');
-  // COA 1.0 and its hit counter (spot touches of each reversal level today).
-  const scenario = selectCoa1(asStatus(direction.support.current), asStatus(direction.resistance.current));
+  // COA 1.0, read from the Detailed Chart of Accuracy: each side's pressure class comes from its history today (see pressure.ts), and the pair of
+  // classes gives the top and bottom. A side that is Strong now but just came back from a weakness or a shift therefore still counts as pressure.
+  const scenario = selectDetailed(pressureOf(supportEvents, support.status), pressureOf(resistanceEvents, resistance.status), support.status, resistance.status);
   const { top, bottom } = scenarioLevels(scenario, ext);
   const spots = snaps.map((s) => s.spot);
   const hit = (lv: ExtLevel | null): Hit => { const count = countHits(spots, lv?.value ?? null, cfg.hitTolerancePoints); return { level: lv?.value ?? null, count, label: hitLabel(count) }; };
@@ -108,6 +108,9 @@ export function analyzeSession(snapshots: Snapshot[], opts: AnalysisOptions): Se
   const firstHitOfExtension = onFirstExtensionHit(scenario.top, top, hits.top) || onFirstExtensionHit(scenario.bottom, bottom, hits.bottom);
   const result = selectCoa2(callTrend, putTrend, istHhmm(latest.ts), { firstHitOfExtension }, cfg);
 
+  const detected = detectSoc(perSnapshot, events, cfg);
+  const socWithTarget = detected ? { ...detected, target: socTarget(detected, latest, method) } : null;
+
   const flags: string[] = [];
   const allExt = [ext.eos, ext.eor, ...ext.eosMinus, ...ext.eorPlus];
   if (allExt.some((e) => e.value === null)) flags.push('Some reversal values are unavailable because an option LTP is missing.');
@@ -118,7 +121,7 @@ export function analyzeSession(snapshots: Snapshot[], opts: AnalysisOptions): Se
     coa1: { scenario, top, bottom, hits },
     coa2: { callTrend, putTrend, result, firstHitOfExtension },
     diversions: { count: diversionCount(levels.support.strike, levels.resistance.strike, latest.step), bullish: diversionPath(latest, levels.support.strike, levels.resistance.strike, 'bullish', method), bearish: diversionPath(latest, levels.support.strike, levels.resistance.strike, 'bearish', method) },
-    soc: detectSoc(perSnapshot, events, cfg), direction,
+    soc: socWithTarget, direction,
     lines0920: freezeLines0920(snaps, method, cfg),
     events,
     series: {

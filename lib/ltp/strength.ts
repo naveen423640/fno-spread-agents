@@ -26,16 +26,28 @@ function metricStatus(side: LevelSide, pick: MetricPick | null, cfg: LtpConfig, 
   return { pct, weak: !suppressed, direction, toward, suppressed };
 }
 
-// Combines the two metrics for one side.
+// Combines the two metrics for one side (course ch09).
+// A level based on BOTH metrics (volume and OI peak at the same strike):
 //   no metric weak                           -> Strong
-//   exactly one weak, second-highest away    -> still Strong
+//   exactly one weak, second-highest away    -> still Strong (away counts only when both metrics move away)
 //   exactly one weak, second-highest toward  -> Weak, in that metric's direction (support WTT, resistance WTB)
 //   both weak, same direction                -> that direction
 //   both weak, opposite directions           -> the metric whose level is closer to the line decides; an exact tie goes to the one pointing toward the line
+// A level based on ONE metric only (the peaks are at different strikes; the one closer to the line sets the level):
+//   the deciding metric's own yellow box decides, in either direction (Strong, WTT or WTB);
+//   the other metric matters only if its yellow box crosses the level on the line side of it: then support is WTT and resistance WTB.
 export function statusOf(side: LevelSide, level: SideLevel, line: Line, cfg: LtpConfig = LTP_CONFIG, ignored: Record<Metric, number | null> = { volume: null, oi: null }): SideStatus {
   const byMetric: Record<Metric, MetricStatus> = { volume: metricStatus(side, level.byVolume, cfg, ignored.volume), oi: metricStatus(side, level.byOi, cfg, ignored.oi) };
-  const weak = (['volume', 'oi'] as Metric[]).filter((m) => byMetric[m].weak);
   const strong: SideStatus = { status: 'strong', byMetric };
+  if (level.decidedBy !== 'volume+oi') {
+    const deciding: Metric = level.decidedBy;
+    const other: Metric = deciding === 'volume' ? 'oi' : 'volume';
+    if (byMetric[deciding].weak) return { status: byMetric[deciding].direction!, byMetric };
+    const otherPick = other === 'volume' ? level.byVolume : level.byOi;
+    const crosses = byMetric[other].weak && otherPick?.secondStrike != null && (side === 'support' ? otherPick.secondStrike > level.strike : otherPick.secondStrike < level.strike);
+    return crosses ? { status: side === 'support' ? 'wtt' : 'wtb', byMetric } : strong;
+  }
+  const weak = (['volume', 'oi'] as Metric[]).filter((m) => byMetric[m].weak);
   if (!weak.length) return strong;
   if (weak.length === 1) return byMetric[weak[0]].toward ? { status: byMetric[weak[0]].direction!, byMetric } : strong;
   if (byMetric.volume.direction === byMetric.oi.direction) return { status: byMetric.volume.direction!, byMetric };

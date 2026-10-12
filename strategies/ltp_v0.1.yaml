@@ -3,7 +3,8 @@
 version: "0.1"
 name: pure course rules
 
-# Which side may be traded in each COA 1.0 scenario (the course table: 6 = Blood Bath, shorts only; 7 = Bull Run, longs only; 8 and 9 not tradable).
+# Which side may be traded in each COA 1.0 scenario (the Detailed Chart of Accuracy: 6 = Blood Bath, shorts only; 7 = Bull Run, longs only;
+# 8 and 9 are tradable, with the top at EOR+1 / WTT-1 and the bottom at EOS-1 / WTB+1). A side with no level in the chart is never traded.
 scenarios_traded:
   "1": { long: true, short: true }
   "2": { long: true, short: true }
@@ -12,9 +13,9 @@ scenarios_traded:
   "5": { long: true, short: true }
   "6": { long: false, short: true }
   "7": { long: true, short: false }
-  "8": { long: false, short: false }
-  "9": { long: false, short: false }
-block_scenarios: [8, 9]
+  "8": { long: true, short: true }
+  "9": { long: true, short: true }
+block_scenarios: []
 
 entry_profile: risky # risky = EOS / EOR, moderate = EOS-1 / EOR+1
 setups_enabled:

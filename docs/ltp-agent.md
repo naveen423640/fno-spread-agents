@@ -83,7 +83,7 @@ Pause and resume paper trading from the tab. Paused means no new decisions or tr
 
 ## The strategy (v0.1 = the pure course rules)
 
-`strategies/ltp_v0.1.yaml`, validated by a zod schema (unknown keys and bad values are rejected with the field path). Fields: which sides to trade in each COA 1.0 scenario (6 = shorts only, 7 = longs only, 8 and 9 nothing), entry profile, which setups are on, touch tolerance, time window, maximum hit number, COA 2.0 agreement, SOC filter, stop rule and buffer, time exit, level-shift exit, risk caps, book settings and fill settings.
+`strategies/ltp_v0.1.yaml`, validated by a zod schema (unknown keys and bad values are rejected with the field path). Fields: which sides to trade in each COA 1.0 scenario (6 = shorts only, 7 = longs only, 8 and 9 both, as in the Detailed Chart of Accuracy; a side the chart gives no level for is never traded), entry profile, which setups are on, touch tolerance, time window, maximum hit number, COA 2.0 agreement, SOC filter, stop rule and buffer, time exit, level-shift exit, risk caps, book settings and fill settings.
 
 **Only these fields may be changed by the reviewer, each within its bounds** (anything else is rejected automatically):
 
