@@ -17,9 +17,9 @@ const MAX_JOURNAL_ROWS = 30; // each row is one database call, and a Worker run 
 const JOURNAL_TABLES: Record<string, 'ignore' | 'replace'> = { agent_decisions: 'ignore', trade_outcomes: 'ignore', agent_trades: 'replace', trade_reviews: 'replace', agent_experiments: 'replace', agent_state: 'replace', agent_strategies: 'replace' };
 const json = (body: unknown, status = 200) => Response.json(body, { status, headers: { 'Cache-Control': 'no-store' } });
 
-async function readToken(db: D1Like): Promise<{ token: string; savedAt: number } | null> {
-  const row = await db.prepare('SELECT token, saved_at FROM recorder_token WHERE id = 1').first<{ token: string; saved_at: number }>();
-  return row ? { token: row.token, savedAt: row.saved_at } : null;
+async function readToken(db: D1Like): Promise<{ token: string; savedAt: number; clientId: string | null } | null> {
+  const row = await db.prepare('SELECT token, saved_at, client_id FROM recorder_token WHERE id = 1').first<{ token: string; saved_at: number; client_id: string | null }>();
+  return row ? { token: row.token, savedAt: row.saved_at, clientId: row.client_id } : null;
 }
 
 // With no token every underlying fails the same way the app's recorder does when FYERS says the login is missing.
@@ -27,7 +27,7 @@ const noLogin: ChainSource = { async optionChain() { return { ok: false, code: '
 
 export async function runScheduled(env: Env, now: Date, makeSource: MakeSource = (credentials) => createFyersAdapter({ credentials })): Promise<RecordSummary> {
   const stored = await readToken(env.DB);
-  const adapter = stored ? makeSource({ clientId: env.FYERS_CLIENT_ID, accessToken: stored.token }) : noLogin;
+  const adapter = stored ? makeSource({ clientId: stored.clientId ?? env.FYERS_CLIENT_ID, accessToken: stored.token }) : noLogin;
   return recordOnce({ adapter, store: createLtpStore(env.DB), now: () => now, underlyings: UNDERLYINGS, strikecount: LTP_CONFIG.strikecount, holidays: HOLIDAYS });
 }
 
@@ -49,16 +49,19 @@ export async function handleRequest(request: Request, env: Env, now: Date = new 
   const nowTs = Math.floor(now.getTime() / 1000);
 
   if (request.method === 'PUT' && url.pathname === '/token') {
-    const body = (await request.json().catch(() => null)) as { token?: unknown } | null;
+    const body = (await request.json().catch(() => null)) as { token?: unknown; clientId?: unknown } | null;
     const token = typeof body?.token === 'string' ? body.token.trim() : '';
     if (!token || token.length > MAX_TOKEN_LENGTH) return json({ error: 'Send {"token": "<today\'s FYERS access token>"}.' }, 400);
-    await env.DB.prepare('INSERT INTO recorder_token (id, token, saved_at) VALUES (1, ?, ?) ON CONFLICT(id) DO UPDATE SET token = excluded.token, saved_at = excluded.saved_at').bind(token, nowTs).run();
+    // The FYERS app id the token was issued to. Tokens only work with their own app, and the cloud app and the Mac may use different FYERS apps.
+    if (body?.clientId !== undefined && (typeof body.clientId !== 'string' || !/^[A-Za-z0-9-]{1,100}$/.test(body.clientId))) return json({ error: 'clientId must be the FYERS app id (letters, digits and dashes).' }, 400);
+    const clientId = typeof body?.clientId === 'string' ? body.clientId : null;
+    await env.DB.prepare('INSERT INTO recorder_token (id, token, saved_at, client_id) VALUES (1, ?, ?, ?) ON CONFLICT(id) DO UPDATE SET token = excluded.token, saved_at = excluded.saved_at, client_id = excluded.client_id').bind(token, nowTs, clientId).run();
     return json({ ok: true, savedAt: nowTs });
   }
 
   if (request.method === 'GET' && url.pathname === '/health') {
     const stored = await readToken(env.DB);
-    return json({ ...(await health(createLtpStore(env.DB), nowTs, UNDERLYINGS, HOLIDAYS)), token: { present: stored !== null, savedAt: stored?.savedAt ?? null } });
+    return json({ ...(await health(createLtpStore(env.DB), nowTs, UNDERLYINGS, HOLIDAYS)), token: { present: stored !== null, savedAt: stored?.savedAt ?? null, clientId: stored?.clientId ?? null } });
   }
 
   if (request.method === 'GET' && url.pathname === '/export') {

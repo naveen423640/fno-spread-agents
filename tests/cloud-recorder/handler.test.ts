@@ -66,6 +66,42 @@ describe('the daily token', () => {
   });
 });
 
+describe('the app id that goes with the token', () => {
+  it('PUT /token can carry the app id the token was issued to, and recording signs with it instead of the one in the config', async () => {
+    const db = freshDb();
+    const env = envOf(db);
+    await call(env, '/token', { method: 'PUT', body: JSON.stringify({ token: TOKEN, clientId: 'NEWAPP123-100' }) });
+    const seen: { id?: string } = {};
+    const source = (credentials: { clientId: string; accessToken: string }): ChainSource => { seen.id = credentials.clientId; return { async optionChain(u) { return { ok: true, value: fixture(BY_UNDERLYING[u]) } as never; } }; };
+    await runScheduled(env, new Date(istTs(DAY, '10:00', 20) * 1000), source);
+    expect(seen.id).toBe('NEWAPP123-100');
+  });
+  it('without an app id in the PUT it keeps using the one in the config', async () => {
+    const db = freshDb();
+    const env = envOf(db);
+    await call(env, '/token', { method: 'PUT', body: JSON.stringify({ token: TOKEN }) });
+    const seen: { id?: string } = {};
+    const source = (credentials: { clientId: string; accessToken: string }): ChainSource => { seen.id = credentials.clientId; return { async optionChain(u) { return { ok: true, value: fixture(BY_UNDERLYING[u]) } as never; } }; };
+    await runScheduled(env, new Date(istTs(DAY, '10:00', 20) * 1000), source);
+    expect(seen.id).toBe('CLIENT-100');
+  });
+  it('a later PUT without an app id goes back to the config one', async () => {
+    const db = freshDb();
+    const env = envOf(db);
+    await call(env, '/token', { method: 'PUT', body: JSON.stringify({ token: TOKEN, clientId: 'NEWAPP123-100' }) });
+    await call(env, '/token', { method: 'PUT', body: JSON.stringify({ token: 'tomorrow' }) });
+    expect((await db.prepare('SELECT client_id FROM recorder_token').first<{ client_id: string | null }>())?.client_id).toBeNull();
+  });
+  it('refuses an app id that is not letters, digits and dashes, and /health shows which app id the token carries', async () => {
+    const env = envOf();
+    for (const clientId of ['bad id', 'x;DROP', 5, '', 'a'.repeat(101)]) {
+      expect((await call(env, '/token', { method: 'PUT', body: JSON.stringify({ token: TOKEN, clientId }) })).status).toBe(400);
+    }
+    await call(env, '/token', { method: 'PUT', body: JSON.stringify({ token: TOKEN, clientId: 'NEWAPP123-100' }) });
+    expect(await (await call(env, '/health')).json()).toMatchObject({ token: { present: true, clientId: 'NEWAPP123-100' } });
+  });
+});
+
 describe('the scheduled recording', () => {
   const at = (hhmm: string, sec = 20) => new Date(istTs(DAY, hhmm, sec) * 1000);
 

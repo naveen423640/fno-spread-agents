@@ -15,10 +15,15 @@ const recorder = (status = 200) => {
 describe('sendTokenToCloud: the logged-in FYERS token goes from the app to the cloud recorder', () => {
   it('PUTs the token to /token with the admin secret as a Bearer header', async () => {
     const { seen, fetchImpl } = recorder();
-    expect(await sendTokenToCloud({ accessToken: TOKEN, url: `${URL_BASE}/`, secret: SECRET, fetchImpl })).toEqual({ ok: true });
+    expect(await sendTokenToCloud({ accessToken: TOKEN, clientId: 'APP-100', url: `${URL_BASE}/`, secret: SECRET, fetchImpl })).toEqual({ ok: true });
     expect(seen[0].url).toBe(`${URL_BASE}/token`);
     expect(seen[0].init?.method).toBe('PUT');
     expect((seen[0].init?.headers as Record<string, string>).Authorization).toBe(`Bearer ${SECRET}`);
+    expect(JSON.parse(seen[0].init?.body as string)).toEqual({ token: TOKEN, clientId: 'APP-100' }); // the recorder signs with the app id the token was issued to
+  });
+  it('without an app id it sends the token alone', async () => {
+    const { seen, fetchImpl } = recorder();
+    await sendTokenToCloud({ accessToken: TOKEN, clientId: undefined, url: URL_BASE, secret: SECRET, fetchImpl });
     expect(JSON.parse(seen[0].init?.body as string)).toEqual({ token: TOKEN });
   });
   it('without a FYERS login it asks you to connect first and calls nothing', async () => {

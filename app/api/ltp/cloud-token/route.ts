@@ -12,7 +12,7 @@ export async function POST(request: Request) {
     assertPaperOnly();
     const blocked = checkRequestOrigin(request.headers);
     if (blocked) return Response.json({ error: blocked }, { status: 403, headers: NO_STORE });
-    const result = await sendTokenToCloud({ accessToken: fyersCredentials(request)?.accessToken, url: process.env.LTP_RECORDER_URL, secret: process.env.LTP_RECORDER_SECRET });
+    const result = await sendTokenToCloud({ accessToken: fyersCredentials(request)?.accessToken, clientId: process.env.FYERS_CLIENT_ID, url: process.env.LTP_RECORDER_URL, secret: process.env.LTP_RECORDER_SECRET });
     return result.ok ? Response.json({ ok: true }, { headers: NO_STORE }) : Response.json({ error: result.error }, { status: result.status, headers: NO_STORE });
   } catch (error) {
     console.error('ltp cloud-token failed', error instanceof Error ? error.message : 'unknown');
