@@ -8,7 +8,7 @@ import { writerBreakeven } from '@/lib/ltp/extensions';
 import { chainAt, DAY, freshStores, pathDay, U } from '../support/ltp-agent-day';
 
 const v01 = parseStrategy(readFileSync('strategies/ltp_v0.1.yaml', 'utf8'));
-const WINNER: [string, number][] = [['10:00', 23880], ['10:01', 23862], ['10:02', 23900], ['10:03', 24100], ['10:04', 24260], ['10:05', 24260]];
+const WINNER: [string, number][] = [['10:00', 23880], ['10:01', 23862], ['10:02', 23900], ['10:03', 24100], ['10:04', 24275], ['10:05', 24275]];
 const base = { strategy: v01, method: writerBreakeven, underlyings: [U] };
 
 async function stores(path: [string, number][]) {

@@ -9,7 +9,7 @@ import { makeChain } from '../support/ltp-chain';
 const T0 = Date.parse('2026-10-12T10:00:00+05:30') / 1000;
 const side = (status: Status, pct: number | null, strike: number): SideStrength => ({
   strike, status, pct: { volume: pct, oi: pct },
-  byMetric: { volume: { pct, weak: status !== 'strong', direction: null, toward: null, suppressed: false }, oi: { pct, weak: status !== 'strong', direction: null, toward: null, suppressed: false } },
+  byMetric: { volume: { pct, weak: status !== 'strong', direction: null, toward: null }, oi: { pct, weak: status !== 'strong', direction: null, toward: null } },
 });
 // A strength history sampled every 5 minutes. `sup`/`res` give status and pct at minute m.
 const history = (minutes: number, sup: (m: number) => [Status, number], res: (m: number) => [Status, number], strike = (_m: number) => 24000) =>

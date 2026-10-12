@@ -9,7 +9,7 @@ import { istTs } from '@/lib/ltp/time';
 import { DAY, freshStores, pathDay, U } from '../support/ltp-agent-day';
 
 const v01 = parseStrategy(readFileSync('strategies/ltp_v0.1.yaml', 'utf8'));
-const PATH: [string, number][] = [['10:00', 23880], ['10:01', 23862], ['10:02', 23890], ['10:03', 23862], ['10:04', 24000], ['10:05', 24100], ['10:06', 24260]];
+const PATH: [string, number][] = [['10:00', 23880], ['10:01', 23862], ['10:02', 23890], ['10:03', 23862], ['10:04', 24000], ['10:05', 24100], ['10:06', 24275]];
 const mem = () => { const m = new Map<string, string>(); return { getState: async (k: string) => m.get(k) ?? null, setState: async (k: string, v: string) => { m.set(k, v); } }; };
 
 describe('agentCatchUp steps every recorded minute exactly once, in order, even when the recorder is late', () => {

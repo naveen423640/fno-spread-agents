@@ -35,7 +35,7 @@ describe('COA 1.0 scenario follows the side directions, like the real tool', () 
   });
   it('a side that is Strong now but bullish from its history gives EOR+1 as the top (support strong, resistance shifted up: S|U)', () => {
     const c = (hhmm: string, ce: Record<number, { volume: number; oi: number }>) => makeChain({ spot: 24037, step: 50, ts: istTs(DAY, hhmm), pe: { 23900: { volume: 10000, oi: 10000 } }, ce });
-    const series = [c('09:15', { 24200: { volume: 10000, oi: 10000 }, 24250: { volume: 9000, oi: 9000 } }), c('09:16', { 24200: { volume: 10000, oi: 10000 }, 24250: { volume: 10500, oi: 10500 } })];
+    const series = [c('09:15', { 24200: { volume: 10000, oi: 10000 }, 24250: { volume: 9000, oi: 9000 } }), c('09:16', { 24200: { volume: 7000, oi: 7000 }, 24250: { volume: 10500, oi: 10500 } })];
     const r = analyzeSession(series, { now: istTs(DAY, '09:16', 30) });
     if (r.empty || !r.usable) throw new Error('expected a usable analysis');
     expect(r.levels.resistance.strike).toBe(24250);

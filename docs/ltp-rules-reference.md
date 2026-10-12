@@ -196,11 +196,11 @@ Status key: **matches**, **differs**, **missing**, **unknown** (the site gives n
 
 | # | Rule | Status | Detail |
 |---|---|---|---|
-| 1 | Search both strikes of the pair, towards OTM; closest of highest-volume and highest-OI; tie means both | matches | |
+| 1 | Search from the pair towards OTM; closest of highest-volume and highest-OI | **differs from the course, matches the tool** (fixed 2026-10-12) | The tool searches every strike, in-the-money included (SENSEX support stayed 72000 with the spot below 71900). |
 | 2 | Yellow box above 75% of the highest | matches | exactly 75% is strong |
 | 3 | Status when the level is based on **both** metrics (away needs both; toward in either; opposite means toward wins) | matches | |
 | 4 | Status when the level is based on **one** metric | **fixed 2026-10-12** | The app treats volume and OI symmetrically, each against its own highest strike. The site: the deciding metric's own box counts in either direction; the other metric counts only if its box lies on the line side of the level. Matters whenever volume and OI peak at different strikes. |
-| 5 | Ignore the yellow box at the strike a level just left until it vanishes and reappears | matches | |
+| 5 | Ignore the yellow box at the strike a level just left until it vanishes and reappears | **differs from the course, matches the tool** (fixed 2026-10-12) | The tool shows the weakness at the old strike straight after the shift (SENSEX resistance 11:17: WTT-73000). The ignore rule was removed. |
 | 6 | Percentage trend (rising or falling) as a bullish or bearish signal | **fixed 2026-10-12** (`lib/ltp/pct-trend.ts`; shown in the tab and logged in the agent context, not yet a trade rule) | Only the discrete events (shift, weak, weak turns strong) are used. |
 | 7 | Side direction from the latest event (shift down bearish, WTT bullish, WTT-to-strong bearish, ...) | matches | reproduced the captured logs |
 | 8 | "Highly" pressure (double shifting, shift then weak the same way) | missing | HB and HU are not distinguished from B and U. |

@@ -34,7 +34,7 @@ describe('pct and the 75% boundary (C3)', () => {
   });
 
   it('a highest value of zero gives no pct and a Strong level, not an error', () => {
-    const zeros = Object.fromEntries([24450, 24400, 24350, 24300, 24250, 24200, 24150, 24100, 24050, 24000, 23950, 23900].map((k) => [k, { volume: 0, oi: 0 }]));
+    const zeros = Object.fromEntries(Array.from({ length: 22 }, (_, i) => 23900 + i * 50).map((k) => [k, { volume: 0, oi: 0 }]));
     const s = status('support', chain(zeros));
     expect(s.status).toBe('strong');
     expect(s.byMetric.volume.pct).toBeNull();
@@ -133,15 +133,14 @@ describe('shifts (C3)', () => {
     expect(perSnapshot[2].levels!.support.strike).toBe(24400);
   });
 
-  it('after a shift the old strike is ignored until it has disappeared and then reappeared', () => {
+  it('after a shift the old strike is NOT ignored: the tool shows the weakness at it straight away (real SENSEX resistance, 11:17: shifted to 72500 and printed WTT-73000)', () => {
     const old = (v: number, ts: number) => chain({ 24300: { volume: 100000, oi: 100000 }, 24400: { volume: v, oi: v } }, {}, ts);
     const series = [sup(99000, 100000, 60), sup(101000, 100000, 120), old(99000, 180), old(60000, 240), old(90000, 300)];
     const { perSnapshot } = trackStrength(series);
     expect(perSnapshot[1].levels!.support.strike).toBe(24300); // shifted at 120
-    expect(perSnapshot[1].support!.status).toBe('strong'); // the old strike (24400, at 99%) is ignored straight after the shift
-    expect(perSnapshot[2].support!.status).toBe('strong'); // still ignored
-    expect(perSnapshot[3].support!.status).toBe('strong'); // 24400 fell to 60%: it has disappeared
-    expect(perSnapshot[4].support!.status).toBe('wtt'); // and reappeared at 90%: now it counts
+    expect(perSnapshot[1].support!.status).toBe('wtt'); // the old strike (24400, at 99%) is weak towards top at once
+    expect(perSnapshot[3].support!.status).toBe('strong'); // 24400 fell to 60%
+    expect(perSnapshot[4].support!.status).toBe('wtt'); // and came back at 90%
   });
 
   it('keeps a pct series per side and metric for the chart, and skips snapshots that have no line', () => {

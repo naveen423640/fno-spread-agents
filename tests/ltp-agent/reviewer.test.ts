@@ -91,7 +91,7 @@ describe('the reviewer model is the Anthropic provider, from config, and needs a
 describe('reviewDay reviews each closed trade of the day once', () => {
   async function tradedDay() {
     const stores = freshStores();
-    for (const s of pathDay([['10:00', 23880], ['10:01', 23862], ['10:02', 23900], ['10:03', 24100], ['10:04', 24260]])) await stores.store.insertSnapshot(s);
+    for (const s of pathDay([['10:00', 23880], ['10:01', 23862], ['10:02', 23900], ['10:03', 24100], ['10:04', 24275]])) await stores.store.insertSnapshot(s);
     await agentReplayDay({ ...stores, strategy: v01, paused: false, method: writerBreakeven }, U, DAY);
     return stores;
   }
@@ -113,7 +113,7 @@ describe('reviewDay reviews each closed trade of the day once', () => {
     expect(built.outcomes.map((o) => o.book)).toEqual(['buy', 'sell']);
     expect(built.path.map((p) => p.time)).toEqual(['10:01', '10:02', '10:03', '10:04']);
     expect(built.path[0]).toMatchObject({ spot: 23862, supportStrike: 23900 });
-    expect(built.path[3].spot).toBe(24260);
+    expect(built.path[3].spot).toBe(24275);
     for (const key of ['supportVolumePct', 'supportOiPct', 'resistanceVolumePct', 'resistanceOiPct', 'ceOiAtResistance', 'peOiAtSupport']) expect(built.path[0]).toHaveProperty(key);
   });
   it('a holdout day is never reviewed: no model call, nothing stored', async () => {
@@ -155,7 +155,7 @@ describe('reviewDay reviews each closed trade of the day once', () => {
 describe('loadSummaryTrades turns journal rows into summary trades', () => {
   it('one closed trade: scenario, hit and time from the decision, both books\' net P&L from the outcomes, and its review', async () => {
     const stores = freshStores();
-    for (const s of pathDay([['10:00', 23880], ['10:01', 23862], ['10:02', 23900], ['10:03', 24100], ['10:04', 24260]])) await stores.store.insertSnapshot(s);
+    for (const s of pathDay([['10:00', 23880], ['10:01', 23862], ['10:02', 23900], ['10:03', 24100], ['10:04', 24275]])) await stores.store.insertSnapshot(s);
     await agentReplayDay({ ...stores, strategy: v01, paused: false, method: writerBreakeven }, U, DAY);
     const id = (await stores.journal.decisionsForDay(DAY))[0].decisionId;
     await stores.journal.recordReview(id, good, 'm');

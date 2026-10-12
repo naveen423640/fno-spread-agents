@@ -14,7 +14,7 @@ import { DAY, freshStores, pathDay, U } from '../support/ltp-agent-day';
 import { seedClosedTrades } from '../support/ltp-agent-journal';
 
 const v01 = parseStrategy(readFileSync('strategies/ltp_v0.1.yaml', 'utf8'));
-const WINNER: [string, number][] = [['10:00', 23880], ['10:01', 23862], ['10:02', 23900], ['10:03', 24100], ['10:04', 24260], ['10:05', 24260]];
+const WINNER: [string, number][] = [['10:00', 23880], ['10:01', 23862], ['10:02', 23900], ['10:03', 24100], ['10:04', 24275], ['10:05', 24275]];
 
 // 40 trades whose P&L is 100 +/- noise for the candidate and 60 +/- noise for the current version.
 const series = (base: number, n = 40) => Array.from({ length: n }, (_, i) => base + ((i * 37) % 21) - 10);

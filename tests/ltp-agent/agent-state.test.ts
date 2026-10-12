@@ -12,7 +12,7 @@ import { seedClosedTrades } from '../support/ltp-agent-journal';
 
 const v01 = parseStrategy(readFileSync('strategies/ltp_v0.1.yaml', 'utf8'));
 const none = new Set<string>();
-const WINNER: [string, number][] = [['10:00', 23880], ['10:01', 23862], ['10:02', 23900], ['10:03', 24100], ['10:04', 24260]];
+const WINNER: [string, number][] = [['10:00', 23880], ['10:01', 23862], ['10:02', 23900], ['10:03', 24100], ['10:04', 24275]];
 const NOW = istTs(DAY, '10:06');
 
 async function replayed(path: [string, number][] = WINNER) {
@@ -97,7 +97,7 @@ describe('buildAgentState: what the Agent tab shows', () => {
     const s = await buildAgentState({ ...stores, holidays: none }, { nowTs: NOW });
     expect(s.watch).toHaveLength(1); // only NIFTY has data
     const w = s.watch[0];
-    expect(w).toMatchObject({ underlying: U, spot: 24260, scenario: expect.any(Number), asOf: istTs(DAY, '10:04') });
+    expect(w).toMatchObject({ underlying: U, spot: 24275, scenario: expect.any(Number), asOf: istTs(DAY, '10:04') });
     expect(w.levels.length).toBeGreaterThan(0);
     const distances = w.levels.map((l) => Math.abs(l.distance));
     expect(distances).toEqual([...distances].sort((a, b) => a - b));

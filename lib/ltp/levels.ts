@@ -44,13 +44,12 @@ export function computeLevels(s: Snapshot): Levels | null {
   const strikes = strikesOf(s);
   const line = imaginaryLine(s.spot, strikes);
   if (!line) return null;
-  // Both strikes of the pair belong to both searches (the real tool shows support above the spot when the spot sits just under a strike).
-  const supportStrikes = strikes.filter((k) => k <= line.high);
-  const resistanceStrikes = strikes.filter((k) => k >= line.low);
-  const downFromLine = (k: number) => line.high - k;
-  const upFromLine = (k: number) => k - line.low;
-  const support = decide(pick(s, supportStrikes, 'PE', 'volume', downFromLine), pick(s, supportStrikes, 'PE', 'oi', downFromLine), downFromLine);
-  const resistance = decide(pick(s, resistanceStrikes, 'CE', 'volume', upFromLine), pick(s, resistanceStrikes, 'CE', 'oi', upFromLine), upFromLine);
+  // Every strike on the side counts, in-the-money ones too (the tool's grey cells): the line only decides which peak is "closer". Searching only from the
+  // line outward made the level jump whenever the spot crossed a strike (real SENSEX 2026-10-12), which the tool never does.
+  const downFromLine = (k: number) => Math.abs(line.high - k);
+  const upFromLine = (k: number) => Math.abs(k - line.low);
+  const support = decide(pick(s, strikes, 'PE', 'volume', downFromLine), pick(s, strikes, 'PE', 'oi', downFromLine), downFromLine);
+  const resistance = decide(pick(s, strikes, 'CE', 'volume', upFromLine), pick(s, strikes, 'CE', 'oi', upFromLine), upFromLine);
   if (!support || !resistance) return null;
   return { line, support, resistance };
 }

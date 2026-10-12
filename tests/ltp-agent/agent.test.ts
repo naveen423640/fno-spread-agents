@@ -11,7 +11,7 @@ import { chainAt, DAY, freshStores, minutes, pathDay, U } from '../support/ltp-a
 const v01 = parseStrategy(readFileSync('strategies/ltp_v0.1.yaml', 'utf8'));
 const FLAT = minutes('09:15', '09:59');
 // 09:15 to 09:59 flat at 24037, then the spots below: a touch of EOS (23860) at 10:01, up through EOR (24255) by 10:04.
-const WINNER: [string, number][] = [['10:00', 23880], ['10:01', 23862], ['10:02', 23900], ['10:03', 24100], ['10:04', 24260], ['10:05', 24260], ['10:06', 24260]];
+const WINNER: [string, number][] = [['10:00', 23880], ['10:01', 23862], ['10:02', 23900], ['10:03', 24100], ['10:04', 24275], ['10:05', 24275], ['10:06', 24275]];
 
 async function setup(snaps: ReturnType<typeof pathDay>, strategy = v01, paused = false) {
   const { store, journal } = freshStores();
@@ -101,7 +101,7 @@ describe('pause, caps and unusable states', () => {
   it('paused: no new trades and no decisions, but an open trade is still managed to its exit', async () => {
     const { store, journal, ctx } = await setup(pathDay(WINNER.slice(0, 2)));
     await agentStep(ctx, U, istTs(DAY, '10:01')); // opens
-    for (const s of [chainAt('10:02', 23900), chainAt('10:03', 24100), chainAt('10:04', 24260)]) await store.insertSnapshot(s);
+    for (const s of [chainAt('10:02', 23900), chainAt('10:03', 24100), chainAt('10:04', 24275)]) await store.insertSnapshot(s);
     for (const t of ['10:02', '10:03', '10:04']) await agentStep({ ...ctx, paused: true }, U, istTs(DAY, t));
     expect(await outcomes(journal)).toEqual([['buy', 'target'], ['sell', 'target']]);
     expect(await journal.decisionsForDay(DAY)).toHaveLength(1);
@@ -145,7 +145,7 @@ describe('finishDay', () => {
 
 describe('live and replay are the same code path', () => {
   it('feeding a day minute by minute as it is recorded gives the same decisions and outcomes as replaying it afterwards', async () => {
-    const snaps = pathDay([['10:00', 23880], ['10:01', 23862], ['10:02', 23890], ['10:03', 23862], ['10:04', 24000], ['10:05', 24100], ['10:06', 24260]]);
+    const snaps = pathDay([['10:00', 23880], ['10:01', 23862], ['10:02', 23890], ['10:03', 23862], ['10:04', 24000], ['10:05', 24100], ['10:06', 24275]]);
     const live = freshStores();
     const liveCtx: AgentContext = { ...live, strategy: v01, paused: false, method: writerBreakeven };
     for (const s of snaps) { await live.store.insertSnapshot(s); await agentStep(liveCtx, U, s.ts); }
