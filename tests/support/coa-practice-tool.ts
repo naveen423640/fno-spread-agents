@@ -30,13 +30,13 @@ const STRONG: Kind[][] = [
 ];
 const WTB: Kind[][] = [
   ['wtb'], // 0 weak towards bottom
-  ['wtb', 'down', 'wtb'], // 1 shifted down and now again WTB
+  ['wtb', 'down', 'wtb'], // 1 (user-confirmed) was WTB earlier, shifted down, WTB again now
   ['init', 'up', 'wtb'], // 2 shifted up and in that continuation WTB
-  ['init', 'up', 'wtb', 'fromWtb', 'wtb'], // 3 shifted up, strong, and WTB again at any place
+  ['wtt', 'up', 'wtb', 'fromWtb', 'wtb'], // 3 (user-confirmed) WTT, shifted up with WTB at the old strike, WTB gone (strong), then a new WTB
   ['init', 'up', 'wtb', 'wtb'], // 4 shifted up with WTB, then WTB at a new place
 ];
 const WTT: Kind[][] = [
-  ['wtt'], ['wtt', 'up', 'wtt'], ['init', 'down', 'wtt'], ['init', 'down', 'wtt', 'fromWtt', 'wtt'], ['init', 'down', 'wtt', 'wtt'],
+  ['wtt'], ['wtt', 'up', 'wtt'], ['init', 'down', 'wtt'], ['wtb', 'down', 'wtt', 'fromWtt', 'wtt'], ['init', 'down', 'wtt', 'wtt'],
 ];
 export const HISTORIES: Record<Status, Kind[][]> = { strong: STRONG, wtb: WTB, wtt: WTT };
 

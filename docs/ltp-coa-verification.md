@@ -72,7 +72,7 @@ Verify this table: it is our reading, not the tool's. `init` = stable strong at 
 | 0 | WEAK TOWARDS BOTTOM | `wtb` |
 | 1 | SHIFTED FROM TOP TO BOTTOM AND NOW AGAIN WTB | `wtb, down, wtb` |
 | 2 | SHIFTED FROM BOTTOM TO TOP AND IN THAT CONTINUATION, IT IS LOOKING WTB | `init, up, wtb` |
-| 3 | SHIFTED FROM BOTTOM TO TOP BECAME STRONG AND AGAIN BECAME WTB AT ANY PLACE | `init, up, wtb, fromWtb, wtb` |
+| 3 | SHIFTED FROM BOTTOM TO TOP BECAME STRONG AND AGAIN BECAME WTB AT ANY PLACE | `wtt, up, wtb, fromWtb, wtb` |
 | 4 | SHIFTED FROM BOTTOM TO TOP [WTB % IS THERE IN CONTINUATION] AND THEN WTB AT NEW PLACE | `init, up, wtb, wtb` |
 
 **Weak toward top (5)**
@@ -82,7 +82,7 @@ Verify this table: it is our reading, not the tool's. `init` = stable strong at 
 | 0 | WEAK TOWARDS TOP | `wtt` |
 | 1 | SHIFTED FROM BOTTOM TO TOP AND NOW AGAIN WTT | `wtt, up, wtt` |
 | 2 | SHIFTED FROM TOP TO BOTTOM AND IN THAT CONTINUATION, IT IS LOOKING WTT | `init, down, wtt` |
-| 3 | SHIFTED FROM TOP TO BOTTOM BECAME STRONG AND AGAIN BECAME WTT AT ANY PLACE | `init, down, wtt, fromWtt, wtt` |
+| 3 | SHIFTED FROM TOP TO BOTTOM BECAME STRONG AND AGAIN BECAME WTT AT ANY PLACE | `wtb, down, wtt, fromWtt, wtt` |
 | 4 | SHIFTED FROM TOP TO BOTTOM [WTT % IS THERE IN CONTINUATION] AND THEN WTT AT NEW PLACE | `init, down, wtt, wtt` |
 
 ## 5. Every result
