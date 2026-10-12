@@ -44,16 +44,16 @@ export function rulebookText(): string {
   const g = graph();
   const lines: string[] = ['RULEBOOK (the LTP knowledge graph; the rules, not you, decide trades. Use only what is written here.)'];
   lines.push('Pressure of a side, from its history today:');
-  for (const n of g.nodes.filter((x) => x.type === 'pressure')) lines.push(`- ${n.code} ${n.label}: ${n.meaning}`);
+  for (const n of g.nodes.filter((x) => x.type === 'pressure')) lines.push(`- ${String(n.code)} ${n.label}: ${String(n.meaning)}`);
   lines.push('Top and bottom from the pair (support|resistance):');
   const groups = new Map<string, string[]>();
   for (const n of g.nodes.filter((x) => x.type === 'pair')) {
-    const key = n.rare ? `rare scenario, do not trade (risky ${n.riskyTop} / ${n.riskyBottom})` : `top ${n.top ?? 'none (Bull Run)'}, bottom ${n.bottom ?? 'none (Blood Bath)'}`;
-    groups.set(key, [...(groups.get(key) ?? []), `${n.support}|${n.resistance}`]);
+    const key = n.rare ? `rare scenario, do not trade (risky ${String(n.riskyTop)} / ${String(n.riskyBottom)})` : `top ${String(n.top ?? 'none (Bull Run)')}, bottom ${String(n.bottom ?? 'none (Blood Bath)')}`;
+    groups.set(key, [...(groups.get(key) ?? []), `${String(n.support)}|${String(n.resistance)}`]);
   }
   for (const [key, pairs] of groups) lines.push(`- ${key}: ${pairs.join(' ')}`);
   lines.push('Rules (source in brackets):');
-  for (const n of g.nodes.filter((x) => x.type === 'rule')) lines.push(`- [${n.source}] ${n.label}`);
+  for (const n of g.nodes.filter((x) => x.type === 'rule')) lines.push(`- [${String(n.source)}] ${n.label}`);
   lines.push('Open questions (not decided; do not invent answers):');
   for (const n of g.nodes.filter((x) => x.type === 'open_question')) lines.push(`- ${n.label}`);
   lines.push('Do not invent tiers, levels or rules that are not in this rulebook.');
