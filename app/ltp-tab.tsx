@@ -53,6 +53,8 @@ export function LtpTab() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [now, setNow] = useState(() => Math.floor(Date.now() / 1000));
+  const [recordMsg, setRecordMsg] = useState<string | null>(null);
+  const [auto, setAuto] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -66,6 +68,27 @@ export function LtpTab() {
       setError(e instanceof Error ? e.message : 'Unable to load the LTP state.');
     } finally { setLoading(false); }
   }, [underlying, method, date]);
+
+  // Asks the recorder route to store one snapshot per underlying now. The tab itself still reads only from the store.
+  const recordNow = useCallback(async () => {
+    try {
+      const res = await fetch('/api/ltp/record', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+      const b = (await res.json()) as { error?: string; loginRequired?: boolean; skipped?: string; results?: { underlying: string; inserted: number; gap?: string; skipped?: string }[] };
+      const time = new Date().toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata' });
+      if (res.status === 401) setRecordMsg(`${time}: connect FYERS first (login required).`);
+      else if (b.error) setRecordMsg(`${time}: ${b.error}`);
+      else if (b.skipped) setRecordMsg(`${time}: market is closed, nothing recorded (records 09:15 to 15:30 IST on trading days).`);
+      else setRecordMsg(`${time}: ${(b.results ?? []).map((x) => `${x.underlying.slice(4, 9)} ${x.skipped ? 'already stored' : x.gap ? `gap (${x.gap})` : `${x.inserted} rows`}`).join(' · ')}`);
+      void load();
+    } catch { setRecordMsg('Could not reach the recorder.'); }
+  }, [load]);
+
+  useEffect(() => {
+    if (!auto) return;
+    const first = setTimeout(() => void recordNow(), 0);
+    const id = setInterval(() => void recordNow(), REFRESH_MS);
+    return () => { clearTimeout(first); clearInterval(id); };
+  }, [auto, recordNow]);
 
   // The tab reads only the stored snapshots (the recorder writes them); it never asks FYERS for anything.
   useEffect(() => {
@@ -97,6 +120,12 @@ export function LtpTab() {
         {date ? <Button size="sm" variant="ghost" onClick={() => setDate('')}>Latest</Button> : null}
         <Button size="sm" variant="outline" onClick={() => { setLoading(true); void load(); }} disabled={loading}><RefreshCw className={loading ? 'animate-spin' : ''} />Refresh</Button>
         <span className={`rounded-md px-2 py-1 text-xs font-medium ${BADGE_CLASS[badge]}`}>{BADGE_TEXT[badge]}{state ? ` · last ${clock(state.health.lastSuccessTs)}` : ''}</span>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-3 text-xs">
+        <Button size="sm" variant="outline" onClick={() => void recordNow()}>Record now</Button>
+        <label className="flex items-center gap-1.5"><input type="checkbox" checked={auto} onChange={(e) => setAuto(e.target.checked)} />Record every minute while this tab is open</label>
+        {recordMsg ? <span className="text-muted-foreground">{recordMsg}</span> : null}
       </div>
 
       {error ? <p className="rounded-md border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm">{error}</p> : null}
