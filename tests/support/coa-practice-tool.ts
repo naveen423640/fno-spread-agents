@@ -23,10 +23,10 @@ const STRONG: Kind[][] = [
   ['init', 'up', 'up'], // 6 double shifting up
   ['init', 'down', 'up'], // 7 shifted down, strong, then shifted up
   ['init', 'down', 'wtt', 'wtt', 'up'], // 8 (user-confirmed) shifted down with WTT, WTT at a new strike above, the level shifted up to it, now strong
-  ['init', 'down', 'wtt', 'wtt', 'fromWtt'], // 9 shifted down with WTT, WTT at a new place, then strong
+  ['init', 'down', 'wtt', 'wtt', 'fromWtt'], // 9 (user-confirmed) shifted down with WTT, WTT at a new strike, then WTT turned strong without a shift
   ['init', 'up', 'down'], // 10 shifted up, strong, then shifted down
   ['init', 'up', 'wtb', 'wtb', 'down'], // 11 the mirror of 8
-  ['init', 'up', 'wtb', 'wtb', 'fromWtb'], // 12 shifted up with WTB, WTB at a new place, then strong
+  ['init', 'up', 'wtb', 'wtb', 'fromWtb'], // 12 the mirror of 9
 ];
 const WTB: Kind[][] = [
   ['wtb'], // 0 weak towards bottom
