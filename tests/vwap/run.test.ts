@@ -288,6 +288,20 @@ describe('baselines', () => {
     expect(a).toEqual(b);
   });
 
+  it('with the index filter, random entries follow the index side instead of flipping a coin', () => {
+    const sidesAll = (side: 1 | -1) => (d: (typeof prepared)[number]) => ({ ...d, indexSides: d.candles.map(() => side) });
+    const strategyTrades = [fake({ symbol: 'NSE:TCS-EQ', day: '2026-08-03', entryT: prepared[0].candles[11].t })];
+    const rule = { name: 'r', squareoffAt: '15:15' };
+    // The day rises from 100 to 101 after the entry candle: following an up index makes money, following a down index loses.
+    const up = randomEntryBaseline(prepared.map(sidesAll(1)), strategyTrades, rule, ctx, 20, 3, (t) => t.grossPnl, true);
+    const down = randomEntryBaseline(prepared.map(sidesAll(-1)), strategyTrades, rule, ctx, 20, 3, (t) => t.grossPnl, true);
+    expect(up.runMeans.every((m) => m >= 0)).toBe(true);
+    expect(down.runMeans.every((m) => m <= 0)).toBe(true);
+    // No reading at that candle: the strategy could not have entered, so the baseline does not either.
+    const none = randomEntryBaseline(prepared.map((d) => ({ ...d, indexSides: d.candles.map(() => null) })), strategyTrades, rule, ctx, 5, 3, (t) => t.grossPnl, true);
+    expect(none.runMeans).toEqual([]);
+  });
+
   it('gainers and losers need enough symbols on the day', () => {
     expect(gainersLosersBaseline(prepared, 3, '15:15', ctx).n).toBe(0); // one symbol cannot fill three gainers and three losers
   });

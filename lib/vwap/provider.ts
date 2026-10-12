@@ -85,3 +85,19 @@ export function createFyersProvider(deps: FyersProviderDeps): DataProvider {
     },
   };
 }
+
+// Tries each provider in turn and returns the first one that has candles for the request. Never hides an error unless a later provider answers.
+export function firstWithData(providers: DataProvider[]): DataProvider {
+  return {
+    name: providers.map((p) => p.name).join(' then '),
+    async candles5m(symbol, fromDay, toDay) {
+      let last: ProviderResult<C5[]> = { ok: true, value: [] };
+      for (const p of providers) {
+        const r = await p.candles5m(symbol, fromDay, toDay);
+        if (r.ok && r.value.length) return r;
+        last = r;
+      }
+      return last;
+    },
+  };
+}

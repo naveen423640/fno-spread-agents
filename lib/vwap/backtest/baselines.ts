@@ -1,21 +1,23 @@
 import { signalsForDay, simulateDay } from './engine';
 import { mean } from './stats';
+import type { IndexSide } from './index-filter';
 import { priceTrade, type PricedTrade, type PricingContext } from './pricing';
 import { DEFAULT_FILTERS, type ExitRule, type ForcedEntry } from './types';
 import { foldDay, type C5, type CrossEvent, type PriorTotals } from '../core';
 import { rng } from './stats';
 
 // A symbol-day ready to simulate: its candles, the month totals before it, and the cross event on each candle (computed once).
-export type PreparedDay = { symbol: string; sector: string; month: string; day: string; sessionOfMonth: number; candles: C5[]; prior: PriorTotals; events: (CrossEvent | null)[] };
+export type PreparedDay = { symbol: string; sector: string; month: string; day: string; sessionOfMonth: number; candles: C5[]; prior: PriorTotals; events: (CrossEvent | null)[]; indexSides?: IndexSide[] };
 
-export function prepareMonth(symbol: string, sector: string, month: string, days: Map<string, C5[]>): PreparedDay[] {
+export function prepareMonth(symbol: string, sector: string, month: string, days: Map<string, C5[]>, indexSidesByDay?: Map<string, Map<number, IndexSide>>): PreparedDay[] {
   const out: PreparedDay[] = [];
   let prior: PriorTotals = { sumPv: 0, sumV: 0, lastClose: null, lastVwap: null };
   let session = 0;
   for (const day of [...days.keys()].sort()) {
     const candles = [...days.get(day)!].sort((a, b) => a.t - b.t);
     session += 1;
-    out.push({ symbol, sector, month, day, sessionOfMonth: session, candles, prior, events: signalsForDay(prior, candles) });
+    const sides = indexSidesByDay?.get(day);
+    out.push({ symbol, sector, month, day, sessionOfMonth: session, candles, prior, events: signalsForDay(prior, candles), indexSides: sides ? candles.map((c) => sides.get(c.t) ?? null) : undefined });
     prior = foldDay(prior, candles);
   }
   return out;
@@ -27,7 +29,7 @@ const stats = (trades: PricedTrade[], note?: string): BaselineStats => ({ n: tra
 // What a trade is scored on when strategy and baseline are compared: percent of notional for futures, rupees for options (see run.ts).
 export type TradeMetric = (t: PricedTrade) => number;
 
-const asInput = (d: PreparedDay) => ({ day: d.day, month: d.month, sessionOfMonth: d.sessionOfMonth, symbol: d.symbol, sector: d.sector, candles: d.candles, prior: d.prior });
+const asInput = (d: PreparedDay) => ({ day: d.day, month: d.month, sessionOfMonth: d.sessionOfMonth, symbol: d.symbol, sector: d.sector, candles: d.candles, prior: d.prior, indexSides: d.indexSides });
 
 function runForced(d: PreparedDay, rule: ExitRule, forced: ForcedEntry[], ctx: PricingContext, label: string): PricedTrade[] {
   return simulateDay(asInput(d), rule, { ...DEFAULT_FILTERS, entryFrom: '09:15', entryTo: '23:59' }, forced)
@@ -36,7 +38,9 @@ function runForced(d: PreparedDay, rule: ExitRule, forced: ForcedEntry[], ctx: P
 
 // Baseline 1: random entries at the same times and counts per day as the strategy, in random symbols and directions, with the same exit rule.
 // Returns the mean net percent per trade of each random run, so the strategy can be placed inside that spread.
-export function randomEntryBaseline(prepared: PreparedDay[], strategyTrades: PricedTrade[], rule: ExitRule, ctx: PricingContext, runs: number, seed: number, metric: TradeMetric = (t) => t.netPct): { runMeans: number[]; tradesPerRun: number } {
+// With followIndex on (the strategy used the index filter), a random entry's direction is the index's side at that candle instead of a coin flip, so the baseline
+// has the same market alignment as the strategy and only the VWAP cross itself differs.
+export function randomEntryBaseline(prepared: PreparedDay[], strategyTrades: PricedTrade[], rule: ExitRule, ctx: PricingContext, runs: number, seed: number, metric: TradeMetric = (t) => t.netPct, followIndex = false): { runMeans: number[]; tradesPerRun: number } {
   const byDay = new Map<string, PreparedDay[]>();
   for (const d of prepared) byDay.set(d.day, [...(byDay.get(d.day) ?? []), d]);
   const entriesByDay = new Map<string, number[]>();
@@ -58,7 +62,9 @@ export function randomEntryBaseline(prepared: PreparedDay[], strategyTrades: Pri
       for (const index of indices) {
         if (!free.length) break;
         const d = free.splice(Math.floor(rand() * free.length), 1)[0];
-        results.push(...runForced(d, rule, [{ index, direction: rand() < 0.5 ? 1 : -1 }], ctx, 'random'));
+        const side = followIndex ? d.indexSides?.[index] : undefined;
+        if (followIndex && (side === null || side === undefined || side === 0)) continue; // the strategy could not have entered here either
+        results.push(...runForced(d, rule, [{ index, direction: followIndex ? (side as 1 | -1) : rand() < 0.5 ? 1 : -1 }], ctx, 'random'));
       }
     }
     count = results.length;

@@ -3,12 +3,13 @@ import { checkRequestOrigin } from '@/lib/agent-service/guard';
 import { fyersCredentials } from '@/lib/backtest/fyers-data';
 import { parseConfig, type BacktestConfig } from '@/lib/vwap/backtest/config';
 import { createCachingProvider, loadHistory } from '@/lib/vwap/backtest/history';
+import { indexSymbolsFor } from '@/lib/vwap/backtest/index-load';
 import { createMonthCacheProvider } from '@/lib/vwap/backtest/month-cache';
 import { runBacktest, type BacktestResult } from '@/lib/vwap/backtest/run';
 import { loadSymbolMaster, type SymbolMaster } from '@/lib/vwap/backtest/symbol-master';
 import { createBoardCacheProvider } from '@/lib/vwap/cache-provider';
 import { assertPaperOnly } from '@/lib/execution-mode';
-import { createFyersProvider } from '@/lib/vwap/provider';
+import { createFyersProvider, firstWithData } from '@/lib/vwap/provider';
 import { createVwapStore } from '@/lib/vwap/store';
 import { loadUniverse } from '@/lib/vwap/universe';
 
@@ -25,7 +26,9 @@ const slim = (t: import('@/lib/vwap/backtest/pricing').PricedTrade) => ({
 
 async function configFrom(body: Record<string, unknown> | null): Promise<BacktestConfig> {
   const raw = (body?.config && typeof body.config === 'object' ? body.config : {}) as Record<string, unknown>;
-  const config = parseConfig({ ...raw, randomRuns: Math.min(200, Number(raw.randomRuns ?? 100) || 100), bootstrapIterations: Math.min(2000, Number(raw.bootstrapIterations ?? 1000) || 1000), grid: null });
+  const filters = raw.filters && typeof raw.filters === 'object' ? { ...(raw.filters as Record<string, unknown>) } : {};
+  if (filters.indexSymbol === 'NIFTY_FUT') filters.indexSymbol = indexSymbolsFor(new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }))[1];
+  const config = parseConfig({ ...raw, filters, randomRuns: Math.min(200, Number(raw.randomRuns ?? 100) || 100), bootstrapIterations: Math.min(2000, Number(raw.bootstrapIterations ?? 1000) || 1000), grid: null });
   return config;
 }
 
@@ -67,7 +70,12 @@ export async function POST(request: Request) {
       const history = await loadHistory({ provider, entries, from: config.from, to: config.to, concurrency: 6 });
       if (!history.data.length) return Response.json({ error: `No usable history for this range. ${config.source === 'fyers' ? 'Load the data first. ' : ''}${history.skipped.slice(0, 3).map((s) => `${s.symbol} ${s.month}: ${s.reason}`).join('; ')}` }, { status: 422, headers: NO_STORE });
       memory.__vwapMaster ??= await loadSymbolMaster();
-      const { result, trades } = runBacktest(config, history.data, history.skipped, memory.__vwapMaster, now);
+      // The index filter reads Nifty (or its future) from the month cache that /api/vwap/index fills.
+      const indexHistory = config.filters.indexFilter === 'with'
+        ? await loadHistory({ provider: firstWithData([createMonthCacheProvider(db), createBoardCacheProvider(db)]), entries: [{ ticker: 'INDEX', symbol: config.filters.indexSymbol, name: config.filters.indexSymbol, sector: 'Index' }], from: config.from, to: config.to, concurrency: 1 })
+        : null;
+      if (indexHistory && !indexHistory.data.length) return Response.json({ error: `No index candles are cached for ${config.filters.indexSymbol}. Open /api/vwap/index once while logged in to FYERS to fetch them, or turn the index filter off.` }, { status: 422, headers: NO_STORE });
+      const { result, trades } = runBacktest(config, history.data, history.skipped, memory.__vwapMaster, now, indexHistory?.data ?? []);
       const truncated = trades.length > MAX_TRADES_RETURNED;
       const slimmed = [...trades].sort((a, b) => a.entryT - b.entryT).slice(0, MAX_TRADES_RETURNED).map(slim);
       memory.__vwapBacktest = { result, trades: slimmed, tradesTruncated: truncated, at: now.toISOString() };

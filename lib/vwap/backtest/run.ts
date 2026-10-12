@@ -1,4 +1,5 @@
 // Runs a configured backtest over loaded history. Pure given its inputs, so the CLI and the app share it.
+import { indexSidesByDay } from './index-filter';
 import { gainersLosersBaseline, openToCloseBaseline, prepareMonth, randomEntryBaseline, type BaselineStats, type PreparedDay } from './baselines';
 import type { BacktestConfig } from './config';
 import { simulateDay } from './engine';
@@ -65,7 +66,7 @@ function tradesFor(prepared: PreparedDay[], rule: ExitRule, filters: SignalFilte
   let unpriced = 0;
   for (const d of prepared) {
     if (d.day < config.from || d.day > config.to) continue;
-    for (const raw of simulateDay({ day: d.day, month: d.month, sessionOfMonth: d.sessionOfMonth, symbol: d.symbol, sector: d.sector, candles: d.candles, prior: d.prior }, rule, filters, undefined, d.events)) {
+    for (const raw of simulateDay({ day: d.day, month: d.month, sessionOfMonth: d.sessionOfMonth, symbol: d.symbol, sector: d.sector, candles: d.candles, prior: d.prior, indexSides: d.indexSides }, rule, filters, undefined, d.events)) {
       const p = priceTrade(raw, ctx);
       if (p) priced.push(p); else unpriced += 1;
     }
@@ -83,13 +84,18 @@ function comboList(grid: NonNullable<BacktestConfig['grid']>): Record<string, un
   return combos;
 }
 
-export function runBacktest(config: BacktestConfig, data: SymbolMonth[], skipped: SkippedMonth[], master: SymbolMaster, now = new Date()): BacktestOutput {
+// indexData: the index's (or index future's) months, needed only when filters.indexFilter is 'with'.
+export function runBacktest(config: BacktestConfig, data: SymbolMonth[], skipped: SkippedMonth[], master: SymbolMaster, now = new Date(), indexData: SymbolMonth[] = []): BacktestOutput {
   const ctx = pricingContext(config, master, data);
   // Futures are compared on percent of notional. Option percent returns on tiny premiums are dominated by a few huge winners, so options
   // are compared on rupees per trade (one lot).
   const metric = config.instrument === 'option' ? (t: PricedTrade) => t.netPnl : (t: PricedTrade) => t.netPct;
   let unpricedTotal = 0;
-  const prepared = data.flatMap((sm) => prepareMonth(sm.entry.symbol, sm.entry.sector, sm.month, sm.days));
+  const followIndex = config.filters.indexFilter === 'with';
+  const indexDays = new Map<string, import('../core').C5[]>();
+  for (const m of indexData) for (const [day, candles] of m.days) indexDays.set(day, candles);
+  const sidesByDay = config.filters.indexFilter === 'with' ? indexSidesByDay(indexDays, config.filters.indexMode) : undefined;
+  const prepared = data.flatMap((sm) => prepareMonth(sm.entry.symbol, sm.entry.sector, sm.month, sm.days, sidesByDay));
   const inRange = prepared.filter((d) => d.day >= config.from && d.day <= config.to);
   const allDays = [...new Set(inRange.map((d) => d.day))].sort();
   const months = [...new Set(inRange.map((d) => d.month))].sort();
@@ -108,8 +114,8 @@ export function runBacktest(config: BacktestConfig, data: SymbolMonth[], skipped
     // The baselines use the same instrument as the strategy, so futures are compared with futures and modelled options with modelled options.
     let random: StrategyResult['random'] = null;
     if (config.randomRuns > 0 && trades.length) {
-      const all = randomEntryBaseline(inRange, trades, rule, ctx, config.randomRuns, config.seed + i, metric);
-      const hold = holdout.length ? randomEntryBaseline(holdoutPrepared, holdout, rule, ctx, Math.max(50, Math.floor(config.randomRuns / 2)), config.seed + 100 + i, metric) : null;
+      const all = randomEntryBaseline(inRange, trades, rule, ctx, config.randomRuns, config.seed + i, metric, followIndex);
+      const hold = holdout.length ? randomEntryBaseline(holdoutPrepared, holdout, rule, ctx, Math.max(50, Math.floor(config.randomRuns / 2)), config.seed + 100 + i, metric, followIndex) : null;
       const sorted = [...all.runMeans].sort((a, b) => a - b);
       const stratMean = trades.length ? mean(trades.map(metric)) : 0;
       const holdMean = holdout.length ? mean(holdout.map(metric)) : null;
@@ -167,6 +173,10 @@ export function runBacktest(config: BacktestConfig, data: SymbolMonth[], skipped
   if (config.instrument === 'option') warnings.push('Option P&L is MODELLED with Black-Scholes (realised-vol IV, 6.5% rate, last-Tuesday expiry): expired option candles are not available. It is not real traded premium. The baselines use the same modelled option, and the percent figures are returns on the premium paid, which small cheap options dominate: read the rupee figures too.');
   if (skipped.length) warnings.push(`${skipped.length} symbol-month(s) were skipped (incomplete month or possible corporate action); see the list.`);
   if (unpricedTotal) warnings.push(`${unpricedTotal} signal(s) could not be priced and were dropped (no lot size or strike grid, or an option premium under Rs ${config.minOptionPremium}).`);
+  if (config.filters.indexFilter === 'with') {
+    const usable = [...new Set(inRange.map((d) => d.day))].filter((d) => [...(sidesByDay?.get(d)?.values() ?? [])].some((side) => side !== null)).length;
+    warnings.push(`Index filter on (${config.filters.indexSymbol}, ${config.filters.indexMode}): longs only while the index is above, shorts only while it is below. The index gives a usable reading in ${usable} of ${allDays.length} sessions (an index with no volume has no VWAP); a candle with no reading blocks the trade.${usable === 0 ? ' NO TRADE CAN PASS: choose an index or future that has volume, or the day-change mode.' : ''}`);
+  }
   const unreliableHoliday = 'The first-session check for each month uses the repo holiday list, which is marked unverified.';
   warnings.push(unreliableHoliday);
 

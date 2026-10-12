@@ -1,4 +1,5 @@
 import type { CrossType } from '../core';
+import type { IndexMode, IndexSide } from './index-filter';
 
 export type ExitRule = {
   name: string;
@@ -18,12 +19,18 @@ export type SignalFilters = {
   entryTo: string; // latest entry candle start
   minDistancePct: number; // |close - VWAP| / VWAP at the signal, percent
   minAvgCandleVolume: number; // average volume per candle so far today, as a liquidity floor
+  indexFilter: 'off' | 'with'; // 'with': longs only while the index is above, shorts only while it is below (see indexMode)
+  indexSymbol: string; // the index (or index future) whose candles drive the filter
+  indexMode: IndexMode;
 };
 
 export const DEFAULT_FILTERS: SignalFilters = {
   types: ['close-cross', 'body-cross', 'gap-cross'], directions: ['up', 'down'], firstCrossOnly: false, skipBorderline: false,
   entryFrom: '09:15', entryTo: '15:00', minDistancePct: 0, minAvgCandleVolume: 0,
+  indexFilter: 'off', indexSymbol: 'NSE:NIFTY50-INDEX', indexMode: 'vwap-side',
 };
+
+export type { IndexSide };
 
 export type ExitReason = 'opposite-cross' | 'square-off' | 'stop' | 'stop-gap' | 'target' | 'target-gap' | 'trail' | 'trail-gap' | 'end-of-day';
 

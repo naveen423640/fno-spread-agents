@@ -56,6 +56,9 @@ export function parseConfig(input: unknown): BacktestConfig {
   if (c.source !== 'fyers' && c.source !== 'cache') throw new Error('source must be "fyers" or "cache".');
   if (c.instrument !== 'futures' && c.instrument !== 'option') throw new Error('instrument must be "futures" or "option".');
   if (!isTime(c.squareoffAt)) throw new Error('squareoffAt must be HH:MM.');
+  if (c.filters.indexFilter !== 'off' && c.filters.indexFilter !== 'with') throw new Error('filters.indexFilter must be "off" or "with".');
+  if (c.filters.indexMode !== 'vwap-side' && c.filters.indexMode !== 'day-change') throw new Error('filters.indexMode must be "vwap-side" or "day-change".');
+  if (typeof c.filters.indexSymbol !== 'string' || !/^(NSE:[A-Z0-9&-]{1,30}|NIFTY_FUT)$/.test(c.filters.indexSymbol)) throw new Error('filters.indexSymbol must look like NSE:NIFTY50-INDEX, or NIFTY_FUT for the current-month Nifty future.');
   if (!isTime(c.filters.entryFrom) || !isTime(c.filters.entryTo)) throw new Error('filters.entryFrom and filters.entryTo must be HH:MM.');
   if (!c.filters.types.every((t) => TYPES.includes(t)) || !c.filters.types.length) throw new Error(`filters.types must be a non-empty list of ${TYPES.join(', ')}.`);
   if (!c.filters.directions.every((d) => d === 'up' || d === 'down') || !c.filters.directions.length) throw new Error('filters.directions must be up and/or down.');

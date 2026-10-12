@@ -38,6 +38,7 @@ export function VwapBacktestTab() {
   const [slippage, setSlippage] = useState('2');
   const [firstOnly, setFirstOnly] = useState(false);
   const [skipBorderline, setSkipBorderline] = useState(false);
+  const [indexFilter, setIndexFilter] = useState<'off' | 'nifty' | 'future'>('off');
   const [entryTo, setEntryTo] = useState('15:00');
   const [data, setData] = useState<Payload | null>(null);
   const [busy, setBusy] = useState<'load' | 'run' | null>(null);
@@ -60,8 +61,8 @@ export function VwapBacktestTab() {
 
   const config = useMemo(() => ({
     universe: universe === 'custom' ? `custom:${custom}` : universe, from, to, instrument, source, slippageBps: Number(slippage) || 0,
-    filters: { firstCrossOnly: firstOnly, skipBorderline, entryTo },
-  }), [universe, custom, from, to, instrument, source, slippage, firstOnly, skipBorderline, entryTo]);
+    filters: { firstCrossOnly: firstOnly, skipBorderline, entryTo, indexFilter: indexFilter === 'off' ? 'off' : 'with', indexSymbol: indexFilter === 'future' ? 'NIFTY_FUT' : 'NSE:NIFTY50-INDEX' },
+  }), [universe, custom, from, to, instrument, source, slippage, firstOnly, skipBorderline, entryTo, indexFilter]);
 
   // Fetches the months from FYERS into the cache, a few symbols per request, until done.
   const load = useCallback(async () => {
@@ -144,11 +145,13 @@ export function VwapBacktestTab() {
         <label className="grid gap-1">Data<select className="rounded-md border border-input bg-background px-2 py-1.5" value={source} onChange={(e) => setSource(e.target.value as 'cache' | 'fyers')}><option value="cache">Cached board history (offline)</option><option value="fyers">FYERS (load first)</option></select></label>
         <label className="grid gap-1">Slippage (bps per side)<input type="number" min="0" className="rounded-md border border-input bg-background px-2 py-1.5" value={slippage} onChange={(e) => setSlippage(e.target.value)} /></label>
         <label className="grid gap-1">Latest entry time<input type="time" className="rounded-md border border-input bg-background px-2 py-1.5" value={entryTo} onChange={(e) => setEntryTo(e.target.value)} /></label>
+        <label className="grid gap-1 sm:col-span-2">Index filter<select className="rounded-md border border-input bg-background px-2 py-1.5" value={indexFilter} onChange={(e) => setIndexFilter(e.target.value as 'off' | 'nifty' | 'future')}><option value="off">Off</option><option value="nifty">Trade only with Nifty 50 (above its VWAP for longs, below for shorts)</option><option value="future">Trade only with the Nifty future (same rule)</option></select></label>
         <div className="flex flex-wrap items-end gap-3"><label className="flex items-center gap-1.5"><input type="checkbox" checked={firstOnly} onChange={(e) => setFirstOnly(e.target.checked)} />First cross of the day only</label><label className="flex items-center gap-1.5"><input type="checkbox" checked={skipBorderline} onChange={(e) => setSkipBorderline(e.target.checked)} />Skip borderline</label></div>
         <div className="flex flex-wrap items-center gap-2 sm:col-span-4">
           {source === 'fyers' ? <Button size="sm" variant="outline" disabled={busy !== null} onClick={() => void load()}><Download className={busy === 'load' ? 'animate-pulse' : ''} />{busy === 'load' ? 'Loading…' : 'Load data from FYERS'}</Button> : null}
           <Button size="sm" disabled={busy !== null} onClick={() => void run()}><Play />{busy === 'run' ? 'Running…' : 'Run backtest'}</Button>
           {loginNeeded ? <Button size="sm" variant="outline" onClick={() => { window.location.href = '/api/fyers/login'; }}><Link2 />Connect FYERS</Button> : null}
+          {indexFilter !== 'off' ? <span className="text-muted-foreground">Needs Nifty candles: open <code>/api/vwap/index</code> once while logged in to FYERS.</span> : null}
           <span className="text-muted-foreground">Up to 60 symbols here; use <code>npm run vwap:backtest</code> for bigger universes and the parameter grid.</span>
         </div>
         {message ? <div className="text-amber-700 sm:col-span-4 dark:text-amber-400">{message}</div> : null}

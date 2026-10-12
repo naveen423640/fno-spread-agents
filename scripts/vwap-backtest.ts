@@ -8,9 +8,11 @@ import { join } from 'node:path';
 import { createBoardCacheProvider } from '../lib/vwap/cache-provider';
 import { parseConfig } from '../lib/vwap/backtest/config';
 import { createCachingProvider, loadHistory } from '../lib/vwap/backtest/history';
+import { createMonthCacheProvider } from '../lib/vwap/backtest/month-cache';
+import { indexSymbolsFor } from '../lib/vwap/backtest/index-load';
 import { runBacktest } from '../lib/vwap/backtest/run';
 import { loadSymbolMaster } from '../lib/vwap/backtest/symbol-master';
-import { createFyersProvider, type DataProvider } from '../lib/vwap/provider';
+import { createFyersProvider, firstWithData, type DataProvider } from '../lib/vwap/provider';
 import { createVwapStore } from '../lib/vwap/store';
 import { loadUniverse } from '../lib/vwap/universe';
 import { createSqliteD1 } from './lib/sqlite-d1';
@@ -51,7 +53,17 @@ async function main() {
   if (!history.data.length) { console.error(`\nNo usable history. ${history.skipped.slice(0, 5).map((s) => `${s.symbol} ${s.month}: ${s.reason}`).join('; ')}`); process.exitCode = 1; return; }
 
   const master = await loadSymbolMaster({ readCache: () => (existsSync('.vwap-cache/NSE_FO.csv') ? readFileSync('.vwap-cache/NSE_FO.csv', 'utf8') : null), writeCache: (csv) => writeFileSync('.vwap-cache/NSE_FO.csv', csv) });
-  const { result, trades } = runBacktest(config, history.data, history.skipped, master, now);
+  // The index filter reads the index (or index future) from the month cache that `npm run vwap:index` fills; a live run reads it through the same provider.
+  let indexData: Awaited<ReturnType<typeof loadHistory>>['data'] = [];
+  if (config.filters.indexFilter === 'with') {
+    const symbol = config.filters.indexSymbol === 'NIFTY_FUT' ? indexSymbolsFor(today)[1] : config.filters.indexSymbol;
+    config.filters.indexSymbol = symbol;
+    const idx = await loadHistory({ provider: config.source === 'fyers' ? provider : firstWithData([createMonthCacheProvider(db), provider]), entries: [{ ticker: 'INDEX', symbol, name: symbol, sector: 'Index' }], from: config.from, to: config.to, concurrency: 1 });
+    indexData = idx.data;
+    if (!indexData.length) console.error(`
+No candles for the index filter (${symbol}). Run npm run vwap:index first, or turn the filter off. Every trade will be blocked.`);
+  }
+  const { result, trades } = runBacktest(config, history.data, history.skipped, master, now, indexData);
 
   const out = arg('out') ?? `.vwap-cache/backtests/${now.toISOString().slice(0, 19).replace(/[:T]/g, '-')}`;
   mkdirSync(out, { recursive: true });

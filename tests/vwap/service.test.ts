@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 import type { C5 } from '@/lib/vwap/core';
-import { chunkDays, createFyersProvider, createRateLimiter, type DataProvider, type ProviderResult } from '@/lib/vwap/provider';
+import { chunkDays, createFyersProvider, createRateLimiter, firstWithData, type DataProvider, type ProviderResult } from '@/lib/vwap/provider';
 import { LoginRequiredError, resolveScanDate, scanOne, scanUniverse } from '@/lib/vwap/service';
 import { createVwapStore } from '@/lib/vwap/store';
 import { loadNifty500, loadUniverse, parseNifty500Csv, toFyersSymbol } from '@/lib/vwap/universe';
@@ -157,6 +157,19 @@ describe('scanUniverse', () => {
     expect(out.loginRequired).toBe(true);
     expect(calls).toBeLessThan(30);
     expect(out.skipped).toBeGreaterThan(0);
+  });
+});
+
+describe('firstWithData', () => {
+  const has = (name: string, n: number): DataProvider => ({ name, candles5m: async () => ({ ok: true as const, value: Array.from({ length: n }, (_, i) => ({ t: i, o: 1, h: 1, l: 1, c: 1, v: 1 })) }) });
+  it('uses the first provider that has candles and skips empty ones', async () => {
+    const r = await firstWithData([has('a', 0), has('b', 3), has('c', 5)]).candles5m('X', '2026-10-01', '2026-10-02');
+    expect(r.ok && r.value).toHaveLength(3);
+  });
+  it('returns empty (not an error) when none has data, and an error only if the last one failed', async () => {
+    expect(await firstWithData([has('a', 0), has('b', 0)]).candles5m('X', 'a', 'b')).toEqual({ ok: true, value: [] });
+    const bad: DataProvider = { name: 'bad', candles5m: async () => ({ ok: false, code: 'UPSTREAM', message: 'down' }) };
+    expect(await firstWithData([has('a', 0), bad]).candles5m('X', 'a', 'b')).toMatchObject({ ok: false });
   });
 });
 

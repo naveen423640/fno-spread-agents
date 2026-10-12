@@ -2,6 +2,7 @@
 // come from scanSymbol over the candles up to that candle only, so nothing later can influence a signal or an entry. A signal on candle i
 // enters at the OPEN of candle i + 1. The same signals feed every exit rule.
 import { foldDay, istDayOf, istTime, scanSymbol, type C5, type CrossEvent, type PriorTotals } from '../core';
+import { indexAllows, type IndexSide } from './index-filter';
 import { DEFAULT_FILTERS, type ExitReason, type ExitRule, type ForcedEntry, type RawTrade, type SignalFilters } from './types';
 
 const minutesOf = (hhmm: string) => Number(hhmm.slice(0, 2)) * 60 + Number(hhmm.slice(3, 5));
@@ -13,13 +14,15 @@ export function signalsForDay(prior: PriorTotals, candles: C5[]): (CrossEvent | 
   return sorted.map((c, i) => scanSymbol(prior, sorted.slice(0, i + 1)).events.find((e) => e.t === c.t) ?? null);
 }
 
-export type DayInput = { day: string; month: string; sessionOfMonth: number; symbol: string; sector: string; candles: C5[]; prior: PriorTotals };
+// indexSides, when given, holds the index's side at each candle (same order as the sorted candles) for the index filter.
+export type DayInput = { day: string; month: string; sessionOfMonth: number; symbol: string; sector: string; candles: C5[]; prior: PriorTotals; indexSides?: IndexSide[] };
 
-function passes(event: CrossEvent, filters: SignalFilters, eventsSeen: number, candleIndex: number, candles: C5[]): boolean {
+function passes(event: CrossEvent, filters: SignalFilters, eventsSeen: number, candleIndex: number, candles: C5[], indexSides?: IndexSide[]): boolean {
   if (!filters.types.includes(event.type)) return false;
   if (!filters.directions.includes(event.direction)) return false;
   if (filters.firstCrossOnly && eventsSeen !== 1) return false;
   if (filters.skipBorderline && event.borderline) return false;
+  if (filters.indexFilter === 'with' && !indexAllows(event.direction, indexSides?.[candleIndex])) return false;
   if (Math.abs(event.distancePct) < filters.minDistancePct) return false;
   if (filters.minAvgCandleVolume > 0) {
     const sofar = candles.slice(0, candleIndex + 1).reduce((a, c) => a + c.v, 0) / (candleIndex + 1);
@@ -119,7 +122,7 @@ export function simulateDay(input: DayInput, rule: ExitRule, filters: SignalFilt
         eventsSeen += 1;
         const dir: 1 | -1 = e.direction === 'up' ? 1 : -1;
         if (pos && (pos as Pos).dir === -dir && rule.opposite) pendingExit = true;
-        if (passes(e, filters, eventsSeen, j, candles)) pendingEntry = { event: e, direction: dir };
+        if (passes(e, filters, eventsSeen, j, candles, input.indexSides)) pendingEntry = { event: e, direction: dir };
       }
     }
   }
