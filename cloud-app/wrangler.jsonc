@@ -14,7 +14,7 @@
     "CF_ACCESS_TEAM_DOMAIN": "green-heart-db68.cloudflareaccess.com",
     "CF_ACCESS_AUD": "f8c13040e171346f327d78718ddbcfd35c1706b2d904d51973855016b473e9f3",
     "SITE_URL": "https://fno-calculator.fnocalculator.workers.dev",
-    "FYERS_CLIENT_ID": "S6D79OFRXR-100",
+    "FYERS_CLIENT_ID": "BPLCCUOKBV-100",
     "FYERS_REDIRECT_URI": "https://fno-calculator.fnocalculator.workers.dev/api/fyers/callback",
     "LTP_RECORDER_URL": "https://ltp-recorder.fnocalculator.workers.dev",
     "EXECUTION_MODE": "paper",
