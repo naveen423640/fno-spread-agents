@@ -87,7 +87,7 @@ Verify this table: it is our reading, not the tool's. `init` = stable strong at 
 
 ## 5. Every result
 
-Cells read `top / bottom`; `–` means none (Bull Run has no top, Blood Bath no bottom). Cells in brackets are the rare scenario (do not trade; the levels shown are the risky ones). Rows are the support condition number, columns the resistance condition number from section 4 (numbered from 1, as in the tool's lists). The live LTP screen shows them as a label: scenario-S/R, for example 6-S3/R1.
+Cells read `top / bottom`; `–` means none (Bull Run has no top, Blood Bath no bottom). Cells in brackets are the rare scenario (do not trade; the levels shown are the risky ones). Rows are the support condition number, columns the resistance condition number from section 4 (numbered from 1, as in the tool's lists). The live LTP screen shows them as a label, scenario(S/R), for example 6(S3/R1).
 
 ### Box 1.1: support Strong, resistance Strong
 

@@ -17,8 +17,8 @@ type Section = 'today' | 'performance' | 'journal' | 'experiments';
 const SECTIONS: [Section, string][] = [['today', 'Today'], ['performance', 'Performance'], ['journal', 'Journal'], ['experiments', 'Experiments']];
 
 const BLOCKED: Record<string, string> = {
-  scenario_allowed: 'the current scenario does not allow this side', time_window: 'outside the trading window right now', valid_plan: 'no usable stop or target', hit_number: 'too many touches of this level already today',
-  coa2_agree: 'COA 2.0 does not agree', soc_opposes: 'an opposing State of Confusion is active', daily_trade_cap: 'the daily trade cap is reached', max_concurrent: 'a trade is already open', daily_loss_cap: 'the daily loss cap is reached',
+  scenario_allowed: 'no level for this side', time_window: 'outside window', valid_plan: 'no usable SL/target', hit_number: 'too many touches',
+  coa2_agree: 'COA2 must agree', soc_opposes: 'opposing SOC', daily_trade_cap: 'trade cap', max_concurrent: 'trade open', daily_loss_cap: 'loss cap',
 };
 const pts = (v: number) => `${v >= 0 ? '+' : '-'}${Math.abs(v).toFixed(0)}`;
 
@@ -31,7 +31,7 @@ function Watch({ rows }: { rows: WatchRow[] }) {
         const next = r.levels.find((l) => l.wouldTrade);
         return (
           <div key={r.underlying} className="rounded-lg border border-border bg-card p-3 text-xs">
-            <div className="mb-1 flex flex-wrap items-baseline gap-x-3"><strong className="text-sm">{short(r.underlying)}</strong><span className="tabular-nums">spot {r.spot.toLocaleString('en-IN')}</span><span className="text-muted-foreground">scenario {r.scenario} ({r.scenarioBias}) · banner {r.banner} · as of {r.date.slice(5)} {istHhmm(r.asOf)} IST</span></div>
+            <div className="mb-1 flex flex-wrap items-baseline gap-x-3"><strong className="text-sm">{short(r.underlying)}</strong><span className="tabular-nums">spot {r.spot.toLocaleString('en-IN')}</span><span className="text-muted-foreground"><strong className="text-foreground">{r.tag}</strong>{r.riskyAllowed ? ' · risky OK' : ''} · as of {r.date.slice(5)} {istHhmm(r.asOf)} IST</span></div>
             <p className={`mb-2 rounded-md px-2 py-1.5 font-semibold ${next ? 'bg-emerald-500/10 text-emerald-800 dark:text-emerald-300' : 'bg-muted/60 text-muted-foreground'}`}>
               {next ? `Next trade level: ${next.direction.toUpperCase()} at ${next.label} ${next.value.toLocaleString('en-IN', { maximumFractionDigits: 2 })} (${Math.abs(next.distance).toFixed(0)} pts ${next.distance > 0 ? 'above' : 'below'} the spot), stop ${next.stop?.toFixed(0)}, target ${next.target?.toFixed(0)}.` : 'No level would be traded right now (see why below).'}
             </p>

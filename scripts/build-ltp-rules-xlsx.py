@@ -22,16 +22,20 @@ input_fill = PatternFill('solid', fgColor='FFFF00')
 wrap = Alignment(wrap_text=True, vertical='top')
 
 def cond_pressure(status, i): return nodes[f'condition:{status}:{i}']['pressure']
+def tag(side, p):
+    word = 'Bearish' if p in ('B', 'HB') else 'Bullish' if p in ('U', 'HU') else 'Stable'
+    return f"{side}-{word}{'(H)' if p in ('HB', 'HU') else ''}"
+def pair(sp, rp): return nodes[f'pair:{sp}|{rp}']
+def tug_text(sp, rp):
+    return {'bears': 'Bears winning', 'bulls': 'Bulls winning', 'contested': 'Contested (sides pull apart)', 'none': 'Balanced'}[pair(sp, rp)['winner']]
+def risky_text(sp, rp):
+    n = pair(sp, rp)
+    return f"Risky {n['riskyDirection'].upper()} allowed at the tool's Risky level" if n['riskyAllowed'] else 'No risky trade'
 def trades(top, bottom, rare, sp, rp):
     if rare: return 'Do not trade (very volatile). For anyone who still trades: risky short at the top shown, risky long at the bottom shown.'
     out = [f'Short at {top} (resistance side)' if top else 'No short from a top (Bull Run)', f'Long at {bottom} (support side)' if bottom else 'No long from a bottom (Blood Bath)']
     if top in ('WTT-1',) or bottom in ('WTB+1',): out.append('WTT/WTB percentage is the key player for the weak-side level')
     return '; '.join(out)
-def owner_rule(top, bottom, rare, sp, rp):
-    if rare: return 'Not applicable'
-    if not bottom and 'HB' in (sp, rp): return "Risky SHORT allowed at the tool's Risky level (resistance side) [owner rule]"
-    if not top and 'HU' in (sp, rp): return "Risky LONG allowed at the tool's Risky level (support side) [owner rule]"
-    return 'Not applicable'
 
 wb = Workbook()
 def sheet(name, headers, rows, widths, freeze='A2', filter_=True, first=False):
@@ -59,8 +63,10 @@ for bi, box in enumerate(tool['boxes']):
         bottom = None if b == 'BLOOD BATH' else b
         sp, rp = cond_pressure(box['support'], i), cond_pressure(box['resistance'], j)
         outcome = 'Rare scenario: do not trade' if rare else ('Blood Bath (no bottom)' if not bottom else 'Bull Run (no top)' if not top else 'Top and bottom')
-        cases.append([f'{bi + 1}|{i + 1}|{j + 1}', bi + 1, f'{bi + 1}-S{i + 1}/R{j + 1}', NAME[box['support']], NAME[box['resistance']], i + 1, box['supportConditions'][i], WORD[sp], j + 1, box['resistanceConditions'][j], WORD[rp], top or 'none', bottom or 'none', outcome, trades(top, bottom, rare, sp, rp), owner_rule(top, bottom, rare, sp, rp), tool['explanations'][int(e)]])
-cases_headers = ['Key (box|S|R)', 'COA box', 'Label', 'Support now', 'Resistance now', 'Support condition no.', 'Support history (tool wording)', 'Support pressure', 'Resistance condition no.', 'Resistance history (tool wording)', 'Resistance pressure', 'Expected TOP', 'Expected BOTTOM', 'Outcome', 'Trades possible', 'Owner rule: risky trade', "The tool's explanation"]
+        label = f'{bi + 1}(S{i + 1}/R{j + 1})'
+        cases.append([f'{bi + 1}|{i + 1}|{j + 1}', bi + 1, label, f"{label} {tag('S', sp)} {tag('R', rp)}", NAME[box['support']], NAME[box['resistance']], i + 1, box['supportConditions'][i], WORD[sp], j + 1, box['resistanceConditions'][j], WORD[rp], tug_text(sp, rp), top or 'none', bottom or 'none', outcome, trades(top, bottom, rare, sp, rp), risky_text(sp, rp), tool['explanations'][int(e)]])
+cases_headers = ['Key (box|S|R)', 'COA box', 'Label', 'Signal tag', 'Support now', 'Resistance now', 'Support condition no.', 'Support history (tool wording)', 'Support pressure', 'Resistance condition no.', 'Resistance history (tool wording)', 'Resistance pressure', 'Tug of war', 'Expected TOP', 'Expected BOTTOM', 'Outcome', 'Trades possible', 'Risky trade (tug of war)', "The tool's explanation"]
+col = {h: get_column_letter(k + 1) for k, h in enumerate(cases_headers)}
 
 # ---- Read me
 ws = wb.active; ws.title = 'Read me'
@@ -70,17 +76,17 @@ lines = [
     ('', body),
     ('How to use', bold),
     ('1. Sheet "Lookup": type the COA box (1 to 9) and the support and resistance condition numbers in the yellow cells. The outcome fills in.', body),
-    ('2. Sheet "All cases": every one of the 529 cases, filterable. The label reads scenario-S<support no.>/R<resistance no.>, for example 6-S3/R1.', body),
+    ('2. Sheet "All cases": every one of the 529 cases, filterable. The label reads scenario(S<support no.>/R<resistance no.>), for example 6(S3/R1); the signal tag adds the side tags: 6(S3/R1) S-Bearish R-Bullish(H).', body),
     ('3. Sheet "Conditions": the 23 numbered history conditions and the pressure each gives. Sheet "Pressure pairs": the pair of pressures and the top and bottom it gives.', body),
     ('4. Sheet "Scenarios": the nine boxes. Sheet "Rules": each rule with its source. Sheet "Open questions": what is still undecided.', body),
     ('', body),
     ('Legend', bold),
-    ('Yellow cell = type here. Pressure: stable strong, bearish, bullish, highly bearish, highly bullish. Top and bottom: EOR / EOR+1 / WTT-1 and EOS / EOS-1 / WTB+1; "none" = no top (Bull Run) or no bottom (Blood Bath).', body),
+    ('Yellow cell = type here. Side tags: S-Bearish, R-Bullish, R-Stable, with (H) when high. Pressure: stable strong, bearish, bullish, highly bearish, highly bullish. Top and bottom: EOR / EOR+1 / WTT-1 and EOS / EOS-1 / WTB+1; "none" = no top (Bull Run) or no bottom (Blood Bath).', body),
     ('Source tags: course = free course or its practice tool; tool = observed on the live tool; owner = told to us by the system\'s owner; ours = our own choice.', body),
     ('', body),
     ('What this is not', bold),
     ('The practice tool gives the top and bottom only. Which entries are safe, moderate or risky in each scenario, and the stops, targets and times, are NOT in it and are still open (sheet "Open questions").', body),
-    ('The only risky-trade rule so far is the owner\'s: when pressure is highly bearish or highly bullish (no bottom or no top), a risky trade is allowed at the level the live tool shows as Risky. The agent does not trade on it yet.', body),
+    ('Tug of war (owner rule): a risky trade is allowed when both sides push the same way, or one pushes highly and the other is stable. Bears winning = risky short, bulls winning = risky long, at the level the live tool shows as Risky. Sides pulling against each other are contested: no risky trade. Decide from the outcome, not from the first-level scenario number.', body),
     ('The pressure of each condition is our reading of the tool\'s wording, confirmed with the owner condition by condition on 2026-10-13. "~" in the app means the history is not one of the listed shapes.', body),
 ]
 for r, (text, font) in enumerate(lines, 1):
@@ -103,7 +109,7 @@ dv2 = DataValidation(type='whole', operator='between', formula1='1', formula2='1
 lk.add_data_validation(dv); lk.add_data_validation(dv2); dv.add('B4'); dv2.add('B5'); dv2.add('B6')
 lk['A8'] = 'Key'; lk['B8'] = '=B4&"|"&B5&"|"&B6'
 lk['A9'] = 'Row in "All cases"'; lk['B9'] = f"=IFERROR(MATCH(B8,'All cases'!$A$2:$A${last},0),0)"
-out = [('Label', 'C'), ('Support now', 'D'), ('Resistance now', 'E'), ('Support history', 'G'), ('Support pressure', 'H'), ('Resistance history', 'J'), ('Resistance pressure', 'K'), ('Expected TOP', 'L'), ('Expected BOTTOM', 'M'), ('Outcome', 'N'), ('Trades possible', 'O'), ('Owner rule: risky trade', 'P'), ("The tool's explanation", 'Q')]
+out = [(h, col[h]) for h in ['Label', 'Signal tag', 'Support now', 'Resistance now', 'Support history (tool wording)', 'Support pressure', 'Resistance history (tool wording)', 'Resistance pressure', 'Tug of war', 'Expected TOP', 'Expected BOTTOM', 'Outcome', 'Trades possible', 'Risky trade (tug of war)', "The tool's explanation"]]
 lk['A11'] = 'RESULT'; lk['A11'].font = bold
 for k, (text, col) in enumerate(out):
     r = 12 + k
@@ -133,12 +139,12 @@ sheet('Conditions', ['Applies to a side that is', 'Condition no.', "The tool's w
 pair_rows = []
 for n in [x for x in graph['nodes'] if x['type'] == 'pair']:
     rare = n['rare']
-    pair_rows.append([WORD[n['support']], WORD[n['resistance']], n['top'] or 'none', n['bottom'] or 'none', n.get('topWhenResistanceWeakTowardTop') or '', n.get('bottomWhenSupportWeakTowardBottom') or '', 'No (rare)' if rare else ('Yes' if n['tradable'] else 'No'), 'Rare scenario: do not trade' if rare else ('Blood Bath (no bottom)' if not n['bottom'] else 'Bull Run (no top)' if not n['top'] else 'Top and bottom'), trades(n['top'], n['bottom'], rare, n['support'], n['resistance']), owner_rule(n['top'], n['bottom'], rare, n['support'], n['resistance']), f"{n['riskyTop']} / {n['riskyBottom']}" if rare else ''])
-sheet('Pressure pairs', ['Support pressure', 'Resistance pressure', 'Top', 'Bottom', 'Top if resistance is weak toward top and bullish', 'Bottom if support is weak toward bottom and bearish', 'Tradable', 'Outcome', 'Trades possible', 'Owner rule: risky trade', 'Risky levels (rare scenario only)'], pair_rows, [18, 18, 10, 10, 22, 22, 12, 28, 60, 52, 18])
+    pair_rows.append([f"{tag('S', n['support'])} {tag('R', n['resistance'])}", WORD[n['support']], WORD[n['resistance']], tug_text(n['support'], n['resistance']), n['top'] or 'none', n['bottom'] or 'none', n.get('topWhenResistanceWeakTowardTop') or '', n.get('bottomWhenSupportWeakTowardBottom') or '', 'No (rare)' if rare else ('Yes' if n['tradable'] else 'No'), 'Rare scenario: do not trade' if rare else ('Blood Bath (no bottom)' if not n['bottom'] else 'Bull Run (no top)' if not n['top'] else 'Top and bottom'), trades(n['top'], n['bottom'], rare, n['support'], n['resistance']), risky_text(n['support'], n['resistance']), f"{n['riskyTop']} / {n['riskyBottom']}" if rare else ''])
+sheet('Pressure pairs', ['Tags', 'Support pressure', 'Resistance pressure', 'Tug of war', 'Top', 'Bottom', 'Top if resistance is weak toward top and bullish', 'Bottom if support is weak toward bottom and bearish', 'Tradable', 'Outcome', 'Trades possible', 'Risky trade (tug of war)', 'Risky levels (rare scenario only)'], pair_rows, [28, 18, 18, 26, 10, 10, 22, 22, 12, 28, 60, 40, 18])
 
 # ---- All cases
-ws = sheet('All cases', cases_headers, cases, [14, 8, 12, 22, 22, 10, 60, 16, 10, 60, 16, 12, 12, 26, 60, 44, 70])
-ws.freeze_panes = 'D2'
+ws = sheet('All cases', cases_headers, cases, [14, 8, 12, 34, 22, 22, 10, 60, 16, 10, 60, 16, 26, 12, 12, 26, 60, 36, 70])
+ws.freeze_panes = 'E2'
 
 # ---- Rules & open questions
 rule_rows = [[n['label'], n['source'], n['status'], n['detail']] for n in graph['nodes'] if n['type'] == 'rule']

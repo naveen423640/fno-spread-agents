@@ -12,17 +12,17 @@ Every rule has a source tag: **[course]** from the free course or its practice t
 
 ## Rules from the owner
 
-1. **[user, 2026-10-13]** When the pressure is high (no bottom: Blood Bath, or no top: Bull Run), **risky trades can be taken**.
-   - **No bottom (Blood Bath):** the risky trade is a **short**. **No top (Bull Run):** the risky trade is a **long**. *(Direction confirmed again on 2026-10-13 after the level was corrected.)* The entry is at the tool's displayed Risky level on that side (resistance side for the short, support side for the long).
-   - **The level is not EOR-1 or EOS+1. The live tool shows the risky level and the moderate level itself** in its header lines (Risky, Moderate, Max Pain, Max Gain, on the resistance side and the support side). The rule uses those displayed values, not our own formula.
-   - **Which cases (owner, 2026-10-13):** only the **highly** bearish / highly bullish ones, not plain bearish on both sides. No bottom with at least one side highly bearish (Blood Bath: one side highly bearish and the other strong, or both highly bearish; scenario 6, both sides plain bearish, does not qualify); no top with at least one side highly bullish, likewise. *(One side highly bearish with the other plainly bearish also shows no bottom in the tool; assumed to qualify, to confirm.)*
-   - The tool's practice-tool wording for the extreme case ("EOR-1 can also be a good level as top", "EOS+1 can also be a good level as bottom") is a hint only, not the risky level.
+1. **[user, 2026-10-13, replaces the earlier version]** **Tug of war.** The two sides pull the market; the pair of pressures says who is winning.
+   - **Risky is allowed** when **both sides push the same way** (both bearish, both bullish, with or without a high one), or **one side pushes highly and the other is stable**.
+   - **Bears winning** (the push is down): a **risky short** on the resistance side. **Bulls winning** (the push is up): a **risky long** on the support side. The level is the one the live tool shows as Risky (the agent uses its proxy of that line until the tool's own is read).
+   - **No risky trade** when the sides pull against each other (contested), when only one side pushes plainly and the other is stable (a mild lead), or when both are stable.
+   - **Do not skip on the first-level scenario** (the nine boxes by current status). Decide from the mind-map outcome: a top gives shorts, a bottom gives longs; the tug of war then says whether a risky trade is also allowed.
+   - Shown everywhere in short tags: `6(S1/R1) S-Bearish R-Bullish(H)`; (H) = high. The agent (v2.0) now trades on this (`risky_tug` setup, `decide_by_graph`).
 
 ## Open
 
-- **What the tool's Risky and Moderate lines are, exactly.** Our code computes Risky as EOR-1 / EOS+1 (or the reversal at the weak strike) from one day of observation; the owner says the tool's displayed value is the one that counts, and our formula may be wrong. Plan: read the tool's header lines live at several times, per index, and fit them against our levels. Until then the agent does not use the owner's rule 1.
+- **What the tool's Risky and Moderate lines are, exactly.** Our code computes Risky as EOR-1 / EOS+1 (or the reversal at the weak strike) from one day of observation; the owner says the tool's displayed value is the one that counts, and our formula may be wrong. Plan: read the tool's header lines live at several times, per index, and fit them against our levels. Until then the agent uses its proxy of the Risky line for the risky entry (tug-of-war rule).
 
-- Rule 1: does it apply to **every** case where the tool shows no bottom or no top (one side highly bearish, both sides bearish, both highly bearish), or only to the highly bearish / highly bullish ones?
 - Which scenarios allow only the safe entry, and which also allow the risky one.
 - What counts as the moderate entry and the safe entry in each scenario.
 - Stops, targets and time limits per tier.

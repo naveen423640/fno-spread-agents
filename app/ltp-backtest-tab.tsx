@@ -8,8 +8,8 @@ import { istHhmm } from '@/lib/ltp/time';
 import { colour, inr, short, TradeCard } from '@/app/ltp-agent-parts/trade-card';
 
 const BLOCKED: Record<string, string> = {
-  scenario_allowed: 'the scenario did not allow that side', time_window: 'outside the trading window', valid_plan: 'no usable stop or target', hit_number: 'too many touches of the level',
-  coa2_agree: 'COA 2.0 disagreed', soc_opposes: 'an opposing State of Confusion', daily_trade_cap: 'daily trade cap', max_concurrent: 'a trade was already open', daily_loss_cap: 'daily loss cap', book_quote: 'no usable option quote',
+  scenario_allowed: 'no level for this side', time_window: 'outside window', valid_plan: 'no usable SL/target', hit_number: 'too many touches',
+  coa2_agree: 'COA2 must agree', soc_opposes: 'opposing SOC', daily_trade_cap: 'trade cap', max_concurrent: 'trade open', daily_loss_cap: 'loss cap', book_quote: 'no option quote',
 };
 
 type Bound = { min: number; max: number; integer?: boolean } | { values: (string | boolean)[] };

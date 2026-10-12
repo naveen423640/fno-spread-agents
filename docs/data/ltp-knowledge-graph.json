@@ -591,7 +591,11 @@
    "tradable": true,
    "rare": false,
    "topWhenResistanceWeakTowardTop": null,
-   "bottomWhenSupportWeakTowardBottom": null
+   "bottomWhenSupportWeakTowardBottom": null,
+   "winner": "none",
+   "strength": null,
+   "riskyAllowed": false,
+   "riskyDirection": null
   },
   {
    "id": "pair:S|B",
@@ -604,7 +608,11 @@
    "tradable": true,
    "rare": false,
    "topWhenResistanceWeakTowardTop": null,
-   "bottomWhenSupportWeakTowardBottom": null
+   "bottomWhenSupportWeakTowardBottom": null,
+   "winner": "bears",
+   "strength": "mild",
+   "riskyAllowed": false,
+   "riskyDirection": null
   },
   {
    "id": "pair:S|U",
@@ -617,7 +625,11 @@
    "tradable": true,
    "rare": false,
    "topWhenResistanceWeakTowardTop": "WTT-1",
-   "bottomWhenSupportWeakTowardBottom": null
+   "bottomWhenSupportWeakTowardBottom": null,
+   "winner": "bulls",
+   "strength": "mild",
+   "riskyAllowed": false,
+   "riskyDirection": null
   },
   {
    "id": "pair:S|HB",
@@ -630,7 +642,11 @@
    "tradable": true,
    "rare": false,
    "topWhenResistanceWeakTowardTop": null,
-   "bottomWhenSupportWeakTowardBottom": null
+   "bottomWhenSupportWeakTowardBottom": null,
+   "winner": "bears",
+   "strength": "high",
+   "riskyAllowed": true,
+   "riskyDirection": "short"
   },
   {
    "id": "pair:S|HU",
@@ -643,7 +659,11 @@
    "tradable": true,
    "rare": false,
    "topWhenResistanceWeakTowardTop": null,
-   "bottomWhenSupportWeakTowardBottom": null
+   "bottomWhenSupportWeakTowardBottom": null,
+   "winner": "bulls",
+   "strength": "high",
+   "riskyAllowed": true,
+   "riskyDirection": "long"
   },
   {
    "id": "pair:B|S",
@@ -656,7 +676,11 @@
    "tradable": true,
    "rare": false,
    "topWhenResistanceWeakTowardTop": null,
-   "bottomWhenSupportWeakTowardBottom": "WTB+1"
+   "bottomWhenSupportWeakTowardBottom": "WTB+1",
+   "winner": "bears",
+   "strength": "mild",
+   "riskyAllowed": false,
+   "riskyDirection": null
   },
   {
    "id": "pair:B|B",
@@ -669,7 +693,11 @@
    "tradable": true,
    "rare": false,
    "topWhenResistanceWeakTowardTop": null,
-   "bottomWhenSupportWeakTowardBottom": null
+   "bottomWhenSupportWeakTowardBottom": null,
+   "winner": "bears",
+   "strength": "high",
+   "riskyAllowed": true,
+   "riskyDirection": "short"
   },
   {
    "id": "pair:B|U",
@@ -682,7 +710,11 @@
    "tradable": true,
    "rare": false,
    "topWhenResistanceWeakTowardTop": "WTT-1",
-   "bottomWhenSupportWeakTowardBottom": "WTB+1"
+   "bottomWhenSupportWeakTowardBottom": "WTB+1",
+   "winner": "contested",
+   "strength": null,
+   "riskyAllowed": false,
+   "riskyDirection": null
   },
   {
    "id": "pair:B|HB",
@@ -695,7 +727,11 @@
    "tradable": true,
    "rare": false,
    "topWhenResistanceWeakTowardTop": null,
-   "bottomWhenSupportWeakTowardBottom": null
+   "bottomWhenSupportWeakTowardBottom": null,
+   "winner": "bears",
+   "strength": "high",
+   "riskyAllowed": true,
+   "riskyDirection": "short"
   },
   {
    "id": "pair:B|HU",
@@ -708,7 +744,11 @@
    "tradable": true,
    "rare": false,
    "topWhenResistanceWeakTowardTop": "WTT-1",
-   "bottomWhenSupportWeakTowardBottom": "WTB+1"
+   "bottomWhenSupportWeakTowardBottom": "WTB+1",
+   "winner": "contested",
+   "strength": null,
+   "riskyAllowed": false,
+   "riskyDirection": null
   },
   {
    "id": "pair:U|S",
@@ -721,7 +761,11 @@
    "tradable": true,
    "rare": false,
    "topWhenResistanceWeakTowardTop": null,
-   "bottomWhenSupportWeakTowardBottom": null
+   "bottomWhenSupportWeakTowardBottom": null,
+   "winner": "bulls",
+   "strength": "mild",
+   "riskyAllowed": false,
+   "riskyDirection": null
   },
   {
    "id": "pair:U|B",
@@ -734,7 +778,11 @@
    "tradable": true,
    "rare": false,
    "topWhenResistanceWeakTowardTop": null,
-   "bottomWhenSupportWeakTowardBottom": null
+   "bottomWhenSupportWeakTowardBottom": null,
+   "winner": "contested",
+   "strength": null,
+   "riskyAllowed": false,
+   "riskyDirection": null
   },
   {
    "id": "pair:U|U",
@@ -747,7 +795,11 @@
    "tradable": true,
    "rare": false,
    "topWhenResistanceWeakTowardTop": null,
-   "bottomWhenSupportWeakTowardBottom": null
+   "bottomWhenSupportWeakTowardBottom": null,
+   "winner": "bulls",
+   "strength": "high",
+   "riskyAllowed": true,
+   "riskyDirection": "long"
   },
   {
    "id": "pair:U|HB",
@@ -760,7 +812,11 @@
    "tradable": true,
    "rare": false,
    "topWhenResistanceWeakTowardTop": null,
-   "bottomWhenSupportWeakTowardBottom": null
+   "bottomWhenSupportWeakTowardBottom": null,
+   "winner": "contested",
+   "strength": null,
+   "riskyAllowed": false,
+   "riskyDirection": null
   },
   {
    "id": "pair:U|HU",
@@ -773,7 +829,11 @@
    "tradable": true,
    "rare": false,
    "topWhenResistanceWeakTowardTop": null,
-   "bottomWhenSupportWeakTowardBottom": null
+   "bottomWhenSupportWeakTowardBottom": null,
+   "winner": "bulls",
+   "strength": "high",
+   "riskyAllowed": true,
+   "riskyDirection": "long"
   },
   {
    "id": "pair:HB|S",
@@ -786,7 +846,11 @@
    "tradable": true,
    "rare": false,
    "topWhenResistanceWeakTowardTop": null,
-   "bottomWhenSupportWeakTowardBottom": null
+   "bottomWhenSupportWeakTowardBottom": null,
+   "winner": "bears",
+   "strength": "high",
+   "riskyAllowed": true,
+   "riskyDirection": "short"
   },
   {
    "id": "pair:HB|B",
@@ -799,7 +863,11 @@
    "tradable": true,
    "rare": false,
    "topWhenResistanceWeakTowardTop": null,
-   "bottomWhenSupportWeakTowardBottom": null
+   "bottomWhenSupportWeakTowardBottom": null,
+   "winner": "bears",
+   "strength": "high",
+   "riskyAllowed": true,
+   "riskyDirection": "short"
   },
   {
    "id": "pair:HB|U",
@@ -812,7 +880,11 @@
    "tradable": true,
    "rare": false,
    "topWhenResistanceWeakTowardTop": "WTT-1",
-   "bottomWhenSupportWeakTowardBottom": "WTB+1"
+   "bottomWhenSupportWeakTowardBottom": "WTB+1",
+   "winner": "contested",
+   "strength": null,
+   "riskyAllowed": false,
+   "riskyDirection": null
   },
   {
    "id": "pair:HB|HB",
@@ -825,7 +897,11 @@
    "tradable": true,
    "rare": false,
    "topWhenResistanceWeakTowardTop": null,
-   "bottomWhenSupportWeakTowardBottom": null
+   "bottomWhenSupportWeakTowardBottom": null,
+   "winner": "bears",
+   "strength": "high",
+   "riskyAllowed": true,
+   "riskyDirection": "short"
   },
   {
    "id": "pair:HB|HU",
@@ -839,6 +915,10 @@
    "rare": true,
    "topWhenResistanceWeakTowardTop": null,
    "bottomWhenSupportWeakTowardBottom": null,
+   "winner": "contested",
+   "strength": null,
+   "riskyAllowed": false,
+   "riskyDirection": null,
    "riskyTop": "EOR+1",
    "riskyBottom": "EOS-1"
   },
@@ -853,7 +933,11 @@
    "tradable": true,
    "rare": false,
    "topWhenResistanceWeakTowardTop": null,
-   "bottomWhenSupportWeakTowardBottom": null
+   "bottomWhenSupportWeakTowardBottom": null,
+   "winner": "bulls",
+   "strength": "high",
+   "riskyAllowed": true,
+   "riskyDirection": "long"
   },
   {
    "id": "pair:HU|B",
@@ -866,7 +950,11 @@
    "tradable": true,
    "rare": false,
    "topWhenResistanceWeakTowardTop": null,
-   "bottomWhenSupportWeakTowardBottom": null
+   "bottomWhenSupportWeakTowardBottom": null,
+   "winner": "contested",
+   "strength": null,
+   "riskyAllowed": false,
+   "riskyDirection": null
   },
   {
    "id": "pair:HU|U",
@@ -879,7 +967,11 @@
    "tradable": true,
    "rare": false,
    "topWhenResistanceWeakTowardTop": null,
-   "bottomWhenSupportWeakTowardBottom": null
+   "bottomWhenSupportWeakTowardBottom": null,
+   "winner": "bulls",
+   "strength": "high",
+   "riskyAllowed": true,
+   "riskyDirection": "long"
   },
   {
    "id": "pair:HU|HB",
@@ -893,6 +985,10 @@
    "rare": true,
    "topWhenResistanceWeakTowardTop": null,
    "bottomWhenSupportWeakTowardBottom": null,
+   "winner": "contested",
+   "strength": null,
+   "riskyAllowed": false,
+   "riskyDirection": null,
    "riskyTop": "EOR+1",
    "riskyBottom": "EOS-1"
   },
@@ -907,7 +1003,11 @@
    "tradable": true,
    "rare": false,
    "topWhenResistanceWeakTowardTop": null,
-   "bottomWhenSupportWeakTowardBottom": null
+   "bottomWhenSupportWeakTowardBottom": null,
+   "winner": "bulls",
+   "strength": "high",
+   "riskyAllowed": true,
+   "riskyDirection": "long"
   },
   {
    "id": "trade:short_at_top",
@@ -978,10 +1078,10 @@
   {
    "id": "rule:risky-high-pressure",
    "type": "rule",
-   "label": "High pressure allows risky trades: a risky short in Blood Bath, a risky long in Bull Run",
+   "label": "Tug of war: risky trades are allowed when both sides push one way, or one pushes highly and the other is stable",
    "source": "user",
    "status": "confirmed",
-   "detail": "Only for highly bearish / highly bullish pressure, not plain bearish on both sides. Direction: short when there is no bottom, long when there is no top. The level is the one the live tool shows as Risky."
+   "detail": "Bears winning gives a risky short, bulls winning a risky long, at the level the live tool shows as Risky. Sides pulling against each other are contested: no risky trade. A plain push against a stable side is only a mild lead: no risky trade. Do not skip on the first-level scenario: decide from the mind-map outcome."
   },
   {
    "id": "rule:tool-lines-define-tiers",
@@ -1000,11 +1100,6 @@
    "id": "open:tool-lines-definition",
    "type": "open_question",
    "label": "What exactly are the tool's Risky, Moderate, Max Pain and Max Gain lines? To be read from the live tool in a session."
-  },
-  {
-   "id": "open:one-highly-one-plain",
-   "type": "open_question",
-   "label": "One side highly bearish and the other plainly bearish also shows no bottom: does the risky rule apply? (assumed yes)"
   },
   {
    "id": "open:stops-targets-times",
@@ -1837,13 +1932,13 @@
    "from": "rule:risky-high-pressure",
    "to": "trade:risky_short",
    "type": "allows",
-   "when": "no bottom with at least one side highly bearish"
+   "when": "bears win: both sides push down, or one pushes down highly and the other is stable"
   },
   {
    "from": "rule:risky-high-pressure",
    "to": "trade:risky_long",
    "type": "allows",
-   "when": "no top with at least one side highly bullish"
+   "when": "bulls win: both sides push up, or one pushes up highly and the other is stable"
   },
   {
    "from": "rule:rare-do-not-trade",

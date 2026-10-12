@@ -24,7 +24,7 @@ describe('runBacktest replays recorded days through the agent and lists what it 
     expect(r.version).toBe('0.1');
     expect(r.trades).toHaveLength(1);
     expect(r.trades[0]).toMatchObject({ underlying: U, direction: 'long', entry: 23862, stop: 23765, target: 24255 });
-    expect(r.trades[0].reason).toMatch(/^LONG NIFTY: COA-1 scenario 1/);
+    expect(r.trades[0].reason).toMatch(/^LONG NIFTY 1\(S\d+~?\/R\d+~?\) S-Stable R-Stable · /);
     expect(r.trades[0].books.buy).toMatchObject({ status: 'closed', exitReason: 'target' });
     expect(r.trades[0].books.sell).toMatchObject({ status: 'closed', exitReason: 'target' });
     expect(r.summary).toMatchObject({ decisions: 1, taken: 1, skipped: 0, closedTrades: 1 });

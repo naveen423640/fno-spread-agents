@@ -29,7 +29,7 @@ describe('a clean touch of EOS', () => {
     expect(decisions).toHaveLength(1);
     const d = decisions[0];
     expect(d).toMatchObject({ taken: true, skipReason: null, setup: 'coa1_reversal', direction: 'long', book: 'both', strategyVersion: '0.1', ts: istTs(DAY, '10:01') });
-    expect(d.reason).toMatch(/^LONG NIFTY: COA-1 scenario 1 \(Strong\/Strong; directions neutral\/neutral\); spot 23,862 touched EOS 23,860/);
+    expect(d.reason).toMatch(/^LONG NIFTY 1\(S\d+~?\/R\d+~?\) S-Stable R-Stable · EOS 23,860 #1 · SL 23,765 · T 24,255/);
     expect(d.trace.map((s) => s.rule)).toHaveLength(10);
     expect(d.expectation).toMatchObject({ entry: 23862, stop: 23765, target: 24255 });
     expect(d.context).toMatchObject({ spot: 23862, scenario: 1, hhmm: '10:01' });

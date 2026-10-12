@@ -44,7 +44,7 @@ describe('buildAgentState: what the Agent tab shows', () => {
     expect(s.today.open).toEqual([]);
     expect(s.today.closed).toHaveLength(1);
     const t = s.today.closed[0];
-    expect(t.reason).toMatch(/^LONG NIFTY: COA-1 scenario 1/);
+    expect(t.reason).toMatch(/^LONG NIFTY 1\(S\d+~?\/R\d+~?\) S-Stable R-Stable · /);
     expect(t).toMatchObject({ underlying: U, setup: 'coa1_reversal', direction: 'long', entry: 23862, stop: 23765, target: 24255 });
     expect(t.books.buy).toMatchObject({ status: 'closed', exitReason: 'target', fillQuality: 'quote' });
     expect(t.books.sell).toMatchObject({ status: 'closed', exitReason: 'target' });
@@ -69,7 +69,7 @@ describe('buildAgentState: what the Agent tab shows', () => {
     const s = await buildAgentState({ ...stores, holidays: none }, { nowTs: NOW });
     expect(s.today.skipped).toHaveLength(1);
     expect(s.today.skipped[0]).toMatchObject({ skipReason: 'max_concurrent', underlying: U, direction: 'long' });
-    expect(s.today.skipped[0].reason).toMatch(/^SKIPPED LONG NIFTY: a trade is already open/);
+    expect(s.today.skipped[0].reason).toMatch(/^SKIPPED LONG NIFTY 1\(S\d+~?\/R\d+~?\) S-Stable R-Stable · trade already open/);
   });
   it('performance: equity curves per book and per version, the buy-versus-sell comparison and the breakdowns', async () => {
     const { store, journal } = freshStores();
@@ -99,7 +99,7 @@ describe('buildAgentState: what the Agent tab shows', () => {
     const s = await buildAgentState({ ...stores, holidays: none }, { nowTs: NOW });
     expect(s.watch).toHaveLength(1); // only NIFTY has data
     const w = s.watch[0];
-    expect(w).toMatchObject({ underlying: U, spot: 24275, scenario: expect.any(Number), asOf: istTs(DAY, '10:04') });
+    expect(w).toMatchObject({ underlying: U, spot: 24275, tag: expect.stringMatching(/^\d\(S\d+~?\/R\d+~?\) S-\w+(\(H\))? R-\w+(\(H\))?$/), riskyAllowed: expect.any(Boolean), asOf: istTs(DAY, '10:04') });
     expect(w.levels.length).toBeGreaterThan(0);
     const distances = w.levels.map((l) => Math.abs(l.distance));
     expect(distances).toEqual([...distances].sort((a, b) => a - b));

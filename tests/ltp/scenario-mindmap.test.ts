@@ -30,7 +30,9 @@ describe('the nine-scenario mind map', () => {
   it('shows the trades each outcome allows, the owner rule where it applies, and the rare scenario as do not trade', () => {
     expect(map).toContain('Short at EOR (resistance side)');
     expect(map).toContain('No long from a bottom (Blood Bath)');
-    expect(map).toContain('Risky short allowed at the tool\'s Risky level [owner rule]');
+    expect(map).toContain('S-Bearish R-Bearish · risky short OK');
+    expect(map).toContain('S-Bearish R-Stable'); // a mild lead: no risky tag
+    expect(map).not.toMatch(/S-Bearish R-Stable · risky/);
     expect(map).toContain('Rare scenario: do not trade');
   });
 });

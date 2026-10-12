@@ -6,6 +6,7 @@ import { COA1_TABLE } from './coa1';
 import { selectDetailed } from './coa1-detailed';
 import { eventsOf, HISTORY_CONDITIONS } from './coa-histories';
 import { pressureOf, type Pressure } from './pressure';
+import { tugOfWar } from './tug-of-war';
 import type { Status } from './types';
 
 export const GRAPH_FILE = 'docs/data/ltp-knowledge-graph.json';
@@ -72,9 +73,11 @@ export function buildKnowledgeGraph(): KnowledgeGraph {
     const weakBottom = selectDetailed(support, resistance, 'wtb', 'strong');
     const id = `pair:${support}|${resistance}`;
     const rare = plain.risky !== undefined;
+    const tug = tugOfWar(support, resistance);
     node({
       id, type: 'pair', label: `Support ${support}, resistance ${resistance}`, support, resistance, top: plain.top, bottom: plain.bottom, tradable: plain.tradable, rare,
       topWhenResistanceWeakTowardTop: weakTop.top !== plain.top ? weakTop.top : null, bottomWhenSupportWeakTowardBottom: weakBottom.bottom !== plain.bottom ? weakBottom.bottom : null,
+      winner: tug.winner, strength: tug.strength, riskyAllowed: tug.riskyAllowed, riskyDirection: tug.riskyDirection,
       ...(rare ? { riskyTop: plain.risky?.top, riskyBottom: plain.risky?.bottom } : {}),
     });
     edge(id, `pressure:${support}`, 'support_pressure');
@@ -95,11 +98,11 @@ export function buildKnowledgeGraph(): KnowledgeGraph {
   rule('rare-do-not-trade', 'Highly bearish against highly bullish: do not trade', 'course', 'confirmed', 'The tool still names EOR+1 (WTT-1) as the risky top and EOS-1 (WTB+1) as the risky bottom.');
   rule('first-hit-safe', 'The first touch of a level is generally safe; risk rises with each further touch', 'course', 'confirmed', 'From the chart of accuracy chapter.');
   rule('weekly-range-bands', 'Weekly range: risky, moderate and generally safe bands', 'course', 'confirmed', 'L1 risky, L2 moderate, L3 generally safe (price plus or minus S, 2S, 3S).');
-  rule('risky-high-pressure', 'High pressure allows risky trades: a risky short in Blood Bath, a risky long in Bull Run', 'user', 'confirmed', 'Only for highly bearish / highly bullish pressure, not plain bearish on both sides. Direction: short when there is no bottom, long when there is no top. The level is the one the live tool shows as Risky.');
+  rule('risky-high-pressure', 'Tug of war: risky trades are allowed when both sides push one way, or one pushes highly and the other is stable', 'user', 'confirmed', 'Bears winning gives a risky short, bulls winning a risky long, at the level the live tool shows as Risky. Sides pulling against each other are contested: no risky trade. A plain push against a stable side is only a mild lead: no risky trade. Do not skip on the first-level scenario: decide from the mind-map outcome.');
   rule('tool-lines-define-tiers', 'The live tool shows the risky and moderate levels itself', 'user', 'confirmed', 'Use the tool\'s displayed Risky and Moderate values, not our own formula (ours, EOR-1 / EOS+1, was a guess).');
   edge('rule:risky-high-pressure', 'outcome:blood_bath', 'applies_to'); edge('rule:risky-high-pressure', 'outcome:bull_run', 'applies_to');
-  edge('rule:risky-high-pressure', 'trade:risky_short', 'allows', { when: 'no bottom with at least one side highly bearish' });
-  edge('rule:risky-high-pressure', 'trade:risky_long', 'allows', { when: 'no top with at least one side highly bullish' });
+  edge('rule:risky-high-pressure', 'trade:risky_short', 'allows', { when: 'bears win: both sides push down, or one pushes down highly and the other is stable' });
+  edge('rule:risky-high-pressure', 'trade:risky_long', 'allows', { when: 'bulls win: both sides push up, or one pushes up highly and the other is stable' });
   edge('rule:rare-do-not-trade', 'outcome:rare', 'applies_to');
   edge('rule:first-hit-safe', 'trade:short_at_top', 'applies_to'); edge('rule:first-hit-safe', 'trade:long_at_bottom', 'applies_to');
   edge('rule:wtt1-wtb1-substitution', 'level:WTT-1', 'applies_to'); edge('rule:wtt1-wtb1-substitution', 'level:WTB+1', 'applies_to');
@@ -109,7 +112,6 @@ export function buildKnowledgeGraph(): KnowledgeGraph {
   const question = (id: string, label: string) => node({ id: `open:${id}`, type: 'open_question', label });
   question('safe-moderate-risky', 'Which of the tool\'s lines is the safe, the moderate and the risky entry in each scenario?');
   question('tool-lines-definition', 'What exactly are the tool\'s Risky, Moderate, Max Pain and Max Gain lines? To be read from the live tool in a session.');
-  question('one-highly-one-plain', 'One side highly bearish and the other plainly bearish also shows no bottom: does the risky rule apply? (assumed yes)');
   question('stops-targets-times', 'Stops, targets and time limits per tier.');
 
   return {

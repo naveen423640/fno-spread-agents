@@ -4,6 +4,8 @@
 import { readFileSync } from 'node:fs';
 
 import { buildKnowledgeGraph } from './knowledge-graph';
+import { sideTag, tugOfWar } from './tug-of-war';
+import type { Pressure } from './pressure';
 
 export const SCENARIO_MINDMAP_FILE = 'docs/ltp-scenarios-by-box.mindmap.md';
 type Box = { heading: string; support: string; resistance: string; supportConditions: string[]; resistanceConditions: string[]; rows: string[] };
@@ -14,14 +16,11 @@ const WORD: Record<string, string> = { S: 'stable strong', B: 'bearish', U: 'bul
 const sentence = (s: string) => s.charAt(0) + s.slice(1).toLowerCase().replace(/\bwt([tb])\b/g, (_m, c: string) => `WT${c.toUpperCase()}`);
 const range = (n: number[]) => n.map((i) => `${i + 1}`).join(', ');
 
-function trades(top: string | null, bottom: string | null, rare: boolean, pair: string): string[] {
-  const [support, resistance] = pair.split('|');
+function trades(top: string | null, bottom: string | null, rare: boolean): string[] {
   if (rare) return ['Do not trade: the market is very volatile', 'For anyone who still trades: risky short at the top shown, risky long at the bottom shown'];
   const out: string[] = [];
   out.push(top ? `Short at ${top} (resistance side)` : 'No short from a top (Bull Run)');
   out.push(bottom ? `Long at ${bottom} (support side)` : 'No long from a bottom (Blood Bath)');
-  if (!bottom && (support === 'HB' || resistance === 'HB')) out.push('Risky short allowed at the tool\'s Risky level [owner rule]');
-  if (!top && (support === 'HU' || resistance === 'HU')) out.push('Risky long allowed at the tool\'s Risky level [owner rule]');
   if (top === 'WTT-1' || bottom === 'WTB+1') out.push('WTT / WTB percentage is the key player for the weak-side level');
   return out;
 }
@@ -34,7 +33,7 @@ export function buildScenarioMindmap(): string {
   const w = (s = '') => out.push(s);
   w('---\ntitle: The 9 scenarios of the Detailed Chart of Accuracy\nmarkmap:\n  colorFreezeLevel: 2\n  maxWidth: 420\n---\n');
   w('# The 9 scenarios: history, pressure, top and bottom, trades\n');
-  w('## How to read this\n- Pick the scenario (COA box) = the status of the two sides now\n- Each side has a history condition (S1, S2 ... for support; R1, R2 ... for resistance; the live label reads scenario-S/R, for example 6-S3/R1)\n- The history gives a pressure: stable strong, bearish, bullish, highly bearish, highly bullish\n- The pair of pressures gives the top and bottom\n- The top and bottom decide the trades\n- Source: the practice tool, 529 cases, all matched by our engine; pressure per condition is our reading, confirmed with the owner\n');
+  w('## How to read this\n- Pick the scenario (COA box) = the status of the two sides now\n- Each side has a history condition (S1, S2 ... for support; R1, R2 ... for resistance; the live label reads scenario-S/R, for example 6-S3/R1)\n- The history gives a pressure: stable strong, bearish, bullish, highly bearish, highly bullish\n- The pair of pressures gives the top and bottom, and who is winning the tug of war\n- The top and bottom decide the trades; the tug of war decides whether a risky trade is also allowed\n- Tags: S-Bearish / R-Bullish, with (H) when high\n- Source: the practice tool, 529 cases, all matched by our engine; pressure per condition is our reading, confirmed with the owner\n');
   data.boxes.forEach((box, bi) => {
     const nr = box.resistanceConditions.length;
     w(`## COA 1.${bi + 1}: support ${NAME[box.support]}, resistance ${NAME[box.resistance]}`);
@@ -64,17 +63,17 @@ export function buildScenarioMindmap(): string {
     for (const g of [...groups.values()].sort((a, b) => Number(a.rare) - Number(b.rare) || [...b.pairs.values()].length - [...a.pairs.values()].length)) {
       const title = g.rare ? 'Rare scenario: do not trade' : `${g.top ? `Top ${g.top}` : 'No top (Bull Run)'}, ${g.bottom ? `bottom ${g.bottom}` : 'no bottom (Blood Bath)'}`;
       w(`- **${title}**`);
-      const firstPair = [...g.pairs.keys()][0];
       w('  - Trades');
-      for (const t of trades(g.top, g.bottom, g.rare, firstPair)) w(`    - ${t}`);
-      w('  - Pressure and when it happens');
+      for (const t of trades(g.top, g.bottom, g.rare)) w(`    - ${t}`);
+      w('  - Tug of war and when it happens');
       for (const [pair, bySupport] of g.pairs) {
         const [s, r] = pair.split('|');
-        w(`    - Support ${WORD[s]}, resistance ${WORD[r]}`);
+        const tug = tugOfWar(s as Pressure, r as Pressure);
+        w(`    - ${sideTag('S', s as Pressure)} ${sideTag('R', r as Pressure)}${tug.riskyAllowed ? ` · risky ${tug.riskyDirection} OK` : ''}`);
         for (const [i, js] of bySupport) w(`      - S${i + 1} with R${range(js)}`);
       }
     }
   });
-  w('## Rules behind the outcomes\n- No bottom (Blood Bath) = highly bearish pressure; no top (Bull Run) = highly bullish\n- A highly bearish side against a bullish side stops the Blood Bath, and the bottom is EOS-1\n- Highly bearish against highly bullish = rare scenario, do not trade\n- WTT-1 replaces the top, WTB+1 the bottom, only for a weak side that is bullish (resistance) or bearish (support)\n- Risky trade when pressure is highly bearish or highly bullish [owner rule]; level = the tool\'s Risky line\n- Safe, moderate and risky entries for the other scenarios: still open');
+  w('## Rules behind the outcomes\n- No bottom (Blood Bath) = highly bearish pressure; no top (Bull Run) = highly bullish\n- A highly bearish side against a bullish side stops the Blood Bath, and the bottom is EOS-1\n- Highly bearish against highly bullish = rare scenario, do not trade\n- WTT-1 replaces the top, WTB+1 the bottom, only for a weak side that is bullish (resistance) or bearish (support)\n- Tug of war [owner rule]: risky trade allowed when both sides push one way, or one pushes highly and the other is stable; bears winning = risky short, bulls = risky long; level = the tool\'s Risky line\n- Do not skip on the first-level scenario: decide from this outcome\n- Safe, moderate and risky entries for the other scenarios: still open');
   return `${out.join('\n')}\n`;
 }

@@ -11,8 +11,9 @@ markmap:
 - Pick the scenario (COA box) = the status of the two sides now
 - Each side has a history condition (S1, S2 ... for support; R1, R2 ... for resistance; the live label reads scenario-S/R, for example 6-S3/R1)
 - The history gives a pressure: stable strong, bearish, bullish, highly bearish, highly bullish
-- The pair of pressures gives the top and bottom
-- The top and bottom decide the trades
+- The pair of pressures gives the top and bottom, and who is winning the tug of war
+- The top and bottom decide the trades; the tug of war decides whether a risky trade is also allowed
+- Tags: S-Bearish / R-Bullish, with (H) when high
 - Source: the practice tool, 529 cases, all matched by our engine; pressure per condition is our reading, confirmed with the owner
 
 ## COA 1.1: support Strong, resistance Strong
@@ -49,108 +50,106 @@ markmap:
   - Trades
     - Short at EOR (resistance side)
     - No long from a bottom (Blood Bath)
-    - Risky short allowed at the tool's Risky level [owner rule]
-  - Pressure and when it happens
-    - Support stable strong, resistance highly bearish
+  - Tug of war and when it happens
+    - S-Stable R-Bearish(H) · risky short OK
       - S1 with R6
-    - Support bearish, resistance bearish
+    - S-Bearish R-Bearish · risky short OK
       - S2 with R2, 5, 10, 11, 12
       - S5 with R2, 5, 10, 11, 12
       - S10 with R2, 5, 10, 11, 12
       - S11 with R2, 5, 10, 11, 12
       - S12 with R2, 5, 10, 11, 12
-    - Support bearish, resistance highly bearish
+    - S-Bearish R-Bearish(H) · risky short OK
       - S2 with R6
       - S5 with R6
       - S10 with R6
       - S11 with R6
       - S12 with R6
-    - Support highly bearish, resistance stable strong
+    - S-Bearish(H) R-Stable · risky short OK
       - S6 with R1
-    - Support highly bearish, resistance bearish
+    - S-Bearish(H) R-Bearish · risky short OK
       - S6 with R2, 5, 10, 11, 12
-    - Support highly bearish, resistance highly bearish
+    - S-Bearish(H) R-Bearish(H) · risky short OK
       - S6 with R6
 - **No top (Bull Run), bottom EOS**
   - Trades
     - No short from a top (Bull Run)
     - Long at EOS (support side)
-    - Risky long allowed at the tool's Risky level [owner rule]
-  - Pressure and when it happens
-    - Support stable strong, resistance highly bullish
+  - Tug of war and when it happens
+    - S-Stable R-Bullish(H) · risky long OK
       - S1 with R7
-    - Support bullish, resistance bullish
+    - S-Bullish R-Bullish · risky long OK
       - S3 with R3, 4, 8, 9, 13
       - S4 with R3, 4, 8, 9, 13
       - S8 with R3, 4, 8, 9, 13
       - S9 with R3, 4, 8, 9, 13
       - S13 with R3, 4, 8, 9, 13
-    - Support bullish, resistance highly bullish
+    - S-Bullish R-Bullish(H) · risky long OK
       - S3 with R7
       - S4 with R7
       - S8 with R7
       - S9 with R7
       - S13 with R7
-    - Support highly bullish, resistance stable strong
+    - S-Bullish(H) R-Stable · risky long OK
       - S7 with R1
-    - Support highly bullish, resistance bullish
+    - S-Bullish(H) R-Bullish · risky long OK
       - S7 with R3, 4, 8, 9, 13
-    - Support highly bullish, resistance highly bullish
+    - S-Bullish(H) R-Bullish(H) · risky long OK
       - S7 with R7
 - **Top EOR, bottom EOS-1**
   - Trades
     - Short at EOR (resistance side)
     - Long at EOS-1 (support side)
-  - Pressure and when it happens
-    - Support stable strong, resistance bearish
+  - Tug of war and when it happens
+    - S-Stable R-Bearish
       - S1 with R2, 5, 10, 11, 12
-    - Support bearish, resistance stable strong
+    - S-Bearish R-Stable
       - S2 with R1
       - S5 with R1
       - S10 with R1
       - S11 with R1
       - S12 with R1
-    - Support bullish, resistance highly bearish
+    - S-Bullish R-Bearish(H)
       - S3 with R6
       - S4 with R6
       - S8 with R6
       - S9 with R6
       - S13 with R6
-    - Support highly bearish, resistance bullish
+    - S-Bearish(H) R-Bullish
       - S6 with R3, 4, 8, 9, 13
 - **Top EOR+1, bottom EOS**
   - Trades
     - Short at EOR+1 (resistance side)
     - Long at EOS (support side)
-  - Pressure and when it happens
-    - Support stable strong, resistance bullish
+  - Tug of war and when it happens
+    - S-Stable R-Bullish
       - S1 with R3, 4, 8, 9, 13
-    - Support bearish, resistance highly bullish
+    - S-Bearish R-Bullish(H)
       - S2 with R7
       - S5 with R7
       - S10 with R7
       - S11 with R7
       - S12 with R7
-    - Support bullish, resistance stable strong
+    - S-Bullish R-Stable
       - S3 with R1
       - S4 with R1
       - S8 with R1
       - S9 with R1
       - S13 with R1
-    - Support highly bullish, resistance bearish
+    - S-Bullish(H) R-Bearish
       - S7 with R2, 5, 10, 11, 12
 - **Top EOR+1, bottom EOS-1**
   - Trades
     - Short at EOR+1 (resistance side)
     - Long at EOS-1 (support side)
-  - Pressure and when it happens
-    - Support bearish, resistance bullish
+  - Tug of war and when it happens
+    - S-Bearish R-Bullish
       - S2 with R3, 4, 8, 9, 13
       - S5 with R3, 4, 8, 9, 13
       - S10 with R3, 4, 8, 9, 13
       - S11 with R3, 4, 8, 9, 13
       - S12 with R3, 4, 8, 9, 13
-    - Support bullish, resistance bearish
+    - S-Bullish R-Bearish
       - S3 with R2, 5, 10, 11, 12
       - S4 with R2, 5, 10, 11, 12
       - S8 with R2, 5, 10, 11, 12
@@ -160,17 +159,17 @@ markmap:
   - Trades
     - Short at EOR (resistance side)
     - Long at EOS (support side)
-  - Pressure and when it happens
-    - Support stable strong, resistance stable strong
+  - Tug of war and when it happens
+    - S-Stable R-Stable
       - S1 with R1
 - **Rare scenario: do not trade**
   - Trades
     - Do not trade: the market is very volatile
     - For anyone who still trades: risky short at the top shown, risky long at the bottom shown
-  - Pressure and when it happens
-    - Support highly bearish, resistance highly bullish
+  - Tug of war and when it happens
+    - S-Bearish(H) R-Bullish(H)
       - S6 with R7
-    - Support highly bullish, resistance highly bearish
+    - S-Bullish(H) R-Bearish(H)
       - S7 with R6
 ## COA 1.2: support Strong, resistance WTB (weak toward bottom)
 ### Support history
@@ -198,62 +197,61 @@ markmap:
   - Trades
     - Short at EOR (resistance side)
     - No long from a bottom (Blood Bath)
-    - Risky short allowed at the tool's Risky level [owner rule]
-  - Pressure and when it happens
-    - Support stable strong, resistance highly bearish
+  - Tug of war and when it happens
+    - S-Stable R-Bearish(H) · risky short OK
       - S1 with R2
-    - Support bearish, resistance bearish
+    - S-Bearish R-Bearish · risky short OK
       - S2 with R1, 4, 5
       - S5 with R1, 4, 5
       - S10 with R1, 4, 5
       - S11 with R1, 4, 5
       - S12 with R1, 4, 5
-    - Support bearish, resistance highly bearish
+    - S-Bearish R-Bearish(H) · risky short OK
       - S2 with R2
       - S5 with R2
       - S10 with R2
       - S11 with R2
       - S12 with R2
-    - Support highly bearish, resistance bearish
+    - S-Bearish(H) R-Bearish · risky short OK
       - S6 with R1, 4, 5
-    - Support highly bearish, resistance highly bearish
+    - S-Bearish(H) R-Bearish(H) · risky short OK
       - S6 with R2
 - **Top EOR, bottom EOS-1**
   - Trades
     - Short at EOR (resistance side)
     - Long at EOS-1 (support side)
-  - Pressure and when it happens
-    - Support stable strong, resistance bearish
+  - Tug of war and when it happens
+    - S-Stable R-Bearish
       - S1 with R1, 4, 5
-    - Support bullish, resistance highly bearish
+    - S-Bullish R-Bearish(H)
       - S3 with R2
       - S4 with R2
       - S8 with R2
       - S9 with R2
       - S13 with R2
-    - Support highly bearish, resistance bullish
+    - S-Bearish(H) R-Bullish
       - S6 with R3
 - **Top EOR+1, bottom EOS**
   - Trades
     - Short at EOR+1 (resistance side)
     - Long at EOS (support side)
-  - Pressure and when it happens
-    - Support stable strong, resistance bullish
+  - Tug of war and when it happens
+    - S-Stable R-Bullish
       - S1 with R3
-    - Support highly bullish, resistance bearish
+    - S-Bullish(H) R-Bearish
       - S7 with R1, 4, 5
 - **Top EOR+1, bottom EOS-1**
   - Trades
     - Short at EOR+1 (resistance side)
     - Long at EOS-1 (support side)
-  - Pressure and when it happens
-    - Support bearish, resistance bullish
+  - Tug of war and when it happens
+    - S-Bearish R-Bullish
       - S2 with R3
       - S5 with R3
       - S10 with R3
       - S11 with R3
       - S12 with R3
-    - Support bullish, resistance bearish
+    - S-Bullish R-Bearish
       - S3 with R1, 4, 5
       - S4 with R1, 4, 5
       - S8 with R1, 4, 5
@@ -263,21 +261,21 @@ markmap:
   - Trades
     - No short from a top (Bull Run)
     - Long at EOS (support side)
-  - Pressure and when it happens
-    - Support bullish, resistance bullish
+  - Tug of war and when it happens
+    - S-Bullish R-Bullish · risky long OK
       - S3 with R3
       - S4 with R3
       - S8 with R3
       - S9 with R3
       - S13 with R3
-    - Support highly bullish, resistance bullish
+    - S-Bullish(H) R-Bullish · risky long OK
       - S7 with R3
 - **Rare scenario: do not trade**
   - Trades
     - Do not trade: the market is very volatile
     - For anyone who still trades: risky short at the top shown, risky long at the bottom shown
-  - Pressure and when it happens
-    - Support highly bullish, resistance highly bearish
+  - Tug of war and when it happens
+    - S-Bullish(H) R-Bearish(H)
       - S7 with R2
 ## COA 1.3: support Strong, resistance WTT (weak toward top)
 ### Support history
@@ -305,35 +303,34 @@ markmap:
   - Trades
     - No short from a top (Bull Run)
     - Long at EOS (support side)
-    - Risky long allowed at the tool's Risky level [owner rule]
-  - Pressure and when it happens
-    - Support stable strong, resistance highly bullish
+  - Tug of war and when it happens
+    - S-Stable R-Bullish(H) · risky long OK
       - S1 with R2
-    - Support bullish, resistance bullish
+    - S-Bullish R-Bullish · risky long OK
       - S3 with R1, 4, 5
       - S4 with R1, 4, 5
       - S8 with R1, 4, 5
       - S9 with R1, 4, 5
       - S13 with R1, 4, 5
-    - Support bullish, resistance highly bullish
+    - S-Bullish R-Bullish(H) · risky long OK
       - S3 with R2
       - S4 with R2
       - S8 with R2
       - S9 with R2
       - S13 with R2
-    - Support highly bullish, resistance bullish
+    - S-Bullish(H) R-Bullish · risky long OK
       - S7 with R1, 4, 5
-    - Support highly bullish, resistance highly bullish
+    - S-Bullish(H) R-Bullish(H) · risky long OK
       - S7 with R2
 - **Top WTT-1, bottom EOS**
   - Trades
     - Short at WTT-1 (resistance side)
     - Long at EOS (support side)
     - WTT / WTB percentage is the key player for the weak-side level
-  - Pressure and when it happens
-    - Support stable strong, resistance bullish
+  - Tug of war and when it happens
+    - S-Stable R-Bullish
       - S1 with R1, 4, 5
-    - Support bearish, resistance highly bullish
+    - S-Bearish R-Bullish(H)
       - S2 with R2
       - S5 with R2
       - S10 with R2
@@ -344,41 +341,41 @@ markmap:
     - Short at WTT-1 (resistance side)
     - Long at EOS-1 (support side)
     - WTT / WTB percentage is the key player for the weak-side level
-  - Pressure and when it happens
-    - Support bearish, resistance bullish
+  - Tug of war and when it happens
+    - S-Bearish R-Bullish
       - S2 with R1, 4, 5
       - S5 with R1, 4, 5
       - S10 with R1, 4, 5
       - S11 with R1, 4, 5
       - S12 with R1, 4, 5
-    - Support highly bearish, resistance bullish
+    - S-Bearish(H) R-Bullish
       - S6 with R1, 4, 5
 - **Top EOR, no bottom (Blood Bath)**
   - Trades
     - Short at EOR (resistance side)
     - No long from a bottom (Blood Bath)
-  - Pressure and when it happens
-    - Support bearish, resistance bearish
+  - Tug of war and when it happens
+    - S-Bearish R-Bearish · risky short OK
       - S2 with R3
       - S5 with R3
       - S10 with R3
       - S11 with R3
       - S12 with R3
-    - Support highly bearish, resistance bearish
+    - S-Bearish(H) R-Bearish · risky short OK
       - S6 with R3
 - **Top EOR, bottom EOS-1**
   - Trades
     - Short at EOR (resistance side)
     - Long at EOS-1 (support side)
-  - Pressure and when it happens
-    - Support stable strong, resistance bearish
+  - Tug of war and when it happens
+    - S-Stable R-Bearish
       - S1 with R3
 - **Top EOR+1, bottom EOS-1**
   - Trades
     - Short at EOR+1 (resistance side)
     - Long at EOS-1 (support side)
-  - Pressure and when it happens
-    - Support bullish, resistance bearish
+  - Tug of war and when it happens
+    - S-Bullish R-Bearish
       - S3 with R3
       - S4 with R3
       - S8 with R3
@@ -388,15 +385,15 @@ markmap:
   - Trades
     - Short at EOR+1 (resistance side)
     - Long at EOS (support side)
-  - Pressure and when it happens
-    - Support highly bullish, resistance bearish
+  - Tug of war and when it happens
+    - S-Bullish(H) R-Bearish
       - S7 with R3
 - **Rare scenario: do not trade**
   - Trades
     - Do not trade: the market is very volatile
     - For anyone who still trades: risky short at the top shown, risky long at the bottom shown
-  - Pressure and when it happens
-    - Support highly bearish, resistance highly bullish
+  - Tug of war and when it happens
+    - S-Bearish(H) R-Bullish(H)
       - S6 with R2
 ## COA 1.4: support WTB (weak toward bottom), resistance Strong
 ### Support history
@@ -424,44 +421,44 @@ markmap:
   - Trades
     - Short at EOR (resistance side)
     - No long from a bottom (Blood Bath)
-  - Pressure and when it happens
-    - Support bearish, resistance bearish
+  - Tug of war and when it happens
+    - S-Bearish R-Bearish · risky short OK
       - S1 with R2, 5, 10, 11, 12
       - S4 with R2, 5, 10, 11, 12
       - S5 with R2, 5, 10, 11, 12
-    - Support bearish, resistance highly bearish
+    - S-Bearish R-Bearish(H) · risky short OK
       - S1 with R6
       - S4 with R6
       - S5 with R6
-    - Support highly bearish, resistance stable strong
+    - S-Bearish(H) R-Stable · risky short OK
       - S2 with R1
-    - Support highly bearish, resistance bearish
+    - S-Bearish(H) R-Bearish · risky short OK
       - S2 with R2, 5, 10, 11, 12
-    - Support highly bearish, resistance highly bearish
+    - S-Bearish(H) R-Bearish(H) · risky short OK
       - S2 with R6
 - **Top EOR, bottom WTB+1**
   - Trades
     - Short at EOR (resistance side)
     - Long at WTB+1 (support side)
     - WTT / WTB percentage is the key player for the weak-side level
-  - Pressure and when it happens
-    - Support bearish, resistance stable strong
+  - Tug of war and when it happens
+    - S-Bearish R-Stable
       - S1 with R1
       - S4 with R1
       - S5 with R1
-    - Support highly bearish, resistance bullish
+    - S-Bearish(H) R-Bullish
       - S2 with R3, 4, 8, 9, 13
 - **Top EOR+1, bottom WTB+1**
   - Trades
     - Short at EOR+1 (resistance side)
     - Long at WTB+1 (support side)
     - WTT / WTB percentage is the key player for the weak-side level
-  - Pressure and when it happens
-    - Support bearish, resistance bullish
+  - Tug of war and when it happens
+    - S-Bearish R-Bullish
       - S1 with R3, 4, 8, 9, 13
       - S4 with R3, 4, 8, 9, 13
       - S5 with R3, 4, 8, 9, 13
-    - Support bearish, resistance highly bullish
+    - S-Bearish R-Bullish(H)
       - S1 with R7
       - S4 with R7
       - S5 with R7
@@ -469,38 +466,38 @@ markmap:
   - Trades
     - No short from a top (Bull Run)
     - Long at EOS (support side)
-  - Pressure and when it happens
-    - Support bullish, resistance bullish
+  - Tug of war and when it happens
+    - S-Bullish R-Bullish · risky long OK
       - S3 with R3, 4, 8, 9, 13
-    - Support bullish, resistance highly bullish
+    - S-Bullish R-Bullish(H) · risky long OK
       - S3 with R7
 - **Top EOR+1, bottom EOS**
   - Trades
     - Short at EOR+1 (resistance side)
     - Long at EOS (support side)
-  - Pressure and when it happens
-    - Support bullish, resistance stable strong
+  - Tug of war and when it happens
+    - S-Bullish R-Stable
       - S3 with R1
 - **Top EOR+1, bottom EOS-1**
   - Trades
     - Short at EOR+1 (resistance side)
     - Long at EOS-1 (support side)
-  - Pressure and when it happens
-    - Support bullish, resistance bearish
+  - Tug of war and when it happens
+    - S-Bullish R-Bearish
       - S3 with R2, 5, 10, 11, 12
 - **Top EOR, bottom EOS-1**
   - Trades
     - Short at EOR (resistance side)
     - Long at EOS-1 (support side)
-  - Pressure and when it happens
-    - Support bullish, resistance highly bearish
+  - Tug of war and when it happens
+    - S-Bullish R-Bearish(H)
       - S3 with R6
 - **Rare scenario: do not trade**
   - Trades
     - Do not trade: the market is very volatile
     - For anyone who still trades: risky short at the top shown, risky long at the bottom shown
-  - Pressure and when it happens
-    - Support highly bearish, resistance highly bullish
+  - Tug of war and when it happens
+    - S-Bearish(H) R-Bullish(H)
       - S2 with R7
 ## COA 1.5: support WTT (weak toward top), resistance Strong
 ### Support history
@@ -528,71 +525,71 @@ markmap:
   - Trades
     - No short from a top (Bull Run)
     - Long at EOS (support side)
-  - Pressure and when it happens
-    - Support bullish, resistance bullish
+  - Tug of war and when it happens
+    - S-Bullish R-Bullish · risky long OK
       - S1 with R3, 4, 8, 9, 13
       - S4 with R3, 4, 8, 9, 13
       - S5 with R3, 4, 8, 9, 13
-    - Support bullish, resistance highly bullish
+    - S-Bullish R-Bullish(H) · risky long OK
       - S1 with R7
       - S4 with R7
       - S5 with R7
-    - Support highly bullish, resistance stable strong
+    - S-Bullish(H) R-Stable · risky long OK
       - S2 with R1
-    - Support highly bullish, resistance bullish
+    - S-Bullish(H) R-Bullish · risky long OK
       - S2 with R3, 4, 8, 9, 13
-    - Support highly bullish, resistance highly bullish
+    - S-Bullish(H) R-Bullish(H) · risky long OK
       - S2 with R7
 - **Top EOR+1, bottom EOS**
   - Trades
     - Short at EOR+1 (resistance side)
     - Long at EOS (support side)
-  - Pressure and when it happens
-    - Support bullish, resistance stable strong
+  - Tug of war and when it happens
+    - S-Bullish R-Stable
       - S1 with R1
       - S4 with R1
       - S5 with R1
-    - Support highly bullish, resistance bearish
+    - S-Bullish(H) R-Bearish
       - S2 with R2, 5, 10, 11, 12
-    - Support bearish, resistance highly bullish
+    - S-Bearish R-Bullish(H)
       - S3 with R7
 - **Top EOR+1, bottom EOS-1**
   - Trades
     - Short at EOR+1 (resistance side)
     - Long at EOS-1 (support side)
-  - Pressure and when it happens
-    - Support bullish, resistance bearish
+  - Tug of war and when it happens
+    - S-Bullish R-Bearish
       - S1 with R2, 5, 10, 11, 12
       - S4 with R2, 5, 10, 11, 12
       - S5 with R2, 5, 10, 11, 12
-    - Support bearish, resistance bullish
+    - S-Bearish R-Bullish
       - S3 with R3, 4, 8, 9, 13
 - **Top EOR, bottom EOS-1**
   - Trades
     - Short at EOR (resistance side)
     - Long at EOS-1 (support side)
-  - Pressure and when it happens
-    - Support bullish, resistance highly bearish
+  - Tug of war and when it happens
+    - S-Bullish R-Bearish(H)
       - S1 with R6
       - S4 with R6
       - S5 with R6
-    - Support bearish, resistance stable strong
+    - S-Bearish R-Stable
       - S3 with R1
 - **Top EOR, no bottom (Blood Bath)**
   - Trades
     - Short at EOR (resistance side)
     - No long from a bottom (Blood Bath)
-  - Pressure and when it happens
-    - Support bearish, resistance bearish
+  - Tug of war and when it happens
+    - S-Bearish R-Bearish · risky short OK
       - S3 with R2, 5, 10, 11, 12
-    - Support bearish, resistance highly bearish
+    - S-Bearish R-Bearish(H) · risky short OK
       - S3 with R6
 - **Rare scenario: do not trade**
   - Trades
     - Do not trade: the market is very volatile
     - For anyone who still trades: risky short at the top shown, risky long at the bottom shown
-  - Pressure and when it happens
-    - Support highly bullish, resistance highly bearish
+  - Tug of war and when it happens
+    - S-Bullish(H) R-Bearish(H)
       - S2 with R6
 ## COA 1.6: support WTB (weak toward bottom), resistance WTB (weak toward bottom)
 ### Support history
@@ -612,26 +609,26 @@ markmap:
   - Trades
     - Short at EOR (resistance side)
     - No long from a bottom (Blood Bath)
-  - Pressure and when it happens
-    - Support bearish, resistance bearish
+  - Tug of war and when it happens
+    - S-Bearish R-Bearish · risky short OK
       - S1 with R1, 4, 5
       - S4 with R1, 4, 5
       - S5 with R1, 4, 5
-    - Support bearish, resistance highly bearish
+    - S-Bearish R-Bearish(H) · risky short OK
       - S1 with R2
       - S4 with R2
       - S5 with R2
-    - Support highly bearish, resistance bearish
+    - S-Bearish(H) R-Bearish · risky short OK
       - S2 with R1, 4, 5
-    - Support highly bearish, resistance highly bearish
+    - S-Bearish(H) R-Bearish(H) · risky short OK
       - S2 with R2
 - **Top EOR+1, bottom WTB+1**
   - Trades
     - Short at EOR+1 (resistance side)
     - Long at WTB+1 (support side)
     - WTT / WTB percentage is the key player for the weak-side level
-  - Pressure and when it happens
-    - Support bearish, resistance bullish
+  - Tug of war and when it happens
+    - S-Bearish R-Bullish
       - S1 with R3
       - S4 with R3
       - S5 with R3
@@ -640,29 +637,29 @@ markmap:
     - Short at EOR (resistance side)
     - Long at WTB+1 (support side)
     - WTT / WTB percentage is the key player for the weak-side level
-  - Pressure and when it happens
-    - Support highly bearish, resistance bullish
+  - Tug of war and when it happens
+    - S-Bearish(H) R-Bullish
       - S2 with R3
 - **Top EOR+1, bottom EOS-1**
   - Trades
     - Short at EOR+1 (resistance side)
     - Long at EOS-1 (support side)
-  - Pressure and when it happens
-    - Support bullish, resistance bearish
+  - Tug of war and when it happens
+    - S-Bullish R-Bearish
       - S3 with R1, 4, 5
 - **Top EOR, bottom EOS-1**
   - Trades
     - Short at EOR (resistance side)
     - Long at EOS-1 (support side)
-  - Pressure and when it happens
-    - Support bullish, resistance highly bearish
+  - Tug of war and when it happens
+    - S-Bullish R-Bearish(H)
       - S3 with R2
 - **No top (Bull Run), bottom EOS**
   - Trades
     - No short from a top (Bull Run)
     - Long at EOS (support side)
-  - Pressure and when it happens
-    - Support bullish, resistance bullish
+  - Tug of war and when it happens
+    - S-Bullish R-Bullish · risky long OK
       - S3 with R3
 ## COA 1.7: support WTT (weak toward top), resistance WTT (weak toward top)
 ### Support history
@@ -682,25 +679,25 @@ markmap:
   - Trades
     - No short from a top (Bull Run)
     - Long at EOS (support side)
-  - Pressure and when it happens
-    - Support bullish, resistance bullish
+  - Tug of war and when it happens
+    - S-Bullish R-Bullish · risky long OK
       - S1 with R1, 4, 5
       - S4 with R1, 4, 5
       - S5 with R1, 4, 5
-    - Support bullish, resistance highly bullish
+    - S-Bullish R-Bullish(H) · risky long OK
       - S1 with R2
       - S4 with R2
       - S5 with R2
-    - Support highly bullish, resistance bullish
+    - S-Bullish(H) R-Bullish · risky long OK
       - S2 with R1, 4, 5
-    - Support highly bullish, resistance highly bullish
+    - S-Bullish(H) R-Bullish(H) · risky long OK
       - S2 with R2
 - **Top EOR+1, bottom EOS-1**
   - Trades
     - Short at EOR+1 (resistance side)
     - Long at EOS-1 (support side)
-  - Pressure and when it happens
-    - Support bullish, resistance bearish
+  - Tug of war and when it happens
+    - S-Bullish R-Bearish
       - S1 with R3
       - S4 with R3
       - S5 with R3
@@ -708,31 +705,31 @@ markmap:
   - Trades
     - Short at EOR+1 (resistance side)
     - Long at EOS (support side)
-  - Pressure and when it happens
-    - Support highly bullish, resistance bearish
+  - Tug of war and when it happens
+    - S-Bullish(H) R-Bearish
       - S2 with R3
 - **Top WTT-1, bottom EOS-1**
   - Trades
     - Short at WTT-1 (resistance side)
     - Long at EOS-1 (support side)
     - WTT / WTB percentage is the key player for the weak-side level
-  - Pressure and when it happens
-    - Support bearish, resistance bullish
+  - Tug of war and when it happens
+    - S-Bearish R-Bullish
       - S3 with R1, 4, 5
 - **Top WTT-1, bottom EOS**
   - Trades
     - Short at WTT-1 (resistance side)
     - Long at EOS (support side)
     - WTT / WTB percentage is the key player for the weak-side level
-  - Pressure and when it happens
-    - Support bearish, resistance highly bullish
+  - Tug of war and when it happens
+    - S-Bearish R-Bullish(H)
       - S3 with R2
 - **Top EOR, no bottom (Blood Bath)**
   - Trades
     - Short at EOR (resistance side)
     - No long from a bottom (Blood Bath)
-  - Pressure and when it happens
-    - Support bearish, resistance bearish
+  - Tug of war and when it happens
+    - S-Bearish R-Bearish · risky short OK
       - S3 with R3
 ## COA 1.8: support WTB (weak toward bottom), resistance WTT (weak toward top)
 ### Support history
@@ -753,50 +750,50 @@ markmap:
     - Short at WTT-1 (resistance side)
     - Long at WTB+1 (support side)
     - WTT / WTB percentage is the key player for the weak-side level
-  - Pressure and when it happens
-    - Support bearish, resistance bullish
+  - Tug of war and when it happens
+    - S-Bearish R-Bullish
       - S1 with R1, 4, 5
       - S4 with R1, 4, 5
       - S5 with R1, 4, 5
-    - Support bearish, resistance highly bullish
+    - S-Bearish R-Bullish(H)
       - S1 with R2
       - S4 with R2
       - S5 with R2
-    - Support highly bearish, resistance bullish
+    - S-Bearish(H) R-Bullish
       - S2 with R1, 4, 5
 - **Top EOR, no bottom (Blood Bath)**
   - Trades
     - Short at EOR (resistance side)
     - No long from a bottom (Blood Bath)
-  - Pressure and when it happens
-    - Support bearish, resistance bearish
+  - Tug of war and when it happens
+    - S-Bearish R-Bearish · risky short OK
       - S1 with R3
       - S4 with R3
       - S5 with R3
-    - Support highly bearish, resistance bearish
+    - S-Bearish(H) R-Bearish · risky short OK
       - S2 with R3
 - **No top (Bull Run), bottom EOS**
   - Trades
     - No short from a top (Bull Run)
     - Long at EOS (support side)
-  - Pressure and when it happens
-    - Support bullish, resistance bullish
+  - Tug of war and when it happens
+    - S-Bullish R-Bullish · risky long OK
       - S3 with R1, 4, 5
-    - Support bullish, resistance highly bullish
+    - S-Bullish R-Bullish(H) · risky long OK
       - S3 with R2
 - **Top EOR+1, bottom EOS-1**
   - Trades
     - Short at EOR+1 (resistance side)
     - Long at EOS-1 (support side)
-  - Pressure and when it happens
-    - Support bullish, resistance bearish
+  - Tug of war and when it happens
+    - S-Bullish R-Bearish
       - S3 with R3
 - **Rare scenario: do not trade**
   - Trades
     - Do not trade: the market is very volatile
     - For anyone who still trades: risky short at the top shown, risky long at the bottom shown
-  - Pressure and when it happens
-    - Support highly bearish, resistance highly bullish
+  - Tug of war and when it happens
+    - S-Bearish(H) R-Bullish(H)
       - S2 with R2
 ## COA 1.9: support WTT (weak toward top), resistance WTB (weak toward bottom)
 ### Support history
@@ -816,39 +813,39 @@ markmap:
   - Trades
     - Short at EOR+1 (resistance side)
     - Long at EOS-1 (support side)
-  - Pressure and when it happens
-    - Support bullish, resistance bearish
+  - Tug of war and when it happens
+    - S-Bullish R-Bearish
       - S1 with R1, 4, 5
       - S4 with R1, 4, 5
       - S5 with R1, 4, 5
-    - Support bearish, resistance bullish
+    - S-Bearish R-Bullish
       - S3 with R3
 - **No top (Bull Run), bottom EOS**
   - Trades
     - No short from a top (Bull Run)
     - Long at EOS (support side)
-  - Pressure and when it happens
-    - Support bullish, resistance bullish
+  - Tug of war and when it happens
+    - S-Bullish R-Bullish · risky long OK
       - S1 with R3
       - S4 with R3
       - S5 with R3
-    - Support highly bullish, resistance bullish
+    - S-Bullish(H) R-Bullish · risky long OK
       - S2 with R3
 - **Top EOR, no bottom (Blood Bath)**
   - Trades
     - Short at EOR (resistance side)
     - No long from a bottom (Blood Bath)
-  - Pressure and when it happens
-    - Support bearish, resistance bearish
+  - Tug of war and when it happens
+    - S-Bearish R-Bearish · risky short OK
       - S3 with R1, 4, 5
-    - Support bearish, resistance highly bearish
+    - S-Bearish R-Bearish(H) · risky short OK
       - S3 with R2
 - **Top EOR, bottom EOS-1**
   - Trades
     - Short at EOR (resistance side)
     - Long at EOS-1 (support side)
-  - Pressure and when it happens
-    - Support bullish, resistance highly bearish
+  - Tug of war and when it happens
+    - S-Bullish R-Bearish(H)
       - S1 with R2
       - S4 with R2
       - S5 with R2
@@ -856,20 +853,21 @@ markmap:
   - Trades
     - Short at EOR+1 (resistance side)
     - Long at EOS (support side)
-  - Pressure and when it happens
-    - Support highly bullish, resistance bearish
+  - Tug of war and when it happens
+    - S-Bullish(H) R-Bearish
       - S2 with R1, 4, 5
 - **Rare scenario: do not trade**
   - Trades
     - Do not trade: the market is very volatile
     - For anyone who still trades: risky short at the top shown, risky long at the bottom shown
-  - Pressure and when it happens
-    - Support highly bullish, resistance highly bearish
+  - Tug of war and when it happens
+    - S-Bullish(H) R-Bearish(H)
       - S2 with R2
 ## Rules behind the outcomes
 - No bottom (Blood Bath) = highly bearish pressure; no top (Bull Run) = highly bullish
 - A highly bearish side against a bullish side stops the Blood Bath, and the bottom is EOS-1
 - Highly bearish against highly bullish = rare scenario, do not trade
 - WTT-1 replaces the top, WTB+1 the bottom, only for a weak side that is bullish (resistance) or bearish (support)
-- Risky trade when pressure is highly bearish or highly bullish [owner rule]; level = the tool's Risky line
+- Tug of war [owner rule]: risky trade allowed when both sides push one way, or one pushes highly and the other is stable; bears winning = risky short, bulls = risky long; level = the tool's Risky line
+- Do not skip on the first-level scenario: decide from this outcome
 - Safe, moderate and risky entries for the other scenarios: still open

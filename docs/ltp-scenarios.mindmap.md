@@ -106,12 +106,11 @@ markmap:
 - [course] Highly bearish against highly bullish: do not trade
 - [course] The first touch of a level is generally safe; risk rises with each further touch
 - [course] Weekly range: risky, moderate and generally safe bands
-- [user] High pressure allows risky trades: a risky short in Blood Bath, a risky long in Bull Run
+- [user] Tug of war: risky trades are allowed when both sides push one way, or one pushes highly and the other is stable
 - [user] The live tool shows the risky and moderate levels itself
 - **Open questions**
   - Which of the tool's lines is the safe, the moderate and the risky entry in each scenario?
   - What exactly are the tool's Risky, Moderate, Max Pain and Max Gain lines? To be read from the live tool in a session.
-  - One side highly bearish and the other plainly bearish also shows no bottom: does the risky rule apply? (assumed yes)
   - Stops, targets and time limits per tier.
 
 ## 8. Sources and checks

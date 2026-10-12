@@ -3,6 +3,7 @@ import { analyzeSession } from '@/lib/ltp/analyze';
 import { health, UNDERLYINGS, type Health } from '@/lib/ltp/recorder';
 import type { LtpStore } from '@/lib/ltp/store';
 import { istDate } from '@/lib/ltp/time';
+import { signalTag, tugOfWar } from '@/lib/ltp/tug-of-war';
 import { dayCounts } from './agent';
 import { watchLevels } from './signals';
 import type { Book, ClosedTrade, ExitReason, Position } from './books';
@@ -19,7 +20,7 @@ export type SkippedSignal = { decisionId: string; ts: number; underlying: string
 export type EquityPoint = { ts: number; equity: number };
 // One level the agent is watching: where it would enter, with the plan and whether it would trade there now (and if not, what stops it).
 export type WatchLevel = { setup: string; direction: string; label: string; value: number; distance: number; entry: number; stop: number | null; target: number | null; plannedRiskPts: number | null; rewardPts: number | null; hit: number; wouldTrade: boolean; blockedBy: string | null };
-export type WatchRow = { underlying: string; date: string; asOf: number; spot: number; scenario: number; scenarioBias: string; banner: string; levels: WatchLevel[] };
+export type WatchRow = { underlying: string; date: string; asOf: number; spot: number; tag: string; riskyAllowed: boolean; levels: WatchLevel[] };
 export type AgentState = {
   watch: WatchRow[];
   header: { activeVersion: string; phase: ReturnType<typeof phaseOf>; closedTrades: number; paused: boolean; heartbeatAgeSeconds: number | null; heartbeat: 'green' | 'amber' | 'red'; recorder: Pick<Health, 'badge' | 'lastSuccessTs' | 'gapsToday' | 'recordingNow'> };
@@ -82,7 +83,7 @@ export async function buildAgentState(deps: { store: LtpStore; journal: JournalS
       setup: c.setup, direction: c.direction, label: c.level.label, value: c.level.value, distance: c.level.value - analysis.spot, entry: c.entry, stop: c.stop, target: c.target,
       plannedRiskPts: c.plannedRiskPts, rewardPts: c.rewardPts, hit: c.hit, wouldTrade: c.taken, blockedBy: c.skipReason,
     })).sort((a, b) => Math.abs(a.distance) - Math.abs(b.distance));
-    watch.push({ underlying: u, date: day, asOf: last.ts, spot: analysis.spot, scenario: analysis.coa1.scenario.number, scenarioBias: analysis.coa1.scenario.bias, banner: analysis.direction.banner.text, levels });
+    watch.push({ underlying: u, date: day, asOf: last.ts, spot: analysis.spot, tag: signalTag(analysis), riskyAllowed: tugOfWar(analysis.coa1.pressure.support, analysis.coa1.pressure.resistance).riskyAllowed, levels });
   }
 
   const records = await journal.closedTrades();
