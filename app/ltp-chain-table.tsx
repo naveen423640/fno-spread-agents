@@ -22,7 +22,7 @@ function Badge({ s, metric }: { s: SideStrength; metric: 'volume' | 'oi' }) {
   const m = s.byMetric[metric];
   if (m.pct === null) return <span className="text-[10px] text-slate-500">–</span>;
   return (
-    <span className="inline-block rounded border-2 border-black bg-white px-1.5 py-0.5 text-[11px] font-bold text-black">
+    <span className="inline-block rounded border-2 border-black bg-white px-2 py-0.5 text-[12px] font-bold text-black">
       {m.weak ? (m.direction === 'wtt' ? 'WTT' : 'WTB') : 'STRONG'} {m.pct.toFixed(2)} %
     </span>
   );
@@ -44,9 +44,9 @@ export function LtpChainTable({ chain, analysis, methodLabel, spot, underlying }
     const m = marks[`${strike}|${side}|${metric}`];
     const pct = value !== null && value !== undefined && tops[side][metric] > 0 ? (value / tops[side][metric]) * 100 : null;
     return (
-      <td className="px-2 py-1 text-center" style={{ background: m ? MARK[m].background : BODY, fontWeight: m ? MARK[m].fontWeight : 600 }}>
+      <td className="px-3 py-1.5 text-center" style={{ background: m ? MARK[m].background : BODY, fontWeight: m ? MARK[m].fontWeight : 600 }}>
         <div>{lots(value, lot)}</div>
-        {pct !== null ? <div className="text-[10px] font-semibold text-slate-700">{pct.toFixed(2)}%</div> : null}
+        {pct !== null ? <div className="text-[12px] font-semibold text-slate-700">{pct.toFixed(2)}%</div> : null}
       </td>
     );
   };
@@ -56,12 +56,12 @@ export function LtpChainTable({ chain, analysis, methodLabel, spot, underlying }
     return (
       <td className="px-2 py-1 text-center text-[12px] font-semibold" style={{ background: best ? '#86efac' : BODY, color: !value ? '#475569' : value > 0 ? '#15803d' : '#dc2626' }}>
         <div>{value === null || value === undefined ? '–' : signed(Math.round(value / lot))}</div>
-        {pct !== null ? <div className="text-[10px]">{pct.toFixed(2)}%</div> : null}
+        {pct !== null ? <div className="text-[12px]">{pct.toFixed(2)}%</div> : null}
       </td>
     );
   };
   const reversal = (value: number | null, shown: boolean, word: string, ltp: number | null | undefined) => (
-    <td className="bg-white px-2 py-1 text-center text-[12px] font-semibold text-slate-800" title={ltp === null || ltp === undefined ? undefined : `LTP ${dec(ltp)}`}>
+    <td className="bg-white px-2 py-1 text-center text-[14px] font-semibold text-slate-800" title={ltp === null || ltp === undefined ? undefined : `LTP ${dec(ltp)}`}>
       {shown ? dec(value) : <span className="text-slate-500">{word}</span>}
     </td>
   );
@@ -93,9 +93,9 @@ export function LtpChainTable({ chain, analysis, methodLabel, spot, underlying }
 
   return (
     <div className="overflow-x-auto bg-white" style={{ colorScheme: 'light' }}>
-      <table className="w-full min-w-[860px] border-collapse text-[13px] tabular-nums text-slate-900">
+      <table className="w-full min-w-[900px] border-collapse text-[15px] tabular-nums text-slate-900">
         <thead>
-          <tr className="bg-slate-100 text-[11px] font-extrabold uppercase text-slate-800">
+          <tr className="bg-slate-100 text-[12px] font-extrabold uppercase text-slate-800">
             <th className="px-2 py-1.5">OI Chg</th><th className="px-2 py-1.5">OI</th><th className="px-2 py-1.5">Volume</th>
             <th className="px-2 py-1.5" title={`Reversal (proxy: ${methodLabel})`}>S-Reversal*</th>
             <th className="bg-orange-500 px-3 py-1.5 text-white">ATM ⇅ Strike</th>
@@ -110,7 +110,7 @@ export function LtpChainTable({ chain, analysis, methodLabel, spot, underlying }
                 {cell(r.strike, 'CE', 'oi', r.ce?.oi)}
                 {cell(r.strike, 'CE', 'volume', r.ce?.volume)}
                 {reversal(r.callReversal, r.strike >= line.low, 'Break Out', r.ce?.ltp)}
-                <td className="bg-orange-500 px-3 py-1 text-center text-[15px] font-extrabold text-white">
+                <td className="bg-orange-500 px-3 py-1 text-center text-[17px] font-extrabold text-white">
                   {r.strike.toFixed(1)}
                   {r.role ? <div className="text-[9px] font-bold uppercase tracking-wide">{r.role}</div> : null}
                 </td>
