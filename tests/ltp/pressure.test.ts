@@ -18,6 +18,11 @@ describe('pressure class of one side from its history today', () => {
   it('strong after a single shift: down is B, up is U', () => { expect(p('strong', 'init', 'down')).toBe('B'); expect(p('strong', 'init', 'up')).toBe('U'); });
   it('initially WTB then strong is U; initially WTT then strong is B', () => { expect(p('strong', 'wtb', 'fromWtb')).toBe('U'); expect(p('strong', 'wtt', 'fromWtt')).toBe('B'); });
   it('double shifting the same way is highly bearish or highly bullish', () => { expect(p('strong', 'init', 'down', 'down')).toBe('HB'); expect(p('strong', 'init', 'up', 'up')).toBe('HU'); });
+  it('double shifting still counts when a weak spell and a strong stretch sit between the two shifts the same way (confirmed on the practice tool)', () => {
+    expect(p('strong', 'init', 'down', 'wtt', 'fromWtt', 'down')).toBe('HB');
+    expect(p('strong', 'init', 'up', 'wtb', 'fromWtb', 'up')).toBe('HU');
+    expect(p('strong', 'init', 'down', 'wtb', 'wtt', 'fromWtt', 'down')).toBe('HB');
+  });
   it('shifted one way, became strong, then shifted back: the latest shift decides', () => {
     expect(p('strong', 'init', 'down', 'wtb', 'fromWtb', 'up')).toBe('U');
     expect(p('strong', 'init', 'up', 'wtt', 'fromWtt', 'down')).toBe('B');

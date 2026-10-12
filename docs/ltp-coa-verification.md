@@ -56,8 +56,8 @@ Verify this table: it is our reading, not the tool's. `init` = stable strong at 
 | 2 | STRONG BUT SHIFTED FROM BOTTOM TO TOP (SINGLE SHIFTING) | `init, up` |
 | 3 | INITIALLY WTB THEN BECAME STRONG | `wtb, fromWtb` |
 | 4 | INITIALLY WTT THEN BECAME STRONG | `wtt, fromWtt` |
-| 5 | SHIFTED FROM TOP TO BOTTOM AND AGAIN SHIFTED TO BOTTOM AND NOW STRONG (DOUBLE SHIFTING) | `init, down, down` |
-| 6 | SHIFTED FROM BOTTOM TO TOP AND AGAIN SHIFTED TO TOP AND NOW STRONG (DOUBLE SHIFTING) | `init, up, up` |
+| 5 | SHIFTED FROM TOP TO BOTTOM AND AGAIN SHIFTED TO BOTTOM AND NOW STRONG (DOUBLE SHIFTING) | `init, down, wtt, fromWtt, down` |
+| 6 | SHIFTED FROM BOTTOM TO TOP AND AGAIN SHIFTED TO TOP AND NOW STRONG (DOUBLE SHIFTING) | `init, up, wtb, fromWtb, up` |
 | 7 | SHIFTED FROM TOP TO BOTTOM BECAME STRONG, THEN AGAIN SHIFTED FROM BOTTOM TO TOP AT ANY PLACE AND NOW STRONG | `init, down, wtb, wtt, fromWtt, up, wtt, wtb, fromWtb` |
 | 8 | SHIFTED FROM TOP TO BOTTOM [WTT % IS THERE IN CONTINUATION] AND THEN BECAME WTT AT NEW PLACE AND ALSO SHIFTED THERE AND NOW STRONG | `init, down, wtt, wtt, up` |
 | 9 | SHIFTED FROM TOP TO BOTTOM [WTT % IS THERE IN CONTINUATION] AND THEN BECAME WTT AT NEW PLACE AND THEN BECAME STRONG (NOT SHIFTED) | `init, down, wtt, wtt, fromWtt` |
@@ -254,6 +254,6 @@ The 44 distinct sentences the tool shows (index: text):
 
 ## 7. What is still open
 
-- The mapping in section 4 is our reading. The two least certain are "shifted ... and now again WTB/WTT" (we read it as: it was weak that way before the shift) and the two "became strong and again became WTB/WTT at any place" conditions.
+- The mapping in section 4 was checked condition by condition with the user on 2026-10-13: every uncertain condition (weak list 1, 3 and 4; strong list 5 to 12) was confirmed or corrected. The one phrase not placed is "as 2 upward shifts" in condition 7; it does not change the result.
 - The tool covers the **top and bottom only**. Which entries are risky, moderate or safe, stops, targets and times are not in it.
 - The tool's names for the states are not the live tool's: the live tool never says "highly bearish"; we infer the class from the side's event log (`lib/ltp/pressure.ts`).

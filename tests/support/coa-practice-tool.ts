@@ -19,8 +19,8 @@ const STRONG: Kind[][] = [
   ['init', 'up'], // 2 strong but shifted bottom to top
   ['wtb', 'fromWtb'], // 3 initially WTB then strong
   ['wtt', 'fromWtt'], // 4 initially WTT then strong
-  ['init', 'down', 'down'], // 5 double shifting down
-  ['init', 'up', 'up'], // 6 double shifting up
+  ['init', 'down', 'wtt', 'fromWtt', 'down'], // 5 (user-confirmed) double shifting down, with weak or strong stretches between the two shifts
+  ['init', 'up', 'wtb', 'fromWtb', 'up'], // 6 the mirror of 5
   ['init', 'down', 'wtb', 'wtt', 'fromWtt', 'up', 'wtt', 'wtb', 'fromWtb'], // 7 (user: brief weak spells either side) shifted down, WTB then WTT then strong, shifted up, WTT then WTB then strong
   ['init', 'down', 'wtt', 'wtt', 'up'], // 8 (user-confirmed) shifted down with WTT, WTT at a new strike above, the level shifted up to it, now strong
   ['init', 'down', 'wtt', 'wtt', 'fromWtt'], // 9 (user-confirmed) shifted down with WTT, WTT at a new strike, then WTT turned strong without a shift
