@@ -9,6 +9,7 @@ export type Coa1Scenario = {
   bottom: string | null;
   allowed: string[];
   tradable: boolean;
+  risky?: { top: string; bottom: string }; // only in the rare scenario: not a trade, but the levels the course names for anyone who still takes one
 };
 
 const row = (number: number, bias: string, top: string | null, bottom: string | null, allowed: string[], tradable = true): Coa1Scenario => ({ number, bias, top, bottom, allowed, tradable });

@@ -91,6 +91,8 @@ Diversions are mini supports and resistances between the two levels where profit
 
 ## 7. The Detailed Chart of Accuracy 1.0 [practice tool]
 
+> **Superseded by `docs/ltp-coa-verification.md`** (2026-10-13). That document has all 529 cases of the tool, captured and checked against our engine case by case. The class table below was a reconstruction from the tool's wording and is less exact: the tool offers 13 history conditions for a strong side and 5 for a weak side, not the 23 listed here, and WTT-1 / WTB+1 apply only when the weak side also carries the matching pressure.
+
 The free course says scenarios 8 and 9 are explained in a "Detailed Chart of Accuracy 1.0". The site's practice tool shows it. **Each side is described by its history today, not just its current status**, and the pair of histories gives the expected top and bottom.
 
 ### 7.1 The history conditions and their pressure

@@ -23,8 +23,15 @@ export function selectDetailed(support: Pressure, resistance: Pressure, supportN
   const rare = (support === 'HB' && resistance === 'HU') || (support === 'HU' && resistance === 'HB');
   const [chartTop, chartBottom] = CHART[`${support}|${resistance}`] ?? CHART[`${plain(support)}|${plain(resistance)}`]!;
   const basic = COA1_TABLE[`${asStatus(plain(support))}|${asStatus(plain(resistance))}`];
-  const top = chartTop !== null && resistanceNow === 'wtt' ? 'WTT-1' : chartTop;
-  const bottom = chartBottom !== null && supportNow === 'wtb' ? 'WTB+1' : chartBottom;
+  // WTT-1 takes the place of the top, and WTB+1 of the bottom, for a side that is weak right now AND carries the matching pressure (resistance bullish,
+  // support bearish). A weak side whose history points the other way keeps the plain level. Checked against all 529 cases of the practice tool.
+  const weakBullishResistance = resistanceNow === 'wtt' && (resistance === 'U' || resistance === 'HU');
+  const weakBearishSupport = supportNow === 'wtb' && (support === 'B' || support === 'HB');
+  const top = chartTop !== null && weakBullishResistance ? 'WTT-1' : chartTop;
+  const bottom = chartBottom !== null && weakBearishSupport ? 'WTB+1' : chartBottom;
   const allowed = [top ? `short at ${top}` : 'no shorts', bottom ? `long at ${bottom}` : 'no longs'];
-  return { number: basic.number, bias: basic.bias, top, bottom, allowed: rare ? ['rare scenario: do not trade'] : allowed, tradable: !rare && (top !== null || bottom !== null) };
+  // The rare scenario (highly bearish against highly bullish): "market is very volatile, do not trade", but the tool names EOR+1 as the risky top and EOS-1 as
+  // the risky bottom, with WTT-1 and WTB+1 in their place for a weak side that carries the matching pressure.
+  const risky = rare ? { top: weakBullishResistance ? 'WTT-1' : 'EOR+1', bottom: weakBearishSupport ? 'WTB+1' : 'EOS-1' } : undefined;
+  return { number: basic.number, bias: basic.bias, top, bottom, allowed: rare ? ['rare scenario: do not trade'] : allowed, tradable: !rare && (top !== null || bottom !== null), ...(risky ? { risky } : {}) };
 }
