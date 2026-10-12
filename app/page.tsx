@@ -5,6 +5,7 @@ import { Activity, AlertCircle, BarChart3, CalendarDays, FlaskConical, LayoutGri
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, ReferenceLine, XAxis, YAxis } from 'recharts';
 
 import { Button } from '@/components/ui/button';
+import { NAV_STORAGE_KEY, parseHidden, resolveActive, SURFACES, toggleHidden, visibleSurfaces, type SurfaceId } from '@/lib/nav-tabs';
 import { Card, CardContent } from '@/components/ui/card';
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from '@/components/ui/chart';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -218,8 +219,20 @@ function IntradayPriceChart({ stock, points, loading, error }: { stock: MarketSt
   );
 }
 
+const SURFACE_ICONS: Record<SurfaceId, typeof Activity> = { heatmap: LayoutGrid, 'strategy-lab': TrendingUp, backtest: FlaskConical, 'markov-regime': Activity, screener: ScanSearch, board: Layers, ltp: Activity, vwap: Waves, 'vwap-backtest': FlaskConical };
+
 export default function Home() {
-  const [activeSurface, setActiveSurface] = useState<'heatmap' | 'backtest' | 'strategy-lab' | 'markov-regime' | 'screener' | 'board' | 'vwap' | 'vwap-backtest' | 'ltp'>('heatmap');
+  const [openSurface, setActiveSurface] = useState<SurfaceId>('heatmap');
+  // Which top-bar tabs are hidden, remembered in this browser only. Read after the first paint so the server and browser markup agree.
+  const [hiddenTabs, setHiddenTabs] = useState<SurfaceId[]>([]);
+  const [tabsMenuOpen, setTabsMenuOpen] = useState(false);
+  const activeSurface = resolveActive(openSurface, hiddenTabs);
+  useEffect(() => { try { setHiddenTabs(parseHidden(window.localStorage.getItem(NAV_STORAGE_KEY))); } catch { /* storage blocked: show everything */ } }, []);
+  const changeHidden = (id: SurfaceId) => {
+    const next = toggleHidden(hiddenTabs, id);
+    setHiddenTabs(next);
+    try { window.localStorage.setItem(NAV_STORAGE_KEY, JSON.stringify(next)); } catch { /* not saved, still applied for now */ }
+  };
   const [stocks, setStocks] = useState<MarketStock[]>(marketSnapshot);
   const [query, setQuery] = useState('');
   const [sector, setSector] = useState('All sectors');
@@ -400,16 +413,17 @@ export default function Home() {
 
       <nav aria-label="App sections" className="overflow-x-auto overscroll-x-contain border-b border-border bg-background [scrollbar-width:thin] [-webkit-overflow-scrolling:touch]">
         <div className="mx-auto flex w-full min-w-max max-w-[1800px] gap-1 px-4 py-2 lg:px-7">
-          <Button size="sm" variant={activeSurface === 'heatmap' ? 'secondary' : 'ghost'} onClick={() => setActiveSurface('heatmap')}><LayoutGrid />Market heat map</Button>
-          <Button size="sm" variant={activeSurface === 'strategy-lab' ? 'secondary' : 'ghost'} onClick={() => setActiveSurface('strategy-lab')}><TrendingUp />Options payoff test</Button>
-          <Button size="sm" variant={activeSurface === 'backtest' ? 'secondary' : 'ghost'} onClick={() => setActiveSurface('backtest')}><FlaskConical />6-month strategy test</Button>
-          <Button size="sm" variant={activeSurface === 'markov-regime' ? 'secondary' : 'ghost'} onClick={() => setActiveSurface('markov-regime')}><Activity />Markov regime</Button>
-          <Button size="sm" variant={activeSurface === 'screener' ? 'secondary' : 'ghost'} onClick={() => setActiveSurface('screener')}><ScanSearch />Screener</Button>
-          <Button size="sm" variant={activeSurface === 'board' ? 'secondary' : 'ghost'} onClick={() => setActiveSurface('board')}><Layers />OrderBlock Board</Button>
-          <Button size="sm" variant={activeSurface === 'ltp' ? 'secondary' : 'ghost'} onClick={() => setActiveSurface('ltp')}><Activity />LTP Levels</Button>
-          <Button size="sm" variant={activeSurface === 'vwap' ? 'secondary' : 'ghost'} onClick={() => setActiveSurface('vwap')}><Waves />VWAP Scan</Button>
-          <Button size="sm" variant={activeSurface === 'vwap-backtest' ? 'secondary' : 'ghost'} onClick={() => setActiveSurface('vwap-backtest')}><FlaskConical />VWAP Backtest</Button>
+          {visibleSurfaces(hiddenTabs).map((surface) => {
+            const Icon = SURFACE_ICONS[surface.id];
+            return <Button key={surface.id} size="sm" variant={activeSurface === surface.id ? 'secondary' : 'ghost'} onClick={() => setActiveSurface(surface.id)}><Icon />{surface.label}</Button>;
+          })}
+          <Button size="sm" variant={tabsMenuOpen ? 'secondary' : 'ghost'} onClick={() => setTabsMenuOpen((open) => !open)} title="Choose which tabs to show"><SlidersHorizontal />Show tabs</Button>
         </div>
+        {tabsMenuOpen ? (
+          <fieldset className="mx-auto flex w-full max-w-[1800px] flex-wrap gap-x-4 gap-y-1 px-4 pb-2 text-xs lg:px-7"><legend className="sr-only">Tabs to show</legend>
+            {SURFACES.map((surface) => <span key={surface.id} className="flex items-center gap-1.5"><input id={`show-tab-${surface.id}`} type="checkbox" checked={!hiddenTabs.includes(surface.id)} onChange={() => changeHidden(surface.id)} /><label htmlFor={`show-tab-${surface.id}`}>{surface.label}</label></span>)}
+          </fieldset>
+        ) : null}
       </nav>
 
       <section className="mx-auto max-w-[1800px] space-y-4 px-4 py-5 lg:px-7">
