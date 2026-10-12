@@ -5,6 +5,7 @@
   "compatibility_date": "2026-05-15",
   "compatibility_flags": ["nodejs_compat"],
   "workers_dev": true,
+  "preview_urls": false,
   "assets": { "directory": "../dist/client", "binding": "ASSETS" },
   // The same database the cloud recorder writes to, so the tablet sees the recorded chains and the agent journal pushed from the Mac.
   "d1_databases": [{ "binding": "DB", "database_name": "ltp-recorder", "database_id": "90c9e5d1-9583-4f8b-a8e7-15e5ebb921b9" }],
