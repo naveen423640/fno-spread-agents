@@ -9,7 +9,7 @@ import type { CallLogger, LlmClient, LlmMessage } from '@/lib/llm/types';
 import { analyzeSession } from '@/lib/ltp/analyze';
 import type { LtpStore } from '@/lib/ltp/store';
 import { istHhmm } from '@/lib/ltp/time';
-import type { DecisionRecord, JournalStore, OutcomeRow } from './journal-store';
+import type { ClosedRecord, DecisionRecord, JournalStore, OutcomeRow } from './journal-store';
 import { MISTAKE_TAGS, OUTCOME_CLASSES, type MistakeTag, type OutcomeClass } from './taxonomy';
 
 export const DEFAULT_REVIEW_MODEL = 'claude-sonnet-5-5';
@@ -100,7 +100,8 @@ export async function buildReviewInput(deps: { store: LtpStore; journal: Journal
 
 export type ReviewDayResult = { reviewed: number; failed: number; skipped?: 'no_api_key' };
 
-export async function reviewDay(deps: { store: LtpStore; journal: JournalStore; llm: LlmClient | null; model: string }, date: string): Promise<ReviewDayResult> {
+export async function reviewDay(deps: { store: LtpStore; journal: JournalStore; llm: LlmClient | null; model: string; holdout?: string[] }, date: string): Promise<ReviewDayResult> {
+  if (deps.holdout?.includes(date)) return { reviewed: 0, failed: 0 }; // the reviewer never sees holdout days
   if (!deps.llm) return { reviewed: 0, failed: 0, skipped: 'no_api_key' };
   let reviewed = 0;
   let failed = 0;
@@ -147,6 +148,14 @@ export function summarizeTrades(trades: SummaryTrade[]): WeeklySummary {
     trades: trades.length, byTag, bySetup: group((t) => t.setup), byScenario: group((t) => String(t.scenario)), byHit: group((t) => String(t.hit)), byTimeBucket: group((t) => bucketOf(t.hhmm)), byUnderlying: group((t) => t.underlying),
     byBook: { buy: book((t) => t.buy), sell: book((t) => t.sell) }, note: 'Observations only. No rule changes are proposed in the journal phase.',
   };
+}
+
+// One closed trade as the summary and the proposer see it.
+export function summaryTradeOf(r: ClosedRecord): SummaryTrade {
+  const d = r.decision;
+  const c = d.context as { scenario?: number; hit?: number; hhmm?: string };
+  const net = (book: string) => r.outcomes.find((o) => o.book === book)?.netPnl ?? null;
+  return { decisionId: d.decisionId, date: d.tradeDate, underlying: d.underlying, setup: d.setup, scenario: c.scenario ?? 0, hit: c.hit ?? 0, hhmm: c.hhmm ?? istHhmm(d.ts), buy: net('buy'), sell: net('sell'), review: r.review as Review | null };
 }
 
 export async function loadSummaryTrades(journal: JournalStore, days: string[]): Promise<SummaryTrade[]> {

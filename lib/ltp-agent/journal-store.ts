@@ -15,6 +15,9 @@ export type DecisionRecord = {
 export type TradeRow = { decisionId: string; book: Book; status: 'open' | 'closed'; openedTs: number; position: unknown };
 export type OutcomeRow = { decisionId: string; book: Book; tradeDate: string; closedTs: number; netPnl: number; outcome: ClosedTrade };
 
+export type ClosedRecord = { decision: DecisionRecord; outcomes: OutcomeRow[]; review: unknown };
+export type ClosedFilter = { version?: string; from?: string; to?: string; excludeDays?: string[] };
+
 export type JournalStore = ReturnType<typeof createJournalStore>;
 
 const parse = <T>(text: string | number | null) => JSON.parse(text as string) as T;
@@ -74,6 +77,23 @@ export function createJournalStore(db: D1Like) {
     async closedTradeCount(version: string) {
       const r = await first("SELECT COUNT(*) AS n FROM agent_decisions d WHERE d.strategy_version = ? AND d.taken = 1 AND EXISTS (SELECT 1 FROM agent_trades t WHERE t.decision_id = d.decision_id) AND NOT EXISTS (SELECT 1 FROM agent_trades t WHERE t.decision_id = d.decision_id AND t.status <> 'closed')", version);
       return (r?.n as number) ?? 0;
+    },
+    // Closed trades (a taken decision with at least one booked trade and none open), newest last. The filters run in the query: `excludeDays` is how
+    // holdout days are kept away from the reviewer and the proposer.
+    async closedTrades(filter: ClosedFilter = {}): Promise<ClosedRecord[]> {
+      const where: string[] = ["d.taken = 1", "EXISTS (SELECT 1 FROM agent_trades t WHERE t.decision_id = d.decision_id)", "NOT EXISTS (SELECT 1 FROM agent_trades t WHERE t.decision_id = d.decision_id AND t.status <> 'closed')"];
+      const bind: (string | number)[] = [];
+      if (filter.version) { where.push('d.strategy_version = ?'); bind.push(filter.version); }
+      if (filter.from) { where.push('d.trade_date >= ?'); bind.push(filter.from); }
+      if (filter.to) { where.push('d.trade_date <= ?'); bind.push(filter.to); }
+      if (filter.excludeDays?.length) { where.push(`d.trade_date NOT IN (${filter.excludeDays.map(() => '?').join(', ')})`); bind.push(...filter.excludeDays); }
+      const rows = await all(`SELECT d.* FROM agent_decisions d WHERE ${where.join(' AND ')} ORDER BY d.ts, d.decision_id`, ...bind);
+      const out: ClosedRecord[] = [];
+      for (const r of rows) {
+        const decision = toDecision(r);
+        out.push({ decision, outcomes: await this.outcomesForDecision(decision.decisionId), review: await this.reviewFor(decision.decisionId) });
+      }
+      return out;
     },
     async recordReview(decisionId: string, review: unknown, model: string) {
       await db.prepare('INSERT INTO trade_reviews (decision_id, model, review_json, created_ts) VALUES (?, ?, ?, ?)').bind(decisionId, model, JSON.stringify(review), Math.floor(Date.now() / 1000)).run();

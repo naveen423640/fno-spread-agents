@@ -3,19 +3,10 @@ import { describe, expect, it } from 'vitest';
 import type { ClosedTrade } from '@/lib/ltp-agent/books';
 import { createJournalStore, type DecisionRecord } from '@/lib/ltp-agent/journal-store';
 import { createD1Fake } from '../support/d1-fake';
+import { makeDecision } from '../support/ltp-agent-journal';
 
 const fresh = () => { const db = createD1Fake(['drizzle/0010_ltp_agent.sql']); return { db, store: createJournalStore(db) }; };
 
-export const makeDecision = (over: Partial<DecisionRecord> = {}): DecisionRecord => ({
-  decisionId: 'NSE:NIFTY50-INDEX|1791780000|coa1_reversal|long|0.1', ts: 1791780000, tradeDate: '2026-10-12', underlying: 'NSE:NIFTY50-INDEX', strategyVersion: '0.1',
-  setup: 'coa1_reversal', direction: 'long', book: 'both', taken: true, skipReason: null,
-  context: { spot: 24012, line: { low: 24000, high: 24050 }, support: { strike: 24000, status: 'strong', volumePct: 59.6, oiPct: 75.5 }, scenario: 1, hhmm: '10:42' },
-  trace: [{ rule: 'scenario_allowed', inputs: { scenario: 1 }, passed: true }],
-  reason: 'LONG NIFTY: test sentence.',
-  expectation: { entry: 24012, stop: 23900, target: 24200, plannedRiskPts: 112, rewardPts: 188, rr: 1.68 },
-  dataQuality: { snapshotAgeSeconds: 2, historyFrom: '09:47', gaps: 0 },
-  ...over,
-});
 const closed = (net: number, book: 'buy' | 'sell' = 'buy'): ClosedTrade => ({
   book, underlying: 'NSE:NIFTY50-INDEX', direction: 'long', date: '2026-10-12', openedTs: 1791780000, closedTs: 1791781500, qty: 65, legs: [],
   grossPnl: net + 60, charges: { brokerage: 40, stt: 10, exchange: 5, sebi: 0.01, gst: 5, stamp: 0.2, total: 60 }, netPnl: net, plannedRiskInr: 6000, rMultiple: net / 6000,

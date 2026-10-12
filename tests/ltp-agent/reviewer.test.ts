@@ -116,6 +116,13 @@ describe('reviewDay reviews each closed trade of the day once', () => {
     expect(built.path[3].spot).toBe(24260);
     for (const key of ['supportVolumePct', 'supportOiPct', 'resistanceVolumePct', 'resistanceOiPct', 'ceOiAtResistance', 'peOiAtSupport']) expect(built.path[0]).toHaveProperty(key);
   });
+  it('a holdout day is never reviewed: no model call, nothing stored', async () => {
+    const { store, journal } = await tradedDay();
+    const { llm, calls } = fakeLlm([JSON.stringify(good)]);
+    expect(await reviewDay({ store, journal, llm, model: 'm', holdout: [DAY] }, DAY)).toEqual({ reviewed: 0, failed: 0 });
+    expect(calls).toHaveLength(0);
+    expect(await journal.reviewFor((await journal.decisionsForDay(DAY))[0].decisionId)).toBeNull();
+  });
   it('an already-reviewed trade is not reviewed again', async () => {
     const { store, journal } = await tradedDay();
     const { llm, calls } = fakeLlm([JSON.stringify(good)]);
