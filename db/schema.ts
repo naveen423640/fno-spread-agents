@@ -348,6 +348,9 @@ export const ltpSnapshots = sqliteTable('ltp_snapshots', {
   step: real('step').notNull(),
   fetchLatencyMs: integer('fetch_latency_ms'),
   flags: text('flags').notNull().default(''),
+  bid: real('bid'),
+  ask: real('ask'),
+  futures: real('futures'),
 }, (table) => [primaryKey({ columns: [table.underlying, table.expiry, table.snapshotTs, table.strike, table.side] }), index('ltp_snapshots_day').on(table.tradeDate, table.underlying, table.snapshotTs)]);
 
 export const recorderGaps = sqliteTable('recorder_gaps', {

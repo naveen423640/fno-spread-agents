@@ -11,7 +11,7 @@ import { createD1Fake } from '../support/d1-fake';
 const U = 'NSE:NIFTY50-INDEX';
 const DAY = '2026-10-12';
 const none = new Set<string>();
-const fresh = () => createLtpStore(createD1Fake(['drizzle/0008_ltp.sql']));
+const fresh = () => createLtpStore(createD1Fake(['drizzle/0008_ltp.sql', 'drizzle/0009_ltp_bidask.sql']));
 function usable(r: LtpState): UsableAnalysis {
   if (r.empty || r.analysis.empty || !r.analysis.usable) throw new Error('expected usable levels');
   return r.analysis;

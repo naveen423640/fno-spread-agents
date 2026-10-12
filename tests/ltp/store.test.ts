@@ -7,7 +7,7 @@ import { makeChain } from '../support/ltp-chain';
 import { syntheticDay } from '../support/ltp-day';
 import { createD1Fake } from '../support/d1-fake';
 
-const fresh = () => createLtpStore(createD1Fake(['drizzle/0008_ltp.sql']));
+const fresh = () => createLtpStore(createD1Fake(['drizzle/0008_ltp.sql', 'drizzle/0009_ltp_bidask.sql']));
 const at = (date: string, hhmm: string) => istTs(date, hhmm);
 
 describe('snapshots', () => {
@@ -107,5 +107,20 @@ describe('gaps, frozen lines, weekly ranges and calibration', () => {
     const [e] = await store.calibrationEntries('NSE:NIFTY50-INDEX');
     expect(e).toMatchObject({ id: 'a', label: 'EOS', actual: 23860, proxies: { writer_breakeven: 23862.5, time_value_only: 23850 } });
     expect(await store.calibrationEntries('NSE:NIFTYBANK-INDEX')).toEqual([]);
+  });
+});
+
+describe('quotes and futures price', () => {
+  it('bid, ask and futures price round-trip, and a row stored without them reads back as no quote', async () => {
+    const store = fresh();
+    const s = makeChain({ spot: 24037, step: 50, ts: at('2026-10-12', '09:15'), strikes: [24000, 24050] });
+    s.futures = 24090.5;
+    s.rows[0] = { ...s.rows[0], bid: 10.1, ask: 10.2 };
+    await store.insertSnapshot(s);
+    const back = (await store.snapshotsForDay(s.underlying, '2026-10-12'))[0];
+    expect(back.futures).toBe(24090.5);
+    expect(back.rows[0]).toMatchObject({ bid: 10.1, ask: 10.2 });
+    expect(back.rows[1].bid).toBeUndefined();
+    expect(back.rows[1].ask).toBeUndefined();
   });
 });

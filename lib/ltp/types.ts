@@ -6,16 +6,17 @@ export type Status = 'strong' | 'wtt' | 'wtb';
 export type LevelSide = 'support' | 'resistance';
 
 // One strike on one side. A field the feed did not give is null (never zero) and its name is in `flags`.
-export type ChainRow = { strike: number; side: Side; ltp: number | null; oi: number | null; oiChange: number | null; volume: number | null; flags: string[] };
+// `bid` and `ask` are left out when the market had no quote (a zero from FYERS means none); the row then carries the flag `no_quote`.
+export type ChainRow = { strike: number; side: Side; ltp: number | null; oi: number | null; oiChange: number | null; volume: number | null; bid?: number; ask?: number; flags: string[] };
 
 // One option chain at one moment. `ts` is unix seconds (the time we fetched it), `step` the derived strike step.
-export type Snapshot = { ts: number; underlying: string; expiry: string; spot: number; step: number; fetchLatencyMs: number | null; rows: ChainRow[] };
+export type Snapshot = { ts: number; underlying: string; expiry: string; spot: number; step: number; fetchLatencyMs: number | null; futures?: number; rows: ChainRow[] };
 
-export type CellField = Metric | 'ltp' | 'oiChange';
+export type CellField = Metric | 'ltp' | 'oiChange' | 'bid' | 'ask';
 
 export function valueAt(snapshot: Snapshot, strike: number, side: Side, field: CellField): number | null {
   const row = snapshot.rows.find((r) => r.strike === strike && r.side === side);
-  return row ? row[field] : null;
+  return row ? (row[field] ?? null) : null;
 }
 
 export const strikesOf = (snapshot: Snapshot): number[] => [...new Set(snapshot.rows.map((r) => r.strike))].sort((a, b) => a - b);

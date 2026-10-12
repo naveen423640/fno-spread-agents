@@ -128,3 +128,36 @@ describe('deriveStep and nearestExpiry', () => {
     expect(nearestExpiry(list, istTs('2026-10-13', '15:31', 0))).toBe('2026-10-19');
   });
 });
+
+describe('parseChain keeps the quotes (bid, ask) and the futures price', () => {
+  it('a leg with a real quote keeps bid and ask: NIFTY 22350 PE is 21.2 / 21.25', () => {
+    const r = parseChain(fixture('nifty'), ctx('NSE:NIFTY50-INDEX'));
+    if (!r.ok) throw new Error(r.message);
+    expect(valueAt(r.snapshot, 22350, 'PE', 'bid')).toBe(21.2);
+    expect(valueAt(r.snapshot, 22350, 'PE', 'ask')).toBe(21.25);
+  });
+
+  it('a zero bid or ask means no market: the quote is left out (not stored as 0) and the row carries no_quote', () => {
+    const raw = fixture('nifty');
+    const leg = raw.data.optionsChain.find((l) => l.option_type === 'PE')!;
+    leg.bid = 0; leg.ask = 0;
+    const r = parseChain(raw, ctx('NSE:NIFTY50-INDEX'));
+    if (!r.ok) throw new Error(r.message);
+    const row = r.snapshot.rows.find((x) => x.strike === leg.strike_price && x.side === 'PE')!;
+    expect(valueAt(r.snapshot, row.strike, 'PE', 'bid')).toBeNull();
+    expect(valueAt(r.snapshot, row.strike, 'PE', 'ask')).toBeNull();
+    expect(row.flags).toContain('no_quote');
+    expect(r.missing).toEqual([]); // a missing quote is flagged on the row, it is not a missing chain field
+  });
+
+  it('the futures price comes from the index row (fp) and is left out when the response has none', () => {
+    const r = parseChain(fixture('nifty'), ctx('NSE:NIFTY50-INDEX'));
+    if (!r.ok) throw new Error(r.message);
+    expect(r.snapshot.futures).toBe(22665.7);
+    const raw = fixture('nifty');
+    for (const l of raw.data.optionsChain) delete l.fp;
+    const bare = parseChain(raw, ctx('NSE:NIFTY50-INDEX'));
+    if (!bare.ok) throw new Error(bare.message);
+    expect(bare.snapshot.futures).toBeUndefined();
+  });
+});

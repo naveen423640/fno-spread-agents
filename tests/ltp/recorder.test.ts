@@ -25,7 +25,7 @@ function fake(over: Record<string, unknown> = {}) {
 }
 // A clock that moves forward 150 ms each time it is read, so the measured latency is 150.
 const ticking = (start: number) => { let t = start; return () => { const d = new Date(t); t += 150; return d; }; };
-const fresh = () => createLtpStore(createD1Fake(['drizzle/0008_ltp.sql']));
+const fresh = () => createLtpStore(createD1Fake(['drizzle/0008_ltp.sql', 'drizzle/0009_ltp_bidask.sql']));
 const deps = (store: ReturnType<typeof fresh>, source: ChainSource, now: () => Date, extra = {}) => ({ adapter: source, store, now, underlyings: UNDERLYINGS, strikecount: 20, holidays: none, ...extra });
 
 describe('isRecordingMinute', () => {

@@ -10,7 +10,15 @@ export function applyMigrations(databaseFile, migrationsDir = 'drizzle') {
   const files = readdirSync(migrationsDir).filter((name) => name.endsWith('.sql')).sort();
   const db = new DatabaseSync(databaseFile);
   try {
-    for (const name of files) db.exec(readFileSync(join(migrationsDir, name), 'utf8'));
+    for (const name of files) {
+      try {
+        db.exec(readFileSync(join(migrationsDir, name), 'utf8'));
+      } catch (error) {
+        // Every file is re-run on each call. An ALTER TABLE ADD COLUMN file that was already applied fails on its first statement with
+        // this message and has nothing left to do, so that one error is not a failure.
+        if (!(error instanceof Error && /duplicate column name/i.test(error.message))) throw error;
+      }
+    }
   } finally {
     db.close();
   }

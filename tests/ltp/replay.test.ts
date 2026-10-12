@@ -9,7 +9,7 @@ import { syntheticDay } from '../support/ltp-day';
 
 const U = 'NSE:NIFTY50-INDEX';
 async function storeWith(count: number) {
-  const store = createLtpStore(createD1Fake(['drizzle/0008_ltp.sql']));
+  const store = createLtpStore(createD1Fake(['drizzle/0008_ltp.sql', 'drizzle/0009_ltp_bidask.sql']));
   for (const s of syntheticDay('2026-10-12').slice(0, count)) await store.insertSnapshot(s);
   return store;
 }

@@ -9,8 +9,8 @@ type Raw = Record<string, string | number | null>;
 export type Gap = { underlying: string; minuteTs: number; reason: string; detail?: string };
 export type CalibrationEntry = { id: string; underlying: string; entryTs: number; label: string; actual: number; snapshotTs: number; proxies: Record<string, number | null> };
 
-const COLUMNS = ['underlying', 'expiry', 'snapshot_ts', 'trade_date', 'strike', 'side', 'ltp', 'oi', 'oi_change', 'volume', 'spot', 'step', 'fetch_latency_ms', 'flags'];
-const ROWS_PER_INSERT = 7; // 7 x 14 = 98 bound values, under D1's limit of 100 per statement
+const COLUMNS = ['underlying', 'expiry', 'snapshot_ts', 'trade_date', 'strike', 'side', 'ltp', 'oi', 'oi_change', 'volume', 'spot', 'step', 'fetch_latency_ms', 'flags', 'bid', 'ask', 'futures'];
+const ROWS_PER_INSERT = 5; // 5 x 17 = 85 bound values, under D1's limit of 100 per statement
 
 export type LtpStore = {
   insertSnapshot(s: Snapshot): Promise<{ inserted: number }>;
@@ -30,9 +30,12 @@ export type LtpStore = {
   calibrationEntries(underlying: string): Promise<CalibrationEntry[]>;
 };
 
-const toRow = (r: Raw): { snapshotTs: number; expiry: string; underlying: string; spot: number; step: number; latency: number | null; row: ChainRow } => ({
-  snapshotTs: r.snapshot_ts as number, expiry: r.expiry as string, underlying: r.underlying as string, spot: r.spot as number, step: r.step as number, latency: (r.fetch_latency_ms as number | null) ?? null,
-  row: { strike: r.strike as number, side: r.side as Side, ltp: (r.ltp as number | null) ?? null, oi: (r.oi as number | null) ?? null, oiChange: (r.oi_change as number | null) ?? null, volume: (r.volume as number | null) ?? null, flags: (r.flags as string) ? (r.flags as string).split(',') : [] },
+const toRow = (r: Raw): { snapshotTs: number; expiry: string; underlying: string; spot: number; step: number; latency: number | null; futures: number | null; row: ChainRow } => ({
+  snapshotTs: r.snapshot_ts as number, expiry: r.expiry as string, underlying: r.underlying as string, spot: r.spot as number, step: r.step as number, latency: (r.fetch_latency_ms as number | null) ?? null, futures: (r.futures as number | null) ?? null,
+  row: {
+    strike: r.strike as number, side: r.side as Side, ltp: (r.ltp as number | null) ?? null, oi: (r.oi as number | null) ?? null, oiChange: (r.oi_change as number | null) ?? null, volume: (r.volume as number | null) ?? null,
+    ...(typeof r.bid === 'number' ? { bid: r.bid } : {}), ...(typeof r.ask === 'number' ? { ask: r.ask } : {}), flags: (r.flags as string) ? (r.flags as string).split(',') : [],
+  },
 });
 
 function group(rows: Raw[]): Snapshot[] {
@@ -40,7 +43,7 @@ function group(rows: Raw[]): Snapshot[] {
   for (const raw of rows) {
     const x = toRow(raw);
     const key = `${x.snapshotTs}|${x.expiry}`;
-    const snap = map.get(key) ?? { ts: x.snapshotTs, underlying: x.underlying, expiry: x.expiry, spot: x.spot, step: x.step, fetchLatencyMs: x.latency, rows: [] };
+    const snap = map.get(key) ?? { ts: x.snapshotTs, underlying: x.underlying, expiry: x.expiry, spot: x.spot, step: x.step, fetchLatencyMs: x.latency, ...(x.futures !== null ? { futures: x.futures } : {}), rows: [] };
     snap.rows.push(x.row);
     map.set(key, snap);
   }
@@ -58,7 +61,7 @@ export function createLtpStore(db: D1Like): LtpStore {
       for (let i = 0; i < s.rows.length; i += ROWS_PER_INSERT) {
         const group = s.rows.slice(i, i + ROWS_PER_INSERT);
         const marks = group.map(() => `(${COLUMNS.map(() => '?').join(', ')})`).join(', ');
-        const values = group.flatMap((r) => [s.underlying, s.expiry, s.ts, date, r.strike, r.side, r.ltp, r.oi, r.oiChange, r.volume, s.spot, s.step, s.fetchLatencyMs, r.flags.join(',')]);
+        const values = group.flatMap((r) => [s.underlying, s.expiry, s.ts, date, r.strike, r.side, r.ltp, r.oi, r.oiChange, r.volume, s.spot, s.step, s.fetchLatencyMs, r.flags.join(','), r.bid ?? null, r.ask ?? null, s.futures ?? null]);
         await db.prepare(`INSERT OR IGNORE INTO ltp_snapshots (${COLUMNS.join(', ')}) VALUES ${marks}`).bind(...values).run();
       }
       return { inserted: (await count()) - before };

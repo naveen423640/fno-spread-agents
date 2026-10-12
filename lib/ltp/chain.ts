@@ -68,6 +68,12 @@ export function parseChain(raw: unknown, ctx: ParseContext): ParseOk | ParseFail
       row[field] = v;
       if (v === null) { row.flags.push(field); missing.push(`${side} ${strike} ${field}`); }
     }
+    // A zero bid or ask is FYERS saying there is no market on that side, so it is left out and flagged rather than stored as a price of 0.
+    const bid = num(leg.bid);
+    const ask = num(leg.ask);
+    if (bid !== null && bid > 0) row.bid = bid;
+    if (ask !== null && ask > 0) row.ask = ask;
+    if (row.bid === undefined || row.ask === undefined) row.flags.push('no_quote');
     rows.push(row);
   }
 
@@ -79,5 +85,8 @@ export function parseChain(raw: unknown, ctx: ParseContext): ParseOk | ParseFail
   const first = expiryList[0] ? toIso(expiryList[0]) : null;
   if (first && first !== expiry) warnings.push(`the chain's own expiry list starts at ${first} but ${expiry} is the nearest from today`);
 
-  return { ok: true, snapshot: { ts: ctx.snapshotTs, underlying: ctx.underlying, expiry, spot: num(spotLeg.ltp)!, step, fetchLatencyMs: ctx.latencyMs, rows }, warnings, missing };
+  const fp = num(spotLeg.fp);
+  const snapshot: Snapshot = { ts: ctx.snapshotTs, underlying: ctx.underlying, expiry, spot: num(spotLeg.ltp)!, step, fetchLatencyMs: ctx.latencyMs, rows };
+  if (fp !== null && fp > 0) snapshot.futures = fp; // the index row's `fp` is the futures price
+  return { ok: true, snapshot, warnings, missing };
 }
