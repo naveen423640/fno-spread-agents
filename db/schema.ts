@@ -436,3 +436,10 @@ export const agentState = sqliteTable('agent_state', {
   key: text('key').primaryKey(),
   value: text('value').notNull(),
 }, () => []);
+
+export const agentStrategies = sqliteTable('agent_strategies', {
+  version: text('version').primaryKey(),
+  yaml: text('yaml').notNull(),
+  changelog: text('changelog').notNull(),
+  createdTs: integer('created_ts').notNull(),
+}, () => []);

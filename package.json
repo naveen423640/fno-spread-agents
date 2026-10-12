@@ -20,7 +20,9 @@
     "vwap:index": "tsx --env-file-if-exists=.env.local scripts/vwap-index.ts",
     "ltp:record-once": "tsx scripts/ltp-recorder.ts record-once",
     "ltp:record": "tsx scripts/ltp-recorder.ts run",
-    "ltp:replay": "tsx scripts/ltp-recorder.ts replay"
+    "ltp:replay": "tsx scripts/ltp-recorder.ts replay",
+    "agent-run": "tsx scripts/ltp-agent.ts run",
+    "agent-replay": "tsx scripts/ltp-agent.ts replay"
   },
   "dependencies": {
     "@base-ui/react": "1.7.0",

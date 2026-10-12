@@ -30,7 +30,7 @@ export function reasonText(c: Candidate, a: UsableAnalysis): string {
   const name = NAMES[a.underlying] ?? a.underlying;
   const input = (rule: string) => c.trace.find((s) => s.rule === rule)?.inputs ?? {};
   const time = istHhmm(a.asOf);
-  const scenario = `COA-1 scenario ${c.scenario} (${STATUS[a.strength.support.status]}/${STATUS[a.strength.resistance.status]})`;
+  const scenario = `COA-1 scenario ${c.scenario} (${STATUS[a.strength.support.status]}/${STATUS[a.strength.resistance.status]}; directions ${a.direction.support.current}/${a.direction.resistance.current})`;
   const touch = `spot ${fmt(a.spot)} touched ${c.level.label} ${fmt(c.level.value)} (proxy: ${a.method.label}) on hit #${c.hit}`;
   if (!c.taken) {
     const failed = c.trace[c.trace.length - 1];

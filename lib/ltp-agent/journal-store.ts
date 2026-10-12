@@ -60,6 +60,16 @@ export function createJournalStore(db: D1Like) {
       const rows = await all('SELECT * FROM trade_outcomes WHERE decision_id = ? ORDER BY book', decisionId);
       return rows.map((r) => ({ decisionId: r.decision_id as string, book: r.book as Book, tradeDate: r.trade_date as string, closedTs: r.closed_ts as number, netPnl: r.net_pnl as number, outcome: parse<ClosedTrade>(r.outcome_json) }));
     },
+    async outcomesForDay(date: string): Promise<OutcomeRow[]> {
+      const rows = await all('SELECT * FROM trade_outcomes WHERE trade_date = ? ORDER BY closed_ts, decision_id, book', date);
+      return rows.map((r) => ({ decisionId: r.decision_id as string, book: r.book as Book, tradeDate: r.trade_date as string, closedTs: r.closed_ts as number, netPnl: r.net_pnl as number, outcome: parse<ClosedTrade>(r.outcome_json) }));
+    },
+    async saveStrategy(version: string, yaml: string, changelog: string) {
+      await db.prepare('INSERT INTO agent_strategies (version, yaml, changelog, created_ts) VALUES (?, ?, ?, ?)').bind(version, yaml, changelog, Math.floor(Date.now() / 1000)).run();
+    },
+    async strategyYaml(version: string) {
+      return ((await first('SELECT yaml FROM agent_strategies WHERE version = ?', version))?.yaml as string | undefined) ?? null;
+    },
     // A closed trade: a taken decision that has at least one booked trade and no trade still open.
     async closedTradeCount(version: string) {
       const r = await first("SELECT COUNT(*) AS n FROM agent_decisions d WHERE d.strategy_version = ? AND d.taken = 1 AND EXISTS (SELECT 1 FROM agent_trades t WHERE t.decision_id = d.decision_id) AND NOT EXISTS (SELECT 1 FROM agent_trades t WHERE t.decision_id = d.decision_id AND t.status <> 'closed')", version);

@@ -60,3 +60,12 @@ CREATE TABLE IF NOT EXISTS agent_state (
   key TEXT PRIMARY KEY,
   value TEXT NOT NULL
 );
+
+-- Strategy versions as text. The app cannot read files at run time, so the active strategy comes from here (seeded from the bundled v0.1);
+-- the strategies/ folder holds the committed copies.
+CREATE TABLE IF NOT EXISTS agent_strategies (
+  version TEXT PRIMARY KEY,
+  yaml TEXT NOT NULL,
+  changelog TEXT NOT NULL,
+  created_ts INTEGER NOT NULL
+);

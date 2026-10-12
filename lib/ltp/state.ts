@@ -35,6 +35,18 @@ const cell = (s: Snapshot, strike: number, side: 'CE' | 'PE'): Cell | null => {
   return r ? { ltp: r.ltp, oi: r.oi, oiChange: r.oiChange, volume: r.volume } : null;
 };
 
+// The weekly range comes from the first stored day of the current expiry (the first day of the expiry week we have data for), saved once.
+export async function weeklyFor(store: LtpStore, underlying: string, expiry: string, opts: { save?: boolean } = {}): Promise<{ weekly: WeeklyFromSnapshots | null; weeklyWeekStart: string | null }> {
+  const weeklyWeekStart = await store.firstDateForExpiry(underlying, expiry);
+  if (!weeklyWeekStart) return { weekly: null, weeklyWeekStart: null };
+  let weekly = (await store.getWeekly(weeklyWeekStart, underlying)) as WeeklyFromSnapshots | null;
+  if (!weekly) {
+    weekly = weeklyRangeFromSnapshots(await store.snapshotsForDay(underlying, weeklyWeekStart));
+    if (weekly && opts.save !== false) await store.saveWeekly(weeklyWeekStart, underlying, weekly);
+  }
+  return { weekly, weeklyWeekStart };
+}
+
 export async function buildState(store: LtpStore, opts: StateOptions): Promise<LtpState> {
   const { underlying, nowTs } = opts;
   const h = await health(store, nowTs, UNDERLYINGS, opts.holidays);
@@ -56,16 +68,7 @@ export async function buildState(store: LtpStore, opts: StateOptions): Promise<L
     if (lines0920 && !(await store.getLines0920(date, underlying))) await store.saveLines0920(date, underlying, lines0920);
   }
 
-  // The weekly range comes from the first stored day of the current expiry (the first day of the expiry week we have data for), saved once.
-  const weeklyWeekStart = await store.firstDateForExpiry(underlying, last.expiry);
-  let weekly: WeeklyFromSnapshots | null = null;
-  if (weeklyWeekStart) {
-    weekly = (await store.getWeekly(weeklyWeekStart, underlying)) as WeeklyFromSnapshots | null;
-    if (!weekly) {
-      weekly = weeklyRangeFromSnapshots(await store.snapshotsForDay(underlying, weeklyWeekStart));
-      if (weekly) await store.saveWeekly(weeklyWeekStart, underlying, weekly);
-    }
-  }
+  const { weekly, weeklyWeekStart } = await weeklyFor(store, underlying, last.expiry);
 
   let chain: ChainView[] = [];
   if (analysis.empty === false && analysis.usable) {

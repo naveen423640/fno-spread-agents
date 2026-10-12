@@ -14,21 +14,24 @@ const textFor = (opts: FakeOpts, ctx = idle) => { const a = fakeAnalysis(opts); 
 describe('reasonText is a deterministic sentence built only from the rule trace', () => {
   it('a taken long, in the shape of the brief', () => {
     expect(textFor({ spot: 24012, spots: [24092, 24012] })).toBe(
-      'LONG NIFTY: COA-1 scenario 1 (Strong/Strong); spot 24,012 touched EOS 24,010 (proxy: test) on hit #1; COA-2 = Stable/Increasing agrees; no opposing SOC; 10:42 inside window. SL 23,900, target 24,200, planned risk 112 pts.',
+      'LONG NIFTY: COA-1 scenario 1 (Strong/Strong; directions neutral/neutral); spot 24,012 touched EOS 24,010 (proxy: test) on hit #1; COA-2 = Stable/Increasing agrees; no opposing SOC; 10:42 inside window. SL 23,900, target 24,200, planned risk 112 pts.',
     );
   });
   it('a taken short names the weak side and its scenario', () => {
     expect(textFor({ support: 'strong', resistance: 'wtt', spot: 24173, spots: [24120, 24173] })).toBe(
-      'SHORT NIFTY: COA-1 scenario 3 (Strong/WTT); spot 24,173 touched WTT-1 24,175 (proxy: test) on hit #1; COA-2 = Stable/Increasing disagrees (logged only); no opposing SOC; 10:42 inside window. SL 24,310, target 24,010, planned risk 137 pts.',
+      'SHORT NIFTY: COA-1 scenario 3 (Strong/WTT; directions neutral/neutral); spot 24,173 touched WTT-1 24,175 (proxy: test) on hit #1; COA-2 = Stable/Increasing disagrees (logged only); no opposing SOC; 10:42 inside window. SL 24,310, target 24,010, planned risk 137 pts.',
     );
   });
   it('a skip leads with the first failed rule in plain words', () => {
     expect(textFor({ support: 'wtb', resistance: 'wtb', spot: 24012, spots: [24092, 24012] })).toBe(
-      'SKIPPED LONG NIFTY: scenario 6 does not allow longs; COA-1 scenario 6 (WTB/WTB); spot 24,012 touched EOS 24,010 (proxy: test) on hit #1; 10:42.',
+      'SKIPPED LONG NIFTY: scenario 6 does not allow longs; COA-1 scenario 6 (WTB/WTB; directions neutral/neutral); spot 24,012 touched EOS 24,010 (proxy: test) on hit #1; 10:42.',
     );
     expect(textFor({ hhmm: '09:25', spot: 24012, spots: [24092, 24012] })).toBe(
-      'SKIPPED LONG NIFTY: 09:25 is outside the 09:30 to 14:45 window; COA-1 scenario 1 (Strong/Strong); spot 24,012 touched EOS 24,010 (proxy: test) on hit #1; 09:25.',
+      'SKIPPED LONG NIFTY: 09:25 is outside the 09:30 to 14:45 window; COA-1 scenario 1 (Strong/Strong; directions neutral/neutral); spot 24,012 touched EOS 24,010 (proxy: test) on hit #1; 09:25.',
     );
+  });
+  it('names the side directions the scenario was picked from, since they can differ from the statuses', () => {
+    expect(textFor({ support: 'strong', resistance: 'wtb', supportDirection: 'bearish', resistanceDirection: 'bearish', spot: 23962, spots: [24092, 23962] })).toContain('COA-1 scenario 2 (Strong/WTB; directions bearish/bearish);');
   });
   it('each skip rule has its own wording', () => {
     const a = fakeAnalysis({ spot: 24012, spots: [24092, 24012] });
