@@ -19,6 +19,7 @@ export type LtpStore = {
   lastSnapshotTs(underlying: string): Promise<number | null>;
   latestDate(underlying: string): Promise<string | null>;
   countForDay(underlying: string, date: string): Promise<number>;
+  firstDateForExpiry(underlying: string, expiry: string): Promise<string | null>;
   addGap(g: Gap): Promise<void>;
   gapsForDay(date: string): Promise<Required<Gap>[]>;
   saveLines0920(date: string, underlying: string, lines: unknown): Promise<void>;
@@ -80,6 +81,9 @@ export function createLtpStore(db: D1Like): LtpStore {
     },
     async countForDay(underlying, date) {
       return ((await one('SELECT COUNT(DISTINCT snapshot_ts) AS n FROM ltp_snapshots WHERE underlying = ? AND trade_date = ?', underlying, date))?.n as number) ?? 0;
+    },
+    async firstDateForExpiry(underlying, expiry) {
+      return ((await one('SELECT MIN(trade_date) AS d FROM ltp_snapshots WHERE underlying = ? AND expiry = ?', underlying, expiry))?.d as string | null) ?? null;
     },
     async addGap(g) {
       await db.prepare('INSERT OR IGNORE INTO recorder_gaps (underlying, minute_ts, trade_date, reason, detail) VALUES (?, ?, ?, ?, ?)').bind(g.underlying, g.minuteTs, istDate(g.minuteTs), g.reason, g.detail ?? '').run();
