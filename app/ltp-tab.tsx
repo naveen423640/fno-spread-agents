@@ -196,6 +196,7 @@ export function LtpTab() {
               <Section title="9:20 lines (frozen)" note="Computed once from the first snapshot at or after 09:20 and never changed. Display only: nothing is traded. Entries and targets are proxies.">
                 {state.lines0920 ? (
                   <div className="grid gap-3 sm:grid-cols-2">
+                    {state.lines0920.delaySeconds > 120 ? <p className="rounded-md bg-amber-500/10 px-3 py-1.5 text-xs sm:col-span-2">Late: the first snapshot at or after 09:20 was {clock(state.lines0920.snapshotTs)} ({Math.round(state.lines0920.delaySeconds / 60)} min late), so these are not true 09:20 lines.</p> : null}
                     {(['risky', 'moderate'] as const).map((p) => (
                       <div key={p} className="rounded-lg border border-border bg-card p-3 text-xs">
                         <div className="mb-1 text-[11px] font-medium capitalize text-muted-foreground">{p} profile · from {clock(state.lines0920!.snapshotTs)}</div>
