@@ -332,3 +332,50 @@ export const vwapM5Month = sqliteTable('vwap_m5_month', {
   through: text('through').notNull(),
   candlesJson: text('candles_json').notNull(),
 }, (table) => [primaryKey({ columns: [table.symbol, table.month] })]);
+
+export const ltpSnapshots = sqliteTable('ltp_snapshots', {
+  underlying: text('underlying').notNull(),
+  expiry: text('expiry').notNull(),
+  snapshotTs: integer('snapshot_ts').notNull(),
+  tradeDate: text('trade_date').notNull(),
+  strike: real('strike').notNull(),
+  side: text('side').notNull(),
+  ltp: real('ltp'),
+  oi: real('oi'),
+  oiChange: real('oi_change'),
+  volume: real('volume'),
+  spot: real('spot').notNull(),
+  step: real('step').notNull(),
+  fetchLatencyMs: integer('fetch_latency_ms'),
+  flags: text('flags').notNull().default(''),
+}, (table) => [primaryKey({ columns: [table.underlying, table.expiry, table.snapshotTs, table.strike, table.side] }), index('ltp_snapshots_day').on(table.tradeDate, table.underlying, table.snapshotTs)]);
+
+export const recorderGaps = sqliteTable('recorder_gaps', {
+  underlying: text('underlying').notNull(),
+  minuteTs: integer('minute_ts').notNull(),
+  tradeDate: text('trade_date').notNull(),
+  reason: text('reason').notNull(),
+  detail: text('detail').notNull().default(''),
+}, (table) => [primaryKey({ columns: [table.underlying, table.minuteTs] })]);
+
+export const ltpLines0920 = sqliteTable('ltp_lines_0920', {
+  tradeDate: text('trade_date').notNull(),
+  underlying: text('underlying').notNull(),
+  json: text('json').notNull(),
+}, (table) => [primaryKey({ columns: [table.tradeDate, table.underlying] })]);
+
+export const ltpWeeklyRange = sqliteTable('ltp_weekly_range', {
+  weekStart: text('week_start').notNull(),
+  underlying: text('underlying').notNull(),
+  json: text('json').notNull(),
+}, (table) => [primaryKey({ columns: [table.weekStart, table.underlying] })]);
+
+export const ltpCalibration = sqliteTable('ltp_calibration', {
+  id: text('id').primaryKey(),
+  underlying: text('underlying').notNull(),
+  entryTs: integer('entry_ts').notNull(),
+  label: text('label').notNull(),
+  actual: real('actual').notNull(),
+  snapshotTs: integer('snapshot_ts').notNull(),
+  proxiesJson: text('proxies_json').notNull(),
+});
