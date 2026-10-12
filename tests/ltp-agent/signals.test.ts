@@ -234,6 +234,17 @@ describe('every rule is the first failure somewhere, and the trace stops there',
     failing(only(run({ spot: 24012, spots: approaches(3) })), 'hit_number');
     expect(only(run({ spot: 24012, spots: approaches(2) }))).toMatchObject({ taken: true, hit: 2 });
   });
+  it('hit_number: a level that moved is a new level, so only the touches since its side last moved count', () => {
+    const approaches = (n: number) => Array.from({ length: n }, () => [24100, 24012]).flat();
+    // EOS belongs to the support side: it moved at minute 4, after two approaches, so the third approach is the first touch of the new level.
+    expect(only(run({ spot: 24012, spots: approaches(3), shiftedAt: { support: 4 } }))).toMatchObject({ taken: true, hit: 1 });
+    expect(only(run({ spot: 24012, spots: approaches(3), shiftedAt: { support: 2 } }))).toMatchObject({ taken: true, hit: 2 }); // moved after one approach
+    failing(only(run({ spot: 24012, spots: approaches(4), shiftedAt: { support: 2 } })), 'hit_number');
+    // the other side moving does not reset it
+    failing(only(run({ spot: 24012, spots: approaches(3), shiftedAt: { resistance: 4 } })), 'hit_number');
+    // a short (EOR, resistance side) resets with the resistance side
+    expect(only(run({ ...atEor, spots: [24120, 24198, 24120, 24198, 24120, 24198], shiftedAt: { resistance: 4 } }))).toMatchObject({ taken: true, hit: 1 });
+  });
   it('coa2_agree: only enforced when the strategy asks for it; always logged', () => {
     const disagree = { coa2: { result: { status: 'ok' as const, number: 3, outcome: 'Reversal at resistance; support will break' } } };
     const noted = only(run({ ...atEos, ...disagree }));

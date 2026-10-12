@@ -134,7 +134,10 @@ function build(a: UsableAnalysis, strategy: Strategy, ctx: EvalContext, mode: 't
 
   function judge(r: Raw): Candidate {
     const inBand = Math.abs(spot - r.level.value) <= tol;
-    const hit = countHits(spots, r.level.value, tol) + (mode === 'watch' && !inBand ? 1 : 0);
+    // A level that moved is a new level: only the touches since its side's strike last moved count (support side for longs, resistance side for shorts).
+    const sideEvents = a.direction[r.direction === 'long' ? 'support' : 'resistance'].events;
+    const movedAt = sideEvents.reduce((t, e, i) => (i > 0 && e.strike !== sideEvents[i - 1].strike ? e.ts : t), 0);
+    const hit = countHits(a.series.spot.filter((p) => p.ts >= movedAt).map((p) => p.spot), r.level.value, tol) + (mode === 'watch' && !inBand ? 1 : 0);
     const entry = mode === 'watch' ? r.level.value : spot;
     // The Detailed Chart gives no top (Bull Run) or no bottom (Blood Bath) in some pairs: that side has no trade whatever the strategy table says.
     const hasLevel = (r.direction === 'long' ? scenario.bottom : scenario.top) !== null;

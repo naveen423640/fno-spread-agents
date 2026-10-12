@@ -21,6 +21,8 @@ export const DIVERSIONS = {
 export type FakeOpts = {
   step?: number; date?: string; hhmm?: string; underlying?: string; spot?: number; spots?: number[];
   support?: Status; resistance?: Status; pressure?: { support: Pressure; resistance: Pressure }; soc?: UsableAnalysis['soc']; coa2?: Partial<UsableAnalysis['coa2']>;
+  // Minute index (into spots) at which a side's strike last moved: gives that side two events, a strike at minute 0 and a new one at this minute.
+  shiftedAt?: { support?: number; resistance?: number };
   lines?: Lines0920 | null; missing?: (keyof typeof EXT)[]; supportDirection?: 'bullish' | 'bearish' | 'neutral'; resistanceDirection?: 'bullish' | 'bearish' | 'neutral';
 };
 
@@ -39,8 +41,9 @@ export function fakeAnalysis(o: FakeOpts = {}): UsableAnalysis {
   const pr = o.pressure ?? { support: pressure(o.support ?? 'strong'), resistance: pressure(o.resistance ?? 'strong') };
   const scenario = selectDetailed(pr.support, pr.resistance, o.support ?? 'strong', o.resistance ?? 'strong');
   const { top, bottom } = scenarioLevels(scenario, e);
-  const dir = (d?: 'bullish' | 'bearish' | 'neutral') => ({ events: [], current: d ?? 'neutral' });
   const spots = o.spots ?? [spot + 80, spot];
+  const shifts = (at?: number) => (at === undefined ? [] : [{ ts: istTs(date, '10:00'), strike: 24000 }, { ts: istTs(date, '10:00') + at * 60, strike: 24050 }]);
+  const dir = (d?: 'bullish' | 'bearish' | 'neutral', at?: number) => ({ events: shifts(at), current: d ?? 'neutral' });
   return {
     empty: false, usable: true, asOf: istTs(date, o.hhmm ?? '10:42'), date, underlying: o.underlying ?? 'NSE:NIFTY50-INDEX', expiry: '2026-10-13', spot, step: o.step ?? 50,
     levels: { line: { low: 24000, high: 24050, exact: false }, support: { strike: 24000, decidedBy: 'volume+oi', byVolume: null, byOi: null }, resistance: { strike: 24250, decidedBy: 'volume+oi', byVolume: null, byOi: null } },
@@ -49,7 +52,7 @@ export function fakeAnalysis(o: FakeOpts = {}): UsableAnalysis {
     coa1: { label: `${scenario.number}(S1/R1)`, conditions: { support: { number: 1, exact: true, wording: 'STRONG SINCE MORNING', pressure: pressure(o.support ?? 'strong'), phases: 1, currentPhaseMinutes: 0, continuation: false }, resistance: { number: 1, exact: true, wording: 'STRONG SINCE MORNING', pressure: pressure(o.resistance ?? 'strong'), phases: 1, currentPhaseMinutes: 0, continuation: false } }, scenario, pressure: pr, top, bottom, hits: { top: { level: top?.value ?? null, count: 0, label: null }, bottom: { level: bottom?.value ?? null, count: 0, label: null } } },
     coa2: { atmStrike: 24050, callTrend: 'stable', putTrend: 'increasing', result: { status: 'ok', number: 4, outcome: 'Reversal at support; resistance may break out' }, firstHitOfExtension: false, ...o.coa2 },
     diversions: { count: 5, bullish: DIVERSIONS.bullish, bearish: DIVERSIONS.bearish }, pctTrend: { support: null, resistance: null }, soc: o.soc ?? null,
-    direction: { support: dir(o.supportDirection), resistance: dir(o.resistanceDirection), banner: { kind: 'mixed', text: 'Mixed' } },
+    direction: { support: dir(o.supportDirection, o.shiftedAt?.support), resistance: dir(o.resistanceDirection, o.shiftedAt?.resistance), banner: { kind: 'mixed', text: 'Mixed' } },
     lines0920: o.lines ?? null, events: [], flags: [],
     series: { spot: spots.map((s, i) => ({ ts: istTs(date, '10:00') + i * 60, spot: s })), pct: [], ceOiAtResistance: [], peOiAtSupport: [] },
   } as unknown as UsableAnalysis;
