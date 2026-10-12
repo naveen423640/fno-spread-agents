@@ -2,64 +2,104 @@
 
 import type { UsableAnalysis } from '@/lib/ltp/analyze';
 import { LTP_CONFIG } from '@/lib/ltp/config';
+import type { SideStrength } from '@/lib/ltp/strength';
 import type { ChainView } from '@/lib/ltp/state';
-import { highlightCells, type CellMark } from '@/lib/ltp/view';
+import { columnPercents, highlightCells, type CellMark } from '@/lib/ltp/view';
 
-const num = (v: number | null | undefined) => (v === null || v === undefined ? '–' : new Intl.NumberFormat('en-IN', { maximumFractionDigits: 2 }).format(v));
-const compact = (v: number | null | undefined) => {
-  if (v === null || v === undefined) return '–';
-  const a = Math.abs(v);
-  if (a >= 10_000_000) return `${(v / 10_000_000).toFixed(2)}Cr`;
-  if (a >= 100_000) return `${(v / 100_000).toFixed(1)}L`;
-  if (a >= 1_000) return `${(v / 1_000).toFixed(1)}K`;
-  return String(v);
-};
+const int = (v: number | null | undefined) => (v === null || v === undefined ? '–' : new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 }).format(v));
+const dec = (v: number | null | undefined) => (v === null || v === undefined ? '–' : new Intl.NumberFormat('en-IN', { maximumFractionDigits: 2 }).format(v));
+const signedInt = (v: number | null | undefined) => (v === null || v === undefined ? '–' : `${v > 0 ? '+' : ''}${int(v)}`);
 
+// Highest of a column: bold. Second-highest above 75% of it (weak): yellow, like the original screen.
 const MARK_CLASS: Record<CellMark, string> = {
-  max: 'bg-sky-500/20 font-semibold text-sky-800 dark:text-sky-300',
-  second_weak: 'outline outline-2 -outline-offset-2 outline-yellow-400 bg-yellow-400/20 font-semibold',
+  max: 'bg-sky-500/20 font-bold',
+  second_weak: 'bg-yellow-300 font-bold text-black',
 };
 
-export function LtpChainTable({ chain, analysis, methodLabel }: { chain: ChainView[]; analysis: UsableAnalysis; methodLabel: string }) {
-  const marks = highlightCells(chain, analysis.levels.line, LTP_CONFIG.weakThresholdPct);
-  const cls = (strike: number, side: 'CE' | 'PE', metric: 'volume' | 'oi') => { const m = marks[`${strike}|${side}|${metric}`]; return m ? MARK_CLASS[m] : ''; };
+// The badge under the volume and OI columns on the line row: "WTT 77.2%" when weak, "STRONG 59.6%" otherwise.
+function Badge({ s, metric }: { s: SideStrength; metric: 'volume' | 'oi' }) {
+  const m = s.byMetric[metric];
+  if (m.pct === null) return <span className="text-muted-foreground">–</span>;
+  const weak = m.weak;
+  return (
+    <span className={`inline-block rounded px-1.5 py-0.5 text-[10px] font-bold ${weak ? 'bg-yellow-300 text-black' : 'bg-emerald-600 text-white'}`}>
+      {weak ? (m.direction === 'wtt' ? 'WTT' : 'WTB') : 'STRONG'} {m.pct.toFixed(2)}%
+    </span>
+  );
+}
+
+export function LtpChainTable({ chain, analysis, methodLabel, spot }: { chain: ChainView[]; analysis: UsableAnalysis; methodLabel: string; spot: number }) {
+  const { line } = analysis.levels;
+  const marks = highlightCells(chain, line, LTP_CONFIG.weakThresholdPct);
+  const pcts = columnPercents(chain, line);
+  const cell = (strike: number, side: 'CE' | 'PE', metric: 'volume' | 'oi', value: number | null | undefined) => {
+    const key = `${strike}|${side}|${metric}`;
+    const m = marks[key];
+    return (
+      <td className={`px-2 py-1 text-right ${m ? MARK_CLASS[m] : ''}`}>
+        <div>{int(value)}</div>
+        {pcts[key] !== undefined ? <div className={`text-[10px] ${m === 'second_weak' ? 'text-black/70' : 'text-muted-foreground'}`}>{pcts[key].toFixed(2)}%</div> : null}
+      </td>
+    );
+  };
+  const change = (v: number | null | undefined) => <td className={`px-2 py-1 text-right text-[11px] ${v ? (v > 0 ? 'text-emerald-600' : 'text-red-600') : 'text-muted-foreground'}`}>{signedInt(v)}</td>;
+  const lineRow = (
+    <tr key="line" className="border-y-2 border-blue-500 bg-blue-500/5">
+      <td colSpan={2} className="px-2 py-1.5 text-right text-[11px] text-muted-foreground">Resistance strength</td>
+      <td className="px-2 py-1.5 text-right"><Badge s={analysis.strength.resistance} metric="volume" /></td>
+      <td className="px-2 py-1.5 text-right"><Badge s={analysis.strength.resistance} metric="oi" /></td>
+      <td className="px-2 py-1.5"><span className="sr-only">gap</span></td>
+      <td className="px-2 py-1.5 text-center"><span className="rounded bg-foreground px-2 py-0.5 text-xs font-bold text-background">{dec(spot)}</span><div className="text-[9px] text-muted-foreground">SPOT</div></td>
+      <td className="px-2 py-1.5"><span className="sr-only">gap</span></td>
+      <td className="px-2 py-1.5 text-left"><Badge s={analysis.strength.support} metric="volume" /></td>
+      <td className="px-2 py-1.5 text-left"><Badge s={analysis.strength.support} metric="oi" /></td>
+      <td colSpan={2} className="px-2 py-1.5 text-left text-[11px] text-muted-foreground">Support strength</td>
+    </tr>
+  );
+
   return (
     <div className="overflow-x-auto rounded-lg border border-border bg-card">
-      <table className="w-full min-w-[760px] text-xs tabular-nums">
-        <thead className="bg-muted/50 text-[11px] text-muted-foreground">
-          <tr>
-            <th colSpan={4} className="px-2 py-1.5 text-center">Calls (CE)</th>
-            <th className="px-2 py-1.5"><span className="sr-only">Strike</span></th>
-            <th colSpan={4} className="px-2 py-1.5 text-center">Puts (PE)</th>
+      <table className="w-full min-w-[900px] text-xs tabular-nums">
+        <thead className="text-[11px]">
+          <tr className="bg-muted/60 text-muted-foreground">
+            <th colSpan={5} className="px-2 py-1 text-center text-red-600">CALL SIDE (resistance)</th>
+            <th className="bg-orange-500 px-2 py-1 text-white">ATM STRIKE</th>
+            <th colSpan={5} className="px-2 py-1 text-center text-emerald-600">PUT SIDE (support)</th>
           </tr>
-          <tr>
-            <th className="px-2 py-1 text-right">Reversal (proxy: {methodLabel})</th><th className="px-2 py-1 text-right">LTP</th><th className="px-2 py-1 text-right">OI</th><th className="px-2 py-1 text-right">Volume</th>
-            <th className="px-2 py-1 text-center">Strike</th>
-            <th className="px-2 py-1 text-right">Volume</th><th className="px-2 py-1 text-right">OI</th><th className="px-2 py-1 text-right">LTP</th><th className="px-2 py-1 text-right">Reversal (proxy: {methodLabel})</th>
+          <tr className="bg-muted/30 text-muted-foreground">
+            <th className="px-2 py-1 text-right">OI Chg</th><th className="px-2 py-1 text-right">OI</th><th className="px-2 py-1 text-right">Volume</th>
+            <th className="px-2 py-1 text-right" title={`Reversal (proxy: ${methodLabel})`}>Rev*</th><th className="px-2 py-1 text-right">LTP</th>
+            <th className="bg-orange-500/90 px-2 py-1 text-white">Strike</th>
+            <th className="px-2 py-1 text-left">LTP</th><th className="px-2 py-1 text-left" title={`Reversal (proxy: ${methodLabel})`}>Rev*</th>
+            <th className="px-2 py-1 text-right">Volume</th><th className="px-2 py-1 text-right">OI</th><th className="px-2 py-1 text-right">OI Chg</th>
           </tr>
         </thead>
         <tbody>
-          {chain.map((r) => (
-            <tr key={r.strike} className={`border-t border-border ${r.mark ? 'border-t-2 border-t-blue-500' : ''}`}>
-              <td className="px-2 py-1 text-right text-muted-foreground">{num(r.callReversal)}</td>
-              <td className="px-2 py-1 text-right">{num(r.ce?.ltp)}</td>
-              <td className={`px-2 py-1 text-right ${cls(r.strike, 'CE', 'oi')}`}>{compact(r.ce?.oi)}</td>
-              <td className={`px-2 py-1 text-right ${cls(r.strike, 'CE', 'volume')}`}>{compact(r.ce?.volume)}</td>
-              <td className="px-2 py-1 text-center font-semibold">
-                {r.strike}
-                {r.mark ? <span className="ml-1 rounded bg-blue-500/15 px-1 text-[10px] font-normal text-blue-700 dark:text-blue-300">{r.mark === 'line_high' ? 'line ▲' : r.mark === 'line_low' ? 'line ▼' : 'line'}</span> : null}
-                {r.role ? <span className={`ml-1 rounded px-1 text-[10px] font-normal ${r.role === 'support' ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400' : 'bg-red-500/15 text-red-700 dark:text-red-400'}`}>{r.role === 'support' ? 'support' : 'resistance'}</span> : null}
-              </td>
-              <td className={`px-2 py-1 text-right ${cls(r.strike, 'PE', 'volume')}`}>{compact(r.pe?.volume)}</td>
-              <td className={`px-2 py-1 text-right ${cls(r.strike, 'PE', 'oi')}`}>{compact(r.pe?.oi)}</td>
-              <td className="px-2 py-1 text-right">{num(r.pe?.ltp)}</td>
-              <td className="px-2 py-1 text-right text-muted-foreground">{num(r.putReversal)}</td>
-            </tr>
-          ))}
+          {chain.flatMap((r) => {
+            const row = (
+              <tr key={r.strike} className="border-t border-border">
+                {change(r.ce?.oiChange)}
+                {cell(r.strike, 'CE', 'oi', r.ce?.oi)}
+                {cell(r.strike, 'CE', 'volume', r.ce?.volume)}
+                <td className="px-2 py-1 text-right text-muted-foreground">{dec(r.callReversal)}</td>
+                <td className="px-2 py-1 text-right font-medium">{dec(r.ce?.ltp)}</td>
+                <td className="bg-orange-500 px-2 py-1 text-center text-sm font-bold text-white">
+                  {r.strike}
+                  {r.role ? <div className="text-[9px] font-semibold uppercase opacity-90">{r.role}</div> : null}
+                </td>
+                <td className="px-2 py-1 text-left font-medium">{dec(r.pe?.ltp)}</td>
+                <td className="px-2 py-1 text-left text-muted-foreground">{dec(r.putReversal)}</td>
+                {cell(r.strike, 'PE', 'volume', r.pe?.volume)}
+                {cell(r.strike, 'PE', 'oi', r.pe?.oi)}
+                {change(r.pe?.oiChange)}
+              </tr>
+            );
+            return r.mark === 'line' || r.mark === 'line_low' ? [row, lineRow] : [row];
+          })}
         </tbody>
       </table>
       <p className="border-t border-border px-3 py-2 text-[11px] text-muted-foreground">
-        Blue: highest value in the column among the strikes the engine searches (puts at or below the line, calls at or above it, within the rows shown). Yellow box: second-highest above {LTP_CONFIG.weakThresholdPct}% of the highest (weak). The line is marked in blue.
+        Bold: highest in its column. <span className="rounded bg-yellow-300 px-1 font-bold text-black">Yellow</span>: second-highest above {LTP_CONFIG.weakThresholdPct}% of the highest (weak). The % under a value is its share of the column highest. Only puts at or below the line and calls at or above it count. Rev* = reversal (proxy: {methodLabel}).
       </p>
     </div>
   );

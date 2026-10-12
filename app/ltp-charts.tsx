@@ -21,7 +21,7 @@ type Guide = { price: number; color: string; title: string; style?: LineStyle };
 const toPoints = <T extends { ts: number }>(rows: T[], pick: (r: T) => number | null): Point[] =>
   rows.flatMap((r) => { const v = pick(r); return v === null ? [] : [{ time: (r.ts + IST_OFFSET) as UTCTimestamp, value: v }]; });
 
-function LineCanvas({ series, guides }: { series: Series[]; guides: Guide[] }) {
+function LineCanvas({ series, guides, height }: { series: Series[]; guides: Guide[]; height: number }) {
   const container = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const element = container.current;
@@ -42,7 +42,7 @@ function LineCanvas({ series, guides }: { series: Series[]; guides: Guide[] }) {
     chart.timeScale().fitContent();
     return () => chart.remove();
   }, [series, guides]);
-  return <div ref={container} className="h-[220px] w-full text-foreground" />;
+  return <div ref={container} style={{ height }} className="w-full text-foreground" />;
 }
 
 // A chart failure should show a message, not take the whole page down.
@@ -57,7 +57,7 @@ class ChartBoundary extends Component<{ children: ReactNode }, { failed: boolean
   }
 }
 
-function ChartCard({ title, note, series, guides }: { title: string; note: string; series: Series[]; guides: Guide[] }) {
+function ChartCard({ title, note, series, guides, height = 220 }: { title: string; note: string; series: Series[]; guides: Guide[]; height?: number }) {
   return (
     <div className="rounded-lg border border-border bg-card p-3">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
@@ -65,12 +65,12 @@ function ChartCard({ title, note, series, guides }: { title: string; note: strin
         <span className="flex gap-3 text-[11px] text-muted-foreground">{series.map((s) => <span key={s.title} className="flex items-center gap-1"><i className="inline-block size-2 rounded-full" style={{ background: s.color }} />{s.title}</span>)}</span>
       </div>
       <p className="mb-1 text-[11px] text-muted-foreground">{note}</p>
-      <ChartBoundary><LineCanvas series={series} guides={guides} /></ChartBoundary>
+      <ChartBoundary><LineCanvas series={series} guides={guides} height={height} /></ChartBoundary>
     </div>
   );
 }
 
-export function LtpCharts({ analysis, lines0920 }: { analysis: UsableAnalysis; lines0920: Lines0920 | null }) {
+export function LtpCharts({ analysis, lines0920, only = 'all', height }: { analysis: UsableAnalysis; lines0920: Lines0920 | null; only?: 'all' | 'spot' | 'rest'; height?: number }) {
   const { series: s, extensions } = analysis;
   const guides: Guide[] = [
     ...(extensions.eos.value !== null ? [{ price: extensions.eos.value, color: GREEN, title: 'EOS (proxy)' }] : []),
@@ -79,9 +79,9 @@ export function LtpCharts({ analysis, lines0920 }: { analysis: UsableAnalysis; l
     ...(lines0920?.eor.value != null ? [{ price: lines0920.eor.value, color: RED, title: '9:20 EOR (proxy)', style: LineStyle.Dotted }] : []),
   ];
   return (
-    <div className="grid gap-3 lg:grid-cols-3">
-      <ChartCard title="Spot with reversal lines" note="Dashed: current EOS / EOR proxies. Dotted: the frozen 9:20 proxies." series={[{ color: BLUE, title: 'Spot', points: toPoints(s.spot, (r) => r.spot) }]} guides={guides} />
-      <ChartCard
+    <div className={only === 'all' ? 'grid gap-3 lg:grid-cols-3' : only === 'rest' ? 'grid gap-3 lg:grid-cols-2' : 'grid gap-3'}>
+      {only !== 'rest' ? <ChartCard height={height} title="Spot with reversal lines" note="Dashed: current EOS / EOR proxies. Dotted: the frozen 9:20 proxies." series={[{ color: BLUE, title: 'Spot', points: toPoints(s.spot, (r) => r.spot) }]} guides={guides} /> : null}
+      {only !== 'spot' ? <><ChartCard
         title="Weakness %" note={`Second-highest as a percent of the highest. Above ${LTP_CONFIG.weakThresholdPct}% the level is weak.`}
         series={[
           { color: GREEN, title: 'Support vol', points: toPoints(s.pct, (r) => r.supportVolume) }, { color: '#15803d', title: 'Support OI', points: toPoints(s.pct, (r) => r.supportOi) },
@@ -93,7 +93,7 @@ export function LtpCharts({ analysis, lines0920 }: { analysis: UsableAnalysis; l
         title="OI at the walls" note="CE OI at resistance and PE OI at support since the open (the COA 2.0 inputs)."
         series={[{ color: RED, title: 'CE OI at resistance', points: toPoints(s.ceOiAtResistance, (r) => r.oi) }, { color: GREEN, title: 'PE OI at support', points: toPoints(s.peOiAtSupport, (r) => r.oi) }]}
         guides={[]}
-      />
+      /></> : null}
     </div>
   );
 }

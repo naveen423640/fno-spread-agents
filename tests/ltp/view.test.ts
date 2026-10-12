@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { highlightCells, healthBadge, windowLabel } from '@/lib/ltp/view';
+import { columnPercents, highlightCells, healthBadge, windowLabel } from '@/lib/ltp/view';
 import type { ChainView } from '@/lib/ltp/state';
 
 const cell = (volume: number, oi = volume) => ({ ltp: 10, oi, oiChange: 0, volume });
@@ -64,5 +64,16 @@ describe('windowLabel', () => {
     expect(windowLabel('09:30').text).toBe('COA 2.0 starts at 09:45');
     expect(windowLabel('12:00').text).toBe('COA 2.0 valid (09:45–14:30)');
     expect(windowLabel('15:00').text).toBe('COA 2.0 window closed at 14:30');
+  });
+});
+
+describe('columnPercents', () => {
+  it('gives each searched cell as a percent of its column highest, and nothing outside the search side', () => {
+    const chain = [row(23900, 1, 1000), row(23950, 1, 800), row(24000, 1, 500), row(24050, 900, 1), row(24100, 450, 1)];
+    const p = columnPercents(chain, LINE);
+    expect(p['23900|PE|volume']).toBe(100);
+    expect(p['23950|PE|volume']).toBe(80);
+    expect(p['24100|CE|oi']).toBe(50);
+    expect(p['24050|PE|volume']).toBeUndefined();
   });
 });

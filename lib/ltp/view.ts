@@ -37,3 +37,19 @@ export function windowLabel(hhmm: string): { state: 'before' | 'valid' | 'after'
   if (m > minutesOf(windowEnd)) return { state: 'after', text: `COA 2.0 window closed at ${windowEnd}` };
   return { state: 'valid', text: `COA 2.0 valid (${windowStart}–${windowEnd})` };
 }
+
+// Each searched cell as a percent of its column's highest value (the highest is 100). Same keys and search side as highlightCells.
+export function columnPercents(chain: ChainView[], line: { low: number; high: number }): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const side of ['PE', 'CE'] as const) {
+    for (const metric of ['volume', 'oi'] as const) {
+      const cells = chain
+        .filter((r) => (side === 'PE' ? r.strike <= line.low : r.strike >= line.high))
+        .flatMap((r) => { const v = (side === 'PE' ? r.pe : r.ce)?.[metric]; return v === null || v === undefined ? [] : [{ strike: r.strike, v }]; });
+      const top = Math.max(0, ...cells.map((c) => c.v));
+      if (!(top > 0)) continue;
+      for (const c of cells) out[`${c.strike}|${side}|${metric}`] = (c.v / top) * 100;
+    }
+  }
+  return out;
+}

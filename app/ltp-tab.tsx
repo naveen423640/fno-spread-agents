@@ -12,7 +12,7 @@ import { CALIBRATION_LABELS } from '@/lib/ltp/calibration';
 import type { LtpState } from '@/lib/ltp/state';
 import type { CalibrationEntry } from '@/lib/ltp/store';
 import { istDate, istHhmm } from '@/lib/ltp/time';
-import { healthBadge, windowLabel } from '@/lib/ltp/view';
+import { healthBadge } from '@/lib/ltp/view';
 
 import { LtpChainTable } from '@/app/ltp-chain-table';
 
@@ -30,7 +30,6 @@ const BADGE_TEXT = { green: 'Recording', amber: 'Recorder lagging', red: 'Record
 
 const num = (v: number | null | undefined, digits = 2) => (v === null || v === undefined ? '–' : new Intl.NumberFormat('en-IN', { maximumFractionDigits: digits }).format(v));
 const clock = (ts: number | null) => (ts === null ? '–' : `${istHhmm(ts)} IST`);
-const statusText = { strong: 'Strong', wtt: 'Weak (WTT)', wtb: 'Weak (WTB)' } as const;
 
 function Section({ title, note, children }: { title: string; note?: string; children: React.ReactNode }) {
   return (
@@ -101,101 +100,115 @@ export function LtpTab() {
   const a = state && !state.empty && !state.analysis.empty && state.analysis.usable ? state.analysis : null;
   const methodLabel = state && !state.empty ? (state.methods.find((m) => m.id === state.selectedMethod)?.label ?? '') : '';
 
+  const spot = state && !state.empty ? (a?.spot ?? (state.analysis.empty ? 0 : state.analysis.spot)) : 0;
+  const name = UNDERLYING_OPTIONS.find((o) => o.value === underlying)?.label ?? '';
+  const bias = a?.coa1.scenario.bias ?? '';
+  const bannerClass = /^(Bull)/.test(bias) ? 'bg-emerald-600' : /^(Bear|Blood)/.test(bias) ? 'bg-red-600' : bias.startsWith('Not') ? 'bg-slate-500' : 'bg-blue-600';
+  const lastShift = (side: 'support' | 'resistance') => a?.events.filter((e) => e.side === side).slice(-1)[0];
+  const [panel, setPanel] = useState<'scenario' | 'lines' | 'weekly' | 'charts' | 'shifts' | 'calibration'>('scenario');
+  const PANELS: [typeof panel, string][] = [['scenario', 'Scenario & levels'], ['lines', '9:20 lines'], ['weekly', 'Weekly range'], ['charts', 'Charts'], ['shifts', 'Level shifts'], ['calibration', 'Calibration']];
+
+  const sidePill = (side: 'support' | 'resistance') => {
+    if (!a) return null;
+    const st = a.strength[side];
+    const shift = lastShift(side);
+    const label = st.status === 'strong' ? 'STRONG' : st.status === 'wtt' ? 'WEAK TOWARDS TOP (WTT)' : 'WEAK TOWARDS BOTTOM (WTB)';
+    return (
+      <div className={`rounded-md border px-3 py-1.5 text-xs ${side === 'support' ? 'border-emerald-600/50 bg-emerald-500/10' : 'border-red-600/50 bg-red-500/10'}`}>
+        <div className="font-bold">{side === 'support' ? 'SUPPORT' : 'RESISTANCE'} {a.levels[side].strike} · <span className={st.status === 'strong' ? 'text-emerald-600' : 'text-amber-600'}>{label}</span></div>
+        {shift ? <div className="text-[11px] text-muted-foreground">Shifted {shift.fromStrike} → {shift.toStrike} at {clock(shift.ts)} ({shift.metric})</div> : <div className="text-[11px] text-muted-foreground">Not shifted today</div>}
+      </div>
+    );
+  };
+
   return (
-    <div className="mx-auto grid w-full max-w-[1400px] gap-5 px-4 py-5">
-      <div className="flex flex-wrap items-center gap-3">
-        <h1 className="text-lg font-semibold">LTP Levels</h1>
+    <div className="mx-auto grid w-full max-w-[1500px] gap-3 px-3 py-4">
+      <div className="flex flex-wrap items-center gap-2">
         <Select value={underlying} onValueChange={(v) => v && setUnderlying(v)}>
-          <SelectTrigger className="w-[150px]"><SelectValue>{UNDERLYING_OPTIONS.find((o) => o.value === underlying)?.label}</SelectValue></SelectTrigger>
+          <SelectTrigger className="w-[130px]"><SelectValue>{name}</SelectValue></SelectTrigger>
           <SelectContent>{UNDERLYING_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
         </Select>
+        <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="w-[150px]" aria-label="Stored day" />
+        {date ? <Button size="sm" variant="ghost" onClick={() => setDate('')}>Latest</Button> : null}
         <Select value={method} onValueChange={(v) => v && setMethod(v)}>
-          <SelectTrigger className="w-[250px]"><SelectValue>{`EOS/EOR proxy: ${method.replace(/_/g, ' ').replace('writer breakeven', 'writer breakeven')}`}</SelectValue></SelectTrigger>
+          <SelectTrigger className="w-[250px]"><SelectValue>{`EOS/EOR proxy: ${method.replace(/_/g, ' ')}`}</SelectValue></SelectTrigger>
           <SelectContent>
             <SelectItem value="writer_breakeven">EOS/EOR proxy: writer breakeven</SelectItem>
             <SelectItem value="time_value_only">EOS/EOR proxy: time value only</SelectItem>
           </SelectContent>
         </Select>
-        <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="w-[150px]" aria-label="Stored day" />
-        {date ? <Button size="sm" variant="ghost" onClick={() => setDate('')}>Latest</Button> : null}
-        <Button size="sm" variant="outline" onClick={() => { setLoading(true); void load(); }} disabled={loading}><RefreshCw className={loading ? 'animate-spin' : ''} />Refresh</Button>
-        <span className={`rounded-md px-2 py-1 text-xs font-medium ${BADGE_CLASS[badge]}`}>{BADGE_TEXT[badge]}{state ? ` · last ${clock(state.health.lastSuccessTs)}` : ''}</span>
+        {state && !state.empty ? <span className="text-sm"><span className="text-muted-foreground">Spot </span><strong className="tabular-nums">{num(spot)}</strong> <span className="text-muted-foreground">· Expiry </span>{a?.expiry ?? '–'}</span> : null}
+        <span className="ml-auto flex flex-wrap items-center gap-2 text-xs">
+          <span className={`rounded-md px-2 py-1 font-medium ${BADGE_CLASS[badge]}`}>{BADGE_TEXT[badge]}{state ? ` · last ${clock(state.health.lastSuccessTs)}` : ''}</span>
+          <Button size="sm" variant="outline" onClick={() => { setLoading(true); void load(); }} disabled={loading}><RefreshCw className={loading ? 'animate-spin' : ''} />Refresh</Button>
+          <Button size="sm" variant="outline" onClick={() => void recordNow()}>Record now</Button>
+          <label className="flex items-center gap-1.5"><input type="checkbox" checked={auto} onChange={(e) => setAuto(e.target.checked)} />Auto-record</label>
+        </span>
       </div>
-
-      <div className="flex flex-wrap items-center gap-3 text-xs">
-        <Button size="sm" variant="outline" onClick={() => void recordNow()}>Record now</Button>
-        <label className="flex items-center gap-1.5"><input type="checkbox" checked={auto} onChange={(e) => setAuto(e.target.checked)} />Record every minute while this tab is open</label>
-        {recordMsg ? <span className="text-muted-foreground">{recordMsg}</span> : null}
-      </div>
-
+      {recordMsg ? <p className="text-[11px] text-muted-foreground">{recordMsg}</p> : null}
       {error ? <p className="rounded-md border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm">{error}</p> : null}
       {state?.empty ? (
         <p className="rounded-md border border-dashed border-border px-4 py-8 text-center text-sm text-muted-foreground">
-          {state.reason === 'no_data_yet' ? 'No snapshots have been recorded yet. Start the recorder (npm run ltp:record) or open this tab during market hours with the recorder running.' : `No snapshots stored for ${state.date}.`}
+          {state.reason === 'no_data_yet' ? 'No snapshots recorded yet. Press Record now, or tick Auto-record, while logged in to FYERS during market hours (09:15 to 15:30 IST).' : `No snapshots stored for ${state.date}.`}
         </p>
       ) : null}
 
       {state && !state.empty ? (
         <>
-          <div className="flex flex-wrap items-baseline gap-x-6 gap-y-1 text-sm">
-            <span><span className="text-muted-foreground">Day </span>{state.date}{state.viewingStoredDay ? <em className="ml-1 text-xs text-muted-foreground">(stored day, as recorded)</em> : null}</span>
-            <span><span className="text-muted-foreground">Expiry </span>{a?.expiry ?? '–'}</span>
-            <span><span className="text-muted-foreground">Spot </span><strong className="tabular-nums">{num(a?.spot ?? (state.analysis.empty ? null : state.analysis.spot))}</strong></span>
-            <span><span className="text-muted-foreground">Snapshot </span>{clock(state.snapshotTs)} · {state.snapshotCount} stored · {state.health.gapsToday} gaps today</span>
-            <span className={windowLabel(istHhmm(state.snapshotTs)).state === 'valid' ? 'text-emerald-700 dark:text-emerald-400' : 'text-muted-foreground'}>{windowLabel(istHhmm(state.snapshotTs)).text}</span>
-          </div>
-
           {!a ? <p className="rounded-md border border-dashed border-border px-4 py-6 text-center text-sm text-muted-foreground">{state.analysis.empty ? '' : state.analysis.flags.join(' ')}</p> : (
             <>
+              <div className={`rounded-md px-4 py-2 text-center text-sm font-bold uppercase tracking-wide text-white ${bannerClass}`}>
+                {name} · {bias}
+                <span className="ml-3 text-[11px] font-normal normal-case opacity-90">COA 1.0 scenario {a.coa1.scenario.number} · {state.date}{state.viewingStoredDay ? ' (stored day)' : ''} · snapshot {clock(state.snapshotTs)}</span>
+              </div>
+              <div className="grid gap-2 text-xs sm:grid-cols-2 lg:grid-cols-4">
+                <div className="rounded-md border border-border bg-card px-3 py-1.5"><span className="text-muted-foreground">Top reversal </span><strong>{a.coa1.top ? `${a.coa1.top.label.replace(/ \(.*/, '')} ${num(a.coa1.top.value)}` : '–'}</strong> <span className="text-muted-foreground">proxy · hits {a.coa1.hits.top.count}</span></div>
+                <div className="rounded-md border border-border bg-card px-3 py-1.5"><span className="text-muted-foreground">Bottom reversal </span><strong>{a.coa1.bottom ? `${a.coa1.bottom.label.replace(/ \(.*/, '')} ${num(a.coa1.bottom.value)}` : '–'}</strong> <span className="text-muted-foreground">proxy · hits {a.coa1.hits.bottom.count}</span></div>
+                <div className="rounded-md border border-border bg-card px-3 py-1.5"><span className="text-muted-foreground">Allowed </span>{a.coa1.scenario.allowed.join(', ') || 'none'}</div>
+                <div className="rounded-md border border-border bg-card px-3 py-1.5"><span className="text-muted-foreground">COA 2.0 </span>{a.coa2.result.status === 'ok' ? `#${a.coa2.result.number} ${a.coa2.result.outcome}` : { outside_window: 'outside 09:45–14:30', not_on_first_hit: 'not on first hit', no_data: 'not enough OI history' }[a.coa2.result.status]}</div>
+              </div>
               {a.flags.map((f) => <p key={f} className="rounded-md bg-amber-500/10 px-3 py-1.5 text-xs">{f}</p>)}
 
-              <Section title="Levels" note="Support from put volume/OI at or below the imaginary line; resistance from call volume/OI at or above it.">
-                <div className="grid gap-3 sm:grid-cols-3">
-                  <div className="rounded-lg border border-border bg-card p-3 text-sm">
-                    <div className="text-[11px] text-muted-foreground">Imaginary line</div>
-                    <strong className="tabular-nums">{a.levels.line.exact ? a.levels.line.low : `${a.levels.line.low} – ${a.levels.line.high}`}</strong>
-                  </div>
-                  {(['support', 'resistance'] as const).map((side) => (
-                    <div key={side} className="rounded-lg border border-border bg-card p-3 text-sm">
-                      <div className="text-[11px] text-muted-foreground">{side === 'support' ? 'Support' : 'Resistance'} (decided by {a.levels[side].decidedBy})</div>
-                      <strong className="tabular-nums">{a.levels[side].strike}</strong>{' '}
-                      <span className="text-xs">{statusText[a.strength[side].status]}</span>
-                      <div className="text-[11px] text-muted-foreground tabular-nums">Second/highest: volume {num(a.strength[side].pct.volume, 1)}% · OI {num(a.strength[side].pct.oi, 1)}%</div>
-                    </div>
-                  ))}
+              <div className="grid items-start gap-3 xl:grid-cols-[minmax(0,1fr)_380px]">
+                <div className="grid gap-2">
+                  <div className="grid gap-2 sm:grid-cols-2">{sidePill('resistance')}{sidePill('support')}</div>
+                  <LtpChainTable chain={state.chain} analysis={a} methodLabel={methodLabel} spot={spot} />
                 </div>
-              </Section>
+                <Suspense fallback={<p className="text-xs text-muted-foreground">Loading chart…</p>}><LtpCharts analysis={a} lines0920={state.lines0920} only="spot" height={420} /></Suspense>
+              </div>
 
-              <Section title="Scenario cards" note="COA 1.0 from the two strengths; COA 2.0 from the OI trend at the walls. Rule-based readings, not predictions.">
+              <div className="flex flex-wrap gap-1 border-b border-border">
+                {PANELS.map(([id, label]) => <button key={id} type="button" onClick={() => setPanel(id)} className={`rounded-t-md px-3 py-1.5 text-xs font-medium ${panel === id ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'}`}>{label}</button>)}
+              </div>
+
+              {panel === 'scenario' ? (
                 <div className="grid gap-3 lg:grid-cols-3">
                   <div className="rounded-lg border border-border bg-card p-3 text-sm">
-                    <div className="text-[11px] text-muted-foreground">COA 1.0 · scenario {a.coa1.scenario.number}</div>
-                    <p>{a.coa1.scenario.bias}</p>
-                    <p className="text-xs text-muted-foreground">Allowed: {a.coa1.scenario.allowed.join(', ') || 'none'}{a.coa1.scenario.tradable ? '' : ' · not tradable'}</p>
-                    <p className="mt-1 text-xs tabular-nums">Top: <Proxy level={a.coa1.top} /> · hits {a.coa1.hits.top.count}{a.coa1.hits.top.label ? ` (${a.coa1.hits.top.label})` : ''}</p>
-                    <p className="text-xs tabular-nums">Bottom: <Proxy level={a.coa1.bottom} /> · hits {a.coa1.hits.bottom.count}{a.coa1.hits.bottom.label ? ` (${a.coa1.hits.bottom.label})` : ''}</p>
+                    <div className="text-[11px] text-muted-foreground">Levels</div>
+                    <p>Imaginary line <strong className="tabular-nums">{a.levels.line.exact ? a.levels.line.low : `${a.levels.line.low} – ${a.levels.line.high}`}</strong></p>
+                    {(['support', 'resistance'] as const).map((side) => <p key={side} className="text-xs capitalize">{side} {a.levels[side].strike} (decided by {a.levels[side].decidedBy}) · volume {num(a.strength[side].pct.volume, 1)}% · OI {num(a.strength[side].pct.oi, 1)}%</p>)}
+                    <p className="mt-1 text-xs text-muted-foreground">{a.diversions.count} diversion strikes between support and resistance.</p>
+                    <p className="text-xs">{a.soc ? `SOC ${a.soc.type}: ${a.soc.bias}, ${a.soc.minutes} min on ${a.soc.side} (from ${a.soc.from} proxy)` : 'No sustained-weakness (SOC) pattern.'}</p>
                   </div>
                   <div className="rounded-lg border border-border bg-card p-3 text-sm">
-                    <div className="text-[11px] text-muted-foreground">COA 2.0</div>
+                    <div className="text-[11px] text-muted-foreground">COA 2.0 (OI trend at the walls)</div>
                     <p className="text-xs">Call OI at resistance: {a.coa2.callTrend ?? 'unknown'} · Put OI at support: {a.coa2.putTrend ?? 'unknown'}</p>
                     <p className="mt-1">{a.coa2.result.status === 'ok' ? `Scenario ${a.coa2.result.number}: ${a.coa2.result.outcome}` : { outside_window: 'Outside the 09:45–14:30 window.', not_on_first_hit: 'Not read on the first hit of an extension.', no_data: 'Not enough OI history yet.' }[a.coa2.result.status]}</p>
+                    <p className="mt-1 text-xs tabular-nums">Top <Proxy level={a.coa1.top} /> · hits {a.coa1.hits.top.count}{a.coa1.hits.top.label ? ` (${a.coa1.hits.top.label})` : ''}</p>
+                    <p className="text-xs tabular-nums">Bottom <Proxy level={a.coa1.bottom} /> · hits {a.coa1.hits.bottom.count}{a.coa1.hits.bottom.label ? ` (${a.coa1.hits.bottom.label})` : ''}</p>
                   </div>
-                  <div className="rounded-lg border border-border bg-card p-3 text-sm">
-                    <div className="text-[11px] text-muted-foreground">Diversions & SOC</div>
-                    <p className="text-xs">{a.diversions.count} diversion strikes between support and resistance.</p>
-                    <p className="mt-1 text-xs">{a.soc ? `SOC ${a.soc.type}: ${a.soc.bias}, ${a.soc.minutes} min on ${a.soc.side} (from ${a.soc.from} proxy)` : 'No sustained-weakness (SOC) pattern.'}</p>
+                  <div className="grid gap-1 rounded-lg border border-border bg-card p-3 text-xs">
+                    {[a.extensions.eor, ...a.extensions.eorPlus, a.extensions.eos, ...a.extensions.eosMinus, ...(a.extensions.wtbPlus1 ? [a.extensions.wtbPlus1] : []), ...(a.extensions.wttMinus1 ? [a.extensions.wttMinus1] : [])].map((l) => (
+                      <div key={l.label} className="flex justify-between gap-3"><span>{l.label}</span><span className="tabular-nums">{num(l.value)} <span className="text-muted-foreground">@ {l.strike}</span></span></div>
+                    ))}
                   </div>
                 </div>
-                <div className="grid gap-1 rounded-lg border border-border bg-card p-3 text-xs sm:grid-cols-2">
-                  {[a.extensions.eor, ...a.extensions.eorPlus, a.extensions.eos, ...a.extensions.eosMinus, ...(a.extensions.wtbPlus1 ? [a.extensions.wtbPlus1] : []), ...(a.extensions.wttMinus1 ? [a.extensions.wttMinus1] : [])].map((l) => (
-                    <div key={l.label} className="flex justify-between gap-3"><span>{l.label}</span><span className="tabular-nums">{num(l.value)} <span className="text-muted-foreground">@ {l.strike}</span></span></div>
-                  ))}
-                </div>
-              </Section>
+              ) : null}
 
-              <Section title="9:20 lines (frozen)" note="Computed once from the first snapshot at or after 09:20 and never changed. Display only: nothing is traded. Entries and targets are proxies.">
-                {state.lines0920 ? (
+              {panel === 'lines' ? (
+                state.lines0920 ? (
                   <div className="grid gap-3 sm:grid-cols-2">
+                    <p className="text-[11px] text-muted-foreground sm:col-span-2">Computed once from the first snapshot at or after 09:20 and never changed. Display only: nothing is traded. Entries and targets are proxies.</p>
                     {state.lines0920.delaySeconds > 120 ? <p className="rounded-md bg-amber-500/10 px-3 py-1.5 text-xs sm:col-span-2">Late: the first snapshot at or after 09:20 was {clock(state.lines0920.snapshotTs)} ({Math.round(state.lines0920.delaySeconds / 60)} min late), so these are not true 09:20 lines.</p> : null}
                     {(['risky', 'moderate'] as const).map((p) => (
                       <div key={p} className="rounded-lg border border-border bg-card p-3 text-xs">
@@ -206,23 +219,23 @@ export function LtpTab() {
                       </div>
                     ))}
                   </div>
-                ) : <p className="text-xs text-muted-foreground">Not available yet (needs a snapshot at or after 09:20 IST).</p>}
-              </Section>
+                ) : <p className="text-xs text-muted-foreground">Not available yet (needs a snapshot at or after 09:20 IST).</p>
+              ) : null}
 
-              <Section title="Weekly range" note={state.weeklyWeekStart ? `Based on the first stored day of this expiry, ${state.weeklyWeekStart}: CMP ± 1, 2, 3 × (first OTM call + put LTP).` : undefined}>
-                {state.weekly ? (
+              {panel === 'weekly' ? (
+                state.weekly ? (
                   <div className="rounded-lg border border-border bg-card p-3 text-xs tabular-nums">
+                    {state.weeklyWeekStart ? <p className="mb-1 text-[11px] text-muted-foreground">First stored day of this expiry, {state.weeklyWeekStart}: CMP ± 1, 2, 3 × (first OTM call + put LTP).</p> : null}
                     <p>S = {num(state.weekly.s)}{state.weekly.lateStart ? <span className="ml-2 rounded bg-amber-500/15 px-1.5 text-amber-700 dark:text-amber-400">late start: not from the 09:15 snapshot</span> : null}</p>
                     {([['L1', state.weekly.l1], ['L2', state.weekly.l2], ['L3', state.weekly.l3]] as const).map(([n, [lo, hi]]) => <p key={n}>{n}: {num(lo)} – {num(hi)}</p>)}
                   </div>
-                ) : <p className="text-xs text-muted-foreground">Not available (needs first out-of-the-money call and put LTPs).</p>}
-              </Section>
+                ) : <p className="text-xs text-muted-foreground">Not available (needs first out-of-the-money call and put LTPs).</p>
+              ) : null}
 
-              <Section title="Option chain around the line"><LtpChainTable chain={state.chain} analysis={a} methodLabel={methodLabel} /></Section>
-              <Section title="Charts"><Suspense fallback={<p className="text-xs text-muted-foreground">Loading charts…</p>}><LtpCharts analysis={a} lines0920={state.lines0920} /></Suspense></Section>
+              {panel === 'charts' ? <Suspense fallback={<p className="text-xs text-muted-foreground">Loading charts…</p>}><LtpCharts analysis={a} lines0920={state.lines0920} only="rest" /></Suspense> : null}
 
-              <Section title="Level-shift log" note="When the highest strike of a side and metric changed, and whether the old second-highest took over.">
-                {a.events.length ? (
+              {panel === 'shifts' ? (
+                a.events.length ? (
                   <div className="overflow-x-auto rounded-lg border border-border bg-card">
                     <table className="w-full text-xs tabular-nums"><tbody>
                       {[...a.events].reverse().map((e, i) => (
@@ -230,11 +243,12 @@ export function LtpTab() {
                       ))}
                     </tbody></table>
                   </div>
-                ) : <p className="text-xs text-muted-foreground">No level has shifted today.</p>}
-              </Section>
+                ) : <p className="text-xs text-muted-foreground">No level has shifted today.</p>
+              ) : null}
+
+              {panel === 'calibration' ? <Calibration underlying={underlying} date={state.date} /> : null}
             </>
           )}
-          <Calibration underlying={underlying} date={state.date} />
         </>
       ) : null}
 
