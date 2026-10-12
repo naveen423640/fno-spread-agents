@@ -9,7 +9,7 @@ import { istDate } from './time';
 import { weeklyRangeFromSnapshots, type WeeklyFromSnapshots } from './weekly';
 import { strikesOf, type Snapshot } from './types';
 
-const CHAIN_STRIKES_EACH_SIDE = 8;
+const CHAIN_STRIKES_EACH_SIDE = 6;
 
 export type Cell = { ltp: number | null; oi: number | null; oiChange: number | null; volume: number | null };
 export type ChainView = {

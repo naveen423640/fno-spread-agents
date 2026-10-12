@@ -144,7 +144,7 @@ export function LtpTab() {
   };
 
   return (
-    <div className="mx-auto grid w-full max-w-[1800px] gap-3 px-4 py-4">
+    <div className="mx-auto grid w-full max-w-[1800px] gap-2 px-2 py-3">
       <div className="flex flex-wrap items-center gap-2 rounded-md bg-slate-900 px-3 py-2 text-white">
         <Select value={underlying} onValueChange={(v) => v && setUnderlying(v)}>
           <SelectTrigger className="w-[130px] border-slate-600 bg-slate-800 text-white"><SelectValue>{name}</SelectValue></SelectTrigger>
@@ -193,9 +193,9 @@ export function LtpTab() {
               <div className="grid gap-2 md:grid-cols-2">{sidePill('resistance')}{sidePill('support')}</div>
               {a.flags.map((f) => <p key={f} className="rounded-md bg-amber-500/10 px-3 py-1.5 text-xs">{f}</p>)}
 
-              <div className="grid items-start gap-3 2xl:grid-cols-[minmax(0,1fr)_480px]">
+              <div className="grid items-start gap-3 md:grid-cols-[minmax(0,1fr)_280px] xl:grid-cols-[minmax(0,1fr)_420px]">
                 <LtpChainTable chain={state.chain} analysis={a} methodLabel={methodLabel} spot={spot} underlying={underlying} />
-                <Suspense fallback={<p className="text-xs text-muted-foreground">Loading chart…</p>}><MagicalChart analysis={a} lines0920={state.lines0920} height={520} /></Suspense>
+                <Suspense fallback={<p className="text-xs text-muted-foreground">Loading chart…</p>}><MagicalChart analysis={a} lines0920={state.lines0920} height={540} /></Suspense>
               </div>
               <div className="grid gap-2 text-xs sm:grid-cols-2 lg:grid-cols-4">
                 <div className="rounded-md border border-border bg-card px-3 py-1.5"><span className="text-muted-foreground">Top reversal </span><strong>{a.coa1.top ? `${a.coa1.top.label.replace(/ \(.*/, '')} ${num(a.coa1.top.value)}` : '–'}</strong> <span className="text-muted-foreground">proxy · hits {a.coa1.hits.top.count}</span></div>
