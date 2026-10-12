@@ -9,7 +9,7 @@ import { istDate } from './time';
 import { weeklyRangeFromSnapshots, type WeeklyFromSnapshots } from './weekly';
 import { strikesOf, type Snapshot } from './types';
 
-const CHAIN_STRIKES_EACH_SIDE = 6;
+const CHAIN_STRIKES_EACH_SIDE = 10; // about 22 rows around the line, like the real tool
 
 export type Cell = { ltp: number | null; oi: number | null; oiChange: number | null; volume: number | null };
 export type ChainView = {

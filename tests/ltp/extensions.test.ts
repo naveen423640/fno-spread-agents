@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { extensionLevels, timeValueOnly, writerBreakeven, type ExtensionMethod } from '@/lib/ltp/extensions';
+import { extensionLevels, timeValueOnly, weakStrike, writerBreakeven, type ExtensionMethod } from '@/lib/ltp/extensions';
 import { computeLevels } from '@/lib/ltp/levels';
 import { statusOf } from '@/lib/ltp/strength';
 import { makeChain } from '../support/ltp-chain';
@@ -87,5 +87,24 @@ describe('EOS / EOR and their extensions', () => {
     const e = extensionLevels(missing, ml, statusOf('support', ml.support, ml.line), statusOf('resistance', ml.resistance, ml.line), writerBreakeven);
     expect(e.eos.value).toBeNull();
     expect(e.eos.isProxy).toBe(true);
+  });
+});
+
+describe('weakStrike for a level based on one metric (real tool: "72500 - WTT - 73000", never the level itself)', () => {
+  it('names the second-highest strike of the deciding metric, not of the other metric that peaks elsewhere', () => {
+    // Volume peaks at 24200 (closer to the line) with its second at 24250: WTT-24250. OI peaks at 24300 with its second at 24200 (WTB): not the label.
+    const s = makeChain({ spot: SPOT, step: 50, ce: { 24200: { volume: 100000, oi: 1000 }, 24250: { volume: 90000, oi: 1000 }, 24300: { volume: 1000, oi: 100000 } } });
+    const l = computeLevels(s)!;
+    const st = statusOf('resistance', l.resistance, l.line);
+    expect(l.resistance.decidedBy).toBe('volume');
+    expect(st.status).toBe('wtt');
+    expect(weakStrike(st, l.resistance)).toBe(24250);
+  });
+  it('names the crossing metric\'s strike when the deciding metric is strong and the other crosses the level', () => {
+    const s = makeChain({ spot: SPOT, step: 50, pe: { 23900: { volume: 100000, oi: 1000 }, 23700: { volume: 1000, oi: 100000 }, 24000: { volume: 1000, oi: 90000 } } });
+    const l = computeLevels(s)!;
+    const st = statusOf('support', l.support, l.line);
+    expect(st.status).toBe('wtt');
+    expect(weakStrike(st, l.support)).toBe(24000);
   });
 });

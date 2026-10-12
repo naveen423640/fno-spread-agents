@@ -86,12 +86,13 @@ const level = (s: Snapshot, method: ExtensionMethod, name: string, strike: numbe
   label: `${name} (proxy: ${method.label})`, strike, value: method.reversal(s, strike, side), method: method.id, isProxy: true,
 });
 
-// The strike where the weakness is: the second-highest strike of the weak metric that decided the status (the larger pct if both did).
+// The strike where the weakness is: the second-highest strike of the metric that decided the status. For a level based on one metric that is
+// the deciding metric when it is weak, else the other metric that crossed the level; for a level based on both, the larger pct.
 export function weakStrike(status: SideStatus, lv: SideLevel): number | null {
-  const candidates = (['volume', 'oi'] as Metric[])
-    .filter((m) => status.byMetric[m].weak && status.byMetric[m].direction === status.status)
-    .sort((a, b) => (status.byMetric[b].pct ?? 0) - (status.byMetric[a].pct ?? 0));
-  const pick = candidates.length ? (candidates[0] === 'volume' ? lv.byVolume : lv.byOi) : null;
+  const matching = (['volume', 'oi'] as Metric[]).filter((m) => status.byMetric[m].weak && status.byMetric[m].direction === status.status);
+  const deciding = lv.decidedBy !== 'volume+oi' && matching.includes(lv.decidedBy) ? lv.decidedBy : null;
+  const first = deciding ?? [...matching].sort((a, b) => (status.byMetric[b].pct ?? 0) - (status.byMetric[a].pct ?? 0))[0];
+  const pick = first ? (first === 'volume' ? lv.byVolume : lv.byOi) : null;
   return pick?.secondStrike ?? null;
 }
 

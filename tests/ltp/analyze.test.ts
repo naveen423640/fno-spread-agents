@@ -133,6 +133,18 @@ describe('analyzeSession (C1 to C10 together)', () => {
     expect(res.reversals).toEqual({ center: 24255, plus1: 24295, minus1: 24250 }); // CE 24200:55, 24250:45, 24150:100
   });
 
+  it('each logged event also carries the futures price and the same reversal family on it ("Fno price" and "Future Reversal" in the tool)', () => {
+    const withFutures = day.map((x) => ({ ...x, futures: x.spot + 150 }));
+    const r = analyzeSession(withFutures, { now: at('09:30'), method: writerBreakeven });
+    if (r.empty || !r.usable) throw new Error('expected a usable analysis');
+    const first = r.direction.support.events[0];
+    expect(first.futures).toBe(withFutures[0].futures);
+    expect(first.futuresReversals).toEqual(first.reversals); // writer breakeven does not depend on the spot, so the family is identical
+    const none = analyzeSession(day, { now: at('09:30'), method: writerBreakeven });
+    if (none.empty || !none.usable) throw new Error('expected a usable analysis');
+    expect(none.direction.support.events[0]).toMatchObject({ futures: null, futuresReversals: null });
+  });
+
   it('reads the levels, status, scenario and extensions of the latest snapshot', () => {
     const r = analyzeSession(day, { now: at('12:00', 0), method: writerBreakeven });
     if (r.empty || !r.usable) throw new Error('expected a usable analysis');

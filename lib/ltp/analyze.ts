@@ -18,7 +18,9 @@ import { strikesOf, valueAt, type Snapshot } from './types';
 
 // An event with what the real tool's popup shows beside it: the spot and the EOR/EOS family at that moment (null: no data, 'broken': already passed).
 export type Reversal = number | 'broken' | null;
-export type LoggedEvent = SideEvent & { spot: number | null; reversals: { center: Reversal; plus1: Reversal; minus1: Reversal } | null };
+type Family = { center: Reversal; plus1: Reversal; minus1: Reversal };
+// futures / futuresReversals: the futures price at that moment and the same family computed on it (the tool's "Fno price" and "Future Reversal"); null when no futures price was recorded.
+export type LoggedEvent = SideEvent & { spot: number | null; reversals: Family | null; futures: number | null; futuresReversals: Family | null };
 
 export type AnalysisOptions = { now: number; method?: ExtensionMethod; cfg?: LtpConfig };
 
@@ -79,10 +81,14 @@ export function analyzeSession(snapshots: Snapshot[], opts: AnalysisOptions): Se
   const logged = (side: 'support' | 'resistance', list: SideEvent[]): LoggedEvent[] => list.map((e) => {
     const snap = snapAt.get(e.ts);
     const line = lineAt.get(e.ts);
-    if (!snap || !line) return { ...e, spot: snap?.spot ?? null, reversals: null };
+    const futures = snap?.futures ?? null;
+    if (!snap || !line) return { ...e, spot: snap?.spot ?? null, reversals: null, futures, futuresReversals: null };
     // Puts are shown up to the line's upper strike and calls from its lower strike; beyond that the tool says Break Down / Break Out.
-    const at = (k: number): Reversal => (side === 'support' ? (k <= line.high ? method.reversal(snap, k, 'PE') : 'broken') : (k >= line.low ? method.reversal(snap, k, 'CE') : 'broken'));
-    return { ...e, spot: snap.spot, reversals: { center: at(e.strike), plus1: at(e.strike + snap.step), minus1: at(e.strike - snap.step) } };
+    const family = (from: Snapshot): Family => {
+      const at = (k: number): Reversal => (side === 'support' ? (k <= line.high ? method.reversal(from, k, 'PE') : 'broken') : (k >= line.low ? method.reversal(from, k, 'CE') : 'broken'));
+      return { center: at(e.strike), plus1: at(e.strike + snap.step), minus1: at(e.strike - snap.step) };
+    };
+    return { ...e, spot: snap.spot, reversals: family(snap), futures, futuresReversals: futures === null ? null : family({ ...snap, spot: futures }) };
   });
   const supportEvents = logged('support', sideEvents(statesOf('support')));
   const resistanceEvents = logged('resistance', sideEvents(statesOf('resistance')));

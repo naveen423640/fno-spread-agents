@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { analyzeSession } from '@/lib/ltp/analyze';
 import { istTs } from '@/lib/ltp/time';
-import { columnPercents, highlightCells, healthBadge, tradeLevels, windowLabel } from '@/lib/ltp/view';
+import { columnPercents, highlightCells, healthBadge, logLabel, logTime, popupTitle, tradeLevels, windowLabel } from '@/lib/ltp/view';
 import { makeChain } from '../support/ltp-chain';
 import type { ChainView } from '@/lib/ltp/state';
 
@@ -20,7 +20,7 @@ describe('highlightCells', () => {
     expect(marks['23900|PE|oi']).toBe('max');
     expect(marks['24050|CE|volume']).toBe('max');
     expect(marks['24050|CE|oi']).toBe('max');
-    expect(marks['24050|PE|volume']).toBeUndefined(); // puts above the line are not searched
+    expect(marks['24050|PE|volume']).toBeUndefined(); // a put above the line is in the column but neither the highest nor a yellow box
     expect(marks['24000|CE|volume']).toBeUndefined(); // calls below the line are not searched
   });
 
@@ -71,13 +71,13 @@ describe('windowLabel', () => {
 });
 
 describe('columnPercents', () => {
-  it('gives each searched cell as a percent of its column highest, and nothing outside the search side', () => {
+  it('gives every cell as a percent of its column highest, in-the-money ones included', () => {
     const chain = [row(23900, 1, 1000), row(23950, 1, 800), row(24000, 1, 500), row(24050, 900, 1), row(24100, 450, 1)];
     const p = columnPercents(chain, LINE);
     expect(p['23900|PE|volume']).toBe(100);
     expect(p['23950|PE|volume']).toBe(80);
     expect(p['24100|CE|oi']).toBe(50);
-    expect(p['24050|PE|volume']).toBeUndefined();
+    expect(p['24050|PE|volume']).toBeCloseTo(0.1, 5); // a put above the line counts too
   });
 });
 
@@ -99,4 +99,22 @@ describe('tradeLevels', () => {
     const r = analysis({ 23900: { volume: 10000, oi: 10000 } }, { 24200: { volume: 10000, oi: 10000 } }, 24037);
     expect(tradeLevels(r).ruledOut).toEqual({ short: r.direction.banner.kind === 'bull_run', long: r.direction.banner.kind === 'blood_bath' });
   });
+});
+
+describe('the scenario popup, as in the real tool', () => {
+  const a = (soc: unknown, kind: 'blood_bath' | 'bull_run' | 'mixed', text: string) => ({ soc, direction: { banner: { kind, text } } }) as never;
+  it('the title is the SOC text when a State of Confusion is active: "Bullish SOC- 3 hours"', () => {
+    expect(popupTitle(a({ bias: 'bullish', type: '3h' }, 'mixed', 'Mixed'), 'SENSEX')).toBe('LTP Calculator – Bullish SOC- 3 hours');
+    expect(popupTitle(a({ bias: 'bearish', type: '1h' }, 'blood_bath', 'Blood Bath'), 'NIFTY')).toBe('LTP Calculator – Bearish SOC- 1 hours');
+  });
+  it('without a SOC the title is the banner', () => {
+    expect(popupTitle(a(null, 'blood_bath', 'Blood Bath'), 'NIFTY')).toBe('LTP Calculator – NIFTY IS IN BLOOD BATH');
+    expect(popupTitle(a(null, 'bull_run', 'Bull Run'), 'NIFTY')).toBe('LTP Calculator – NIFTY IS IN BULL RUN');
+    expect(popupTitle(a(null, 'mixed', 'Mixed'), 'NIFTY')).toBe('LTP Calculator – NIFTY SIDES DISAGREE');
+  });
+  it('a Strong label ends with a dash, like "71700 - STRONG -"; a weak one is unchanged', () => {
+    expect(logLabel({ status: 'strong', label: '72000 - STRONG' })).toBe('72000 - STRONG -');
+    expect(logLabel({ status: 'wtt', label: '72500 - WTT - 73000' })).toBe('72500 - WTT - 73000');
+  });
+  it('the time carries seconds', () => { expect(logTime(istTs('2026-10-12', '15:10'))).toBe('15:10:00'); });
 });
