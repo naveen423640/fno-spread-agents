@@ -49,3 +49,4 @@ engine/.pytest_cache/
 .superpowers/
 data/ltp_replay/
 data/agent_replay/
+data/agent_reports/

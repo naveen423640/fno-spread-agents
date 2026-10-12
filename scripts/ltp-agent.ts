@@ -1,5 +1,7 @@
 // LTP agent commands (paper trading only; nothing here can place an order).
-//   npm run agent-run                              every minute: asks the running app to step the agent (the app reads the recorded snapshots)
+//   npm run agent-run                              the scheduler: every minute (09:15 to 15:30 IST) asks the running app to step the agent; 15:31 closes anything
+//                                                  still open; 15:35 runs the daily review; Fridays 15:40 asks for proposals (locked until 100 trades);
+//                                                  the first weekday of a month writes last month's report to data/agent_reports/
 //   npm run agent-review -- --date 2026-10-12      asks the running app to review that day's closed trades (needs ANTHROPIC_API_KEY in the app's environment)
 //   npm run experiment-run -- EXP-001              runs one proposed experiment through the gate (in the running app) and writes experiments/EXP-001.json
 //   npm run report -- --month 2026-10              prints the monthly readiness report (paper results only)
@@ -10,6 +12,7 @@ import { existsSync, mkdirSync, readdirSync, statSync, writeFileSync } from 'nod
 import { join } from 'node:path';
 
 import { agentReplayDay, type AgentContext } from '../lib/ltp-agent/agent';
+import { dueJobs, markDone, previousMonth, type ScheduleInput } from '../lib/ltp-agent/schedule';
 import { writeExperimentFile } from '../lib/ltp-agent/experiment-files';
 import type { Experiment } from '../lib/ltp-agent/experiment-types';
 import { createJournalStore } from '../lib/ltp-agent/journal-store';
@@ -57,25 +60,42 @@ async function review(date?: string): Promise<string> {
   return `${new Date().toISOString()} review ${body.date}: ${body.reviewed} reviewed, ${body.failed} failed${body.skipped === 'no_api_key' ? ' (skipped: no ANTHROPIC_API_KEY, the journal stays unreviewed)' : ''}`;
 }
 
-function istParts(now = new Date()) {
+function istClock(now = new Date()) {
   const parts = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Kolkata', weekday: 'short', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(now);
   const get = (type: string) => parts.find((p) => p.type === type)?.value ?? '';
-  return { weekday: get('weekday'), minute: Number(get('hour')) * 60 + Number(get('minute')) };
+  return { weekday: get('weekday') as ScheduleInput['weekday'], minute: Number(get('hour')) * 60 + Number(get('minute')), date: now.toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }) };
+}
+
+async function propose(): Promise<string> {
+  const response = await fetch(`${base}/api/ltp/agent/experiments`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action: 'propose' }) });
+  const body = (await response.json().catch(() => ({}))) as { error?: string; locked?: boolean; experiments?: { id: string }[]; dropped?: unknown[]; failure?: string };
+  if (response.status === 409 || body.locked) return `${new Date().toISOString()} proposals: locked until 100 closed trades (${body.error ?? ''})`;
+  if (!response.ok || body.error) return `${new Date().toISOString()} proposals: ${body.error ?? `HTTP ${response.status}`}`;
+  return `${new Date().toISOString()} proposals: ${body.failure ? `failed (${body.failure})` : `${body.experiments?.length ?? 0} saved, ${body.dropped?.length ?? 0} dropped`}`;
+}
+
+async function monthlyReportToFile(month: string): Promise<string> {
+  const text = await report(month);
+  mkdirSync('data/agent_reports', { recursive: true });
+  writeFileSync(join('data/agent_reports', `${month}.txt`), `${text}\n`);
+  return `monthly report for ${month} written to data/agent_reports/${month}.txt`;
 }
 
 async function run() {
   console.log(`LTP agent running against ${base}. Press Ctrl+C to stop.`);
-  let finishedFor = '';
-  let reviewedFor = '';
+  let done: ScheduleInput['done'] = {};
   for (;;) {
-    const { weekday, minute } = istParts();
-    const trading = !['Sat', 'Sun'].includes(weekday);
-    try {
-      if (trading && minute >= 9 * 60 + 15 && minute <= 15 * 60 + 30) console.log(await post('step'));
-      const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
-      if (trading && minute >= 15 * 60 + 31 && finishedFor !== today) { console.log(`end of day: ${await post('finish_day')}`); finishedFor = today; }
-      if (trading && minute >= 15 * 60 + 35 && reviewedFor !== today) { console.log(await review(today)); reviewedFor = today; }
-    } catch (error) { console.error(`${new Date().toISOString()} could not reach the app: ${error instanceof Error ? error.message : 'unknown error'}`); }
+    const input = { ...istClock(), done };
+    for (const job of dueJobs(input)) {
+      try {
+        if (job === 'step') console.log(await post('step'));
+        else if (job === 'finish_day') console.log(`end of day: ${await post('finish_day')}`);
+        else if (job === 'review') console.log(await review(input.date));
+        else if (job === 'propose') console.log(await propose());
+        else console.log(await monthlyReportToFile(previousMonth(input.date)));
+        done = markDone(done, job, input);
+      } catch (error) { console.error(`${new Date().toISOString()} ${job} could not reach the app: ${error instanceof Error ? error.message : 'unknown error'}`); }
+    }
     // Wake a few seconds after the next minute boundary, so the recorder has stored that minute.
     await new Promise((resolve) => setTimeout(resolve, 60_000 - (Date.now() % 60_000) + 6_000));
   }
