@@ -4,6 +4,7 @@ import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react
 import { Download, FlaskConical, Link2, Play } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
+import type { IndexReport } from '@/lib/vwap/backtest/index-load';
 import type { BacktestResult, StrategyResult } from '@/lib/vwap/backtest/run';
 
 const EquityChart = lazy(() => import('@/app/vwap-equity-chart').then((m) => ({ default: m.EquityChart })));
@@ -49,6 +50,8 @@ export function VwapBacktestTab() {
   const [slice, setSlice] = useState('direction');
   const [sort, setSort] = useState<{ key: SortKey; dir: 1 | -1 }>({ key: 'entryT', dir: 1 });
   const [rowsShown, setRowsShown] = useState(100);
+  const [indexReports, setIndexReports] = useState<IndexReport[] | null>(null);
+  const [indexBusy, setIndexBusy] = useState(false);
 
   useEffect(() => {
     void (async () => {
@@ -78,6 +81,18 @@ export function VwapBacktestTab() {
       }
     } catch { setMessage('Could not reach the server.'); } finally { setBusy(null); }
   }, [config]);
+
+  // Fetches Nifty 50 and the current-month Nifty future into the cache the index filter reads, and shows what came back.
+  const loadIndex = useCallback(async () => {
+    setIndexBusy(true); setMessage(''); setLoginNeeded(false);
+    try {
+      const response = await fetch(`/api/vwap/index?from=${from}&to=${to}`, { cache: 'no-store' });
+      const body = (await response.json().catch(() => null)) as { reports?: IndexReport[]; error?: string; loginRequired?: boolean } | null;
+      if (response.status === 401 || body?.loginRequired) { setLoginNeeded(true); setMessage(body?.error ?? 'Connect FYERS to load Nifty data.'); return; }
+      if (!response.ok || !body?.reports) { setMessage(body?.error ?? 'Loading Nifty data failed.'); return; }
+      setIndexReports(body.reports);
+    } catch { setMessage('Could not reach the server.'); } finally { setIndexBusy(false); }
+  }, [from, to]);
 
   const run = useCallback(async () => {
     setBusy('run'); setMessage('Replaying sessions…'); setRowsShown(100);
@@ -155,6 +170,25 @@ export function VwapBacktestTab() {
           <span className="text-muted-foreground">Up to 60 symbols here; use <code>npm run vwap:backtest</code> for bigger universes and the parameter grid.</span>
         </div>
         {message ? <div className="text-amber-700 sm:col-span-4 dark:text-amber-400">{message}</div> : null}
+        <div className="grid gap-2 sm:col-span-4">
+          <div className="flex flex-wrap items-center gap-2">
+            <Button size="sm" variant="outline" disabled={indexBusy || busy !== null} onClick={() => void loadIndex()}><Download className={indexBusy ? 'animate-pulse' : ''} />{indexBusy ? 'Loading Nifty…' : 'Load Nifty 50 + Nifty future from FYERS'}</Button>
+            <span className="text-muted-foreground">Needed for the index filter. Fetches 5-minute candles for the date range above and checks whether they carry volume.</span>
+          </div>
+          {indexReports ? (
+            <div className="grid gap-2 sm:grid-cols-2">
+              {indexReports.map((r) => (
+                <div key={r.symbol} className={`rounded-md border p-2 ${r.vwapUsable ? 'border-emerald-500/40' : 'border-amber-500/50'}`}>
+                  <div className="font-medium">{r.symbol} · {r.ok ? (r.vwapUsable ? 'VWAP usable' : 'no volume: no VWAP') : 'no data'}</div>
+                  <div className="text-muted-foreground">{r.candles} candles · {r.sessions} sessions ({r.firstDay ?? '–'} to {r.lastDay ?? '–'}) · {r.sessionsWithVolume} with volume · usable months: {r.monthsUsable.join(', ') || 'none'}</div>
+                  {r.sampleCandle ? <div className="text-muted-foreground">sample {r.sampleCandle.time}: close {r.sampleCandle.c}, volume {r.sampleCandle.v.toLocaleString('en-IN')}</div> : null}
+                  <div>{r.note}{r.error ? ` (${r.error})` : ''}</div>
+                  {r.skipped.length ? <div className="text-muted-foreground">Skipped: {r.skipped.map((x) => `${x.month} (${x.reason})`).join('; ')}</div> : null}
+                </div>
+              ))}
+            </div>
+          ) : null}
+        </div>
       </div>
 
       {result && strategy ? (
