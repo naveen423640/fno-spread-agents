@@ -15,6 +15,7 @@ Every rule has a source tag: **[course]** from the free course or its practice t
 1. **[user, 2026-10-13]** When the pressure is high (no bottom: Blood Bath, or no top: Bull Run), **risky trades can be taken**.
    - **No bottom (Blood Bath):** the risky trade is a **short**. **No top (Bull Run):** the risky trade is a **long**. *(Direction confirmed again on 2026-10-13 after the level was corrected.)* The entry is at the tool's displayed Risky level on that side (resistance side for the short, support side for the long).
    - **The level is not EOR-1 or EOS+1. The live tool shows the risky level and the moderate level itself** in its header lines (Risky, Moderate, Max Pain, Max Gain, on the resistance side and the support side). The rule uses those displayed values, not our own formula.
+   - **Which cases (owner, 2026-10-13):** only the **highly** bearish / highly bullish ones, not plain bearish on both sides. No bottom with at least one side highly bearish (Blood Bath: one side highly bearish and the other strong, or both highly bearish; scenario 6, both sides plain bearish, does not qualify); no top with at least one side highly bullish, likewise. *(One side highly bearish with the other plainly bearish also shows no bottom in the tool; assumed to qualify, to confirm.)*
    - The tool's practice-tool wording for the extreme case ("EOR-1 can also be a good level as top", "EOS+1 can also be a good level as bottom") is a hint only, not the risky level.
 
 ## Open
