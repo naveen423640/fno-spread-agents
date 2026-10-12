@@ -11,6 +11,8 @@ A paper-trading agent that trades the LTP Calculator rules (see `docs/ltp-levels
 - every decision's context has a `graph` entry (`lib/ltp-agent/graph-use.ts`): the pressure pair, the top and bottom the graph gives, the rules that applied, and `consistent`, which is false if the live scenario disagrees with the graph;
 - the reviewing model and the experiment-proposing model get the graph as a plain-text RULEBOOK in their instructions, with the open questions listed so they do not invent answers.
 
+**Experiment setups (off in every version):** `breakdown` sells and `breakup` buys the push through the strike instead of waiting for a rally into a level. Bearish tug (a risky trade allowed) and the price falls through the support strike: a short at the price. Bullish tug and the price rises through the resistance strike: a long. Stop one diversion, target two diversions. Not from the course. Switch them on in the Backtest tab under "Try your own changes" (`setups_enabled.breakdown`, `setups_enabled.breakup`); add them to a version only if they prove out.
+
 **Touch count (owner rule):** a level that moves is a new level, so the hit number counts only the touches since that side's strike last moved (support side for longs, resistance side for shorts). The cap is `max_hit_number`.
 
 **Stop loss (owner rule):** v2.0 puts every stop exactly one diversion from the entry, one strike step: 50 points in NIFTY, 100 in BANKNIFTY and SENSEX, whatever the setup (`stop_rule: one_diversion`). v0.1 keeps the 9:20 style stop. The Backtest tab has an index picker (NIFTY, BANKNIFTY, SENSEX) before the run.

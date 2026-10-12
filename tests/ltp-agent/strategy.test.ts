@@ -23,7 +23,7 @@ describe('ltp_v0.1.yaml is the pure course rules with the defaults of the brief'
     expect(s.risk).toMatchObject({ max_trades_per_day: 3, max_concurrent: 1 });
   });
   it('setups: COA 1.0 reversal, 9:20 and SOC on; end of diversion off', () => {
-    expect(s.setups_enabled).toEqual({ coa1_reversal: true, nine_twenty: true, soc: true, end_of_diversion: false, risky_tug: false, very_risky_eod: false });
+    expect(s.setups_enabled).toEqual({ coa1_reversal: true, nine_twenty: true, soc: true, end_of_diversion: false, risky_tug: false, very_risky_eod: false, breakdown: false, breakup: false });
   });
   it('scenarios traded follow the course table: both sides in 1 to 5, shorts only in 6 (Blood Bath), longs only in 7 (Bull Run), both sides in 8 and 9 (Detailed Chart)', () => {
     for (const n of ['1', '2', '3', '4', '5']) expect(s.scenarios_traded[n as '1']).toEqual({ long: true, short: true });
@@ -64,7 +64,7 @@ describe('parseStrategy rejects a bad file and names the field', () => {
 
 describe('only the tunable fields can change, inside their bounds', () => {
   it('lists the tunable fields and every one has a bound', () => {
-    expect(Object.keys(TUNABLE_FIELDS).sort()).toEqual(['books.sell.hedge_width', 'entry_profile', 'exit_on_level_shift', 'max_hit_number', 'require_coa2_agree', 'risk.max_trades_per_day', 'stop_buffer_pts', 'touch_tolerance_pts', 'window.end', 'window.start']);
+    expect(Object.keys(TUNABLE_FIELDS).sort()).toEqual(['books.sell.hedge_width', 'entry_profile', 'exit_on_level_shift', 'max_hit_number', 'require_coa2_agree', 'risk.max_trades_per_day', 'setups_enabled.breakdown', 'setups_enabled.breakup', 'stop_buffer_pts', 'touch_tolerance_pts', 'window.end', 'window.start']);
   });
   it('accepts a value inside the bounds', () => {
     expect(validateDiff({ touch_tolerance_pts: 8 })).toEqual({ ok: true });

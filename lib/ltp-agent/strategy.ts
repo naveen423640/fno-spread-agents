@@ -12,7 +12,7 @@ export const strategySchema = z.object({
   scenarios_traded: z.object(Object.fromEntries(scenarioKeys.map((k) => [k, sides])) as Record<(typeof scenarioKeys)[number], typeof sides>).strict(),
   block_scenarios: z.array(z.number().int().min(1).max(9)),
   entry_profile: z.enum(['risky', 'moderate']),
-  setups_enabled: z.object({ coa1_reversal: z.boolean(), nine_twenty: z.boolean(), soc: z.boolean(), end_of_diversion: z.boolean(), risky_tug: z.boolean().default(false), very_risky_eod: z.boolean().default(false) }).strict(), // settings added later default to off, so a version saved before them keeps the behaviour it always had
+  setups_enabled: z.object({ coa1_reversal: z.boolean(), nine_twenty: z.boolean(), soc: z.boolean(), end_of_diversion: z.boolean(), risky_tug: z.boolean().default(false), very_risky_eod: z.boolean().default(false), breakdown: z.boolean().default(false), breakup: z.boolean().default(false) }).strict(), // settings added later default to off, so a version saved before them keeps the behaviour it always had
   touch_tolerance_pts: z.number().positive(),
   window: z.object({ start: hhmm, end: hhmm, nine_twenty_start: hhmm }).strict(),
   max_hit_number: z.number().int().min(1),
@@ -40,6 +40,8 @@ export const TUNABLE_FIELDS: Record<string, Bound> = {
   require_coa2_agree: { values: [true, false] },
   exit_on_level_shift: { values: [true, false] },
   entry_profile: { values: ['risky', 'moderate'] },
+  'setups_enabled.breakdown': { values: [true, false] },
+  'setups_enabled.breakup': { values: [true, false] },
   'window.start': { values: ['09:30', '09:45', '10:00'] },
   'window.end': { values: ['13:30', '14:00', '14:30', '14:45'] },
   'risk.max_trades_per_day': { min: 1, max: 5, integer: true },

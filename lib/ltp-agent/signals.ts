@@ -9,7 +9,7 @@ import { tugOfWar } from '@/lib/ltp/tug-of-war';
 import { graphTrace } from './graph-use';
 import type { Strategy } from './strategy';
 
-export type SetupType = 'coa1_reversal' | 'nine_twenty' | 'soc' | 'risky_tug' | 'very_risky_eod';
+export type SetupType = 'coa1_reversal' | 'nine_twenty' | 'soc' | 'risky_tug' | 'very_risky_eod' | 'breakdown' | 'breakup';
 export type RuleStep = { rule: string; inputs: Record<string, number | string | boolean | null>; passed: boolean };
 export type EvalContext = { dayTradeCount: number; openCount: number; dayLossInr: number };
 export type Candidate = {
@@ -128,6 +128,20 @@ function build(a: UsableAnalysis, strategy: Strategy, ctx: EvalContext, mode: 't
     }
   }
 
+  // EXPERIMENT (off in every version): follow the push through the strike instead of waiting for a rally into a level. When the tug of war is bearish and the
+  // price falls through the support strike, sell the breakdown; when it is bullish and the price rises through the resistance strike, buy the breakup.
+  // The stop is the usual one diversion; the target is two diversions beyond the entry. Not from the course: it exists to be tested in the Backtest tab.
+  for (const [setup, direction, label] of [['breakdown', 'short', 'Breakdown'], ['breakup', 'long', 'Breakup']] as const) {
+    if (!strategy.setups_enabled[setup]) continue;
+    const tug = tugOfWar(a.coa1.pressure.support, a.coa1.pressure.resistance);
+    if (!tug.riskyAllowed || tug.riskyDirection !== direction) continue;
+    const strike = direction === 'short' ? a.levels.support.strike : a.levels.resistance.strike;
+    const crossed = mode === 'watch' || (previous !== null && (direction === 'short' ? previous >= strike && spot < strike : previous <= strike && spot > strike));
+    if (!crossed || (mode === 'touch' && (coaDirections.has(direction) || raws.some((r) => r.direction === direction)))) continue;
+    const from = mode === 'watch' ? strike : spot;
+    raws.push({ setup, direction, level: { label, value: strike }, stop: null, target: direction === 'short' ? from - 2 * a.step : from + 2 * a.step });
+  }
+
   // v2.0 raises no signal at all for a side the outcome has no level for (no long in a Blood Bath, no short in a Bull Run): nothing to show or to skip.
   const hasLevelFor = (direction: Direction) => (direction === 'long' ? scenario.bottom : scenario.top) !== null;
   return raws.filter((r) => !strategy.decide_by_graph || hasLevelFor(r.direction)).map((r) => judge(r));
@@ -146,7 +160,7 @@ function build(a: UsableAnalysis, strategy: Strategy, ctx: EvalContext, mode: 't
     const blocked = !strategy.decide_by_graph && strategy.block_scenarios.includes(scenario.number);
     const start = r.setup === 'nine_twenty' ? strategy.window.nine_twenty_start : strategy.window.start;
     // v2.0: every setup risks exactly one diversion (one strike step) from the entry.
-    const stop = strategy.stop_rule === 'one_diversion' ? (r.direction === 'long' ? entry - a.step : entry + a.step) : r.stop;
+    const stop = strategy.stop_rule === 'one_diversion' || r.setup === 'breakdown' || r.setup === 'breakup' ? (r.direction === 'long' ? entry - a.step : entry + a.step) : r.stop;
     const target = r.target;
     const planOk = stop !== null && target !== null && (r.direction === 'long' ? stop < entry && entry < target : target < entry && entry < stop);
     const coa2 = a.coa2.result;

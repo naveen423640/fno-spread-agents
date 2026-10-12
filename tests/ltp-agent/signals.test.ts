@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 import { evaluate, watchLevels, type Candidate } from '@/lib/ltp-agent/signals';
-import { parseStrategy, type Strategy } from '@/lib/ltp-agent/strategy';
+import { parseStrategy, TUNABLE_FIELDS, type Strategy } from '@/lib/ltp-agent/strategy';
 import { istTs } from '@/lib/ltp/time';
 import { EXT, fakeAnalysis, fakeLines, type FakeOpts } from '../support/ltp-analysis';
 
@@ -154,6 +154,42 @@ describe('v2.0 keeps one diversion as the stop for every setup: one strike step 
     const a = fakeAnalysis({ underlying: 'NSE:NIFTYBANK-INDEX', step: 100, spot: 24012, spots: [24092, 24012] });
     expect(evaluate(a, v20s, idle).find((x) => x.direction === 'long')).toMatchObject({ stop: 23912, plannedRiskPts: 100 });
     expect(watchLevels(fakeAnalysis(), v20s, idle).find((x) => x.direction === 'long')).toMatchObject({ entry: EXT.eos, stop: EXT.eos - 50 });
+  });
+});
+
+describe('experiment setups: sell the breakdown / buy the breakup (off unless asked for)', () => {
+  const v20x = parseStrategy(readFileSync('strategies/ltp_v2.0.yaml', 'utf8'));
+  const on = (flags: Partial<typeof v20x.setups_enabled>) => ({ ...v20x, setups_enabled: { ...v20x.setups_enabled, coa1_reversal: false, nine_twenty: false, soc: false, risky_tug: false, very_risky_eod: false, ...flags } });
+  const bears = { pressure: { support: 'B' as const, resistance: 'B' as const } };
+  const bulls = { pressure: { support: 'U' as const, resistance: 'U' as const } };
+  const cross = (opts: FakeOpts, flags: Partial<typeof v20x.setups_enabled>) => evaluate(fakeAnalysis(opts), on(flags), idle).filter((c) => c.setup === 'breakdown' || c.setup === 'breakup');
+  it('no version has them on', () => {
+    expect(v20x.setups_enabled).toMatchObject({ breakdown: false, breakup: false });
+    expect(v01.setups_enabled).toMatchObject({ breakdown: false, breakup: false });
+  });
+  it('a bearish tug and the price falling through the support strike: a short at the price, stop one diversion above, target two below', () => {
+    const c = only(cross({ ...bears, spot: 23995, spots: [24010, 23995] }, { breakdown: true }));
+    expect(c).toMatchObject({ setup: 'breakdown', direction: 'short', level: { label: 'Breakdown', value: 24000 }, entry: 23995, stop: 24045, target: 23895, plannedRiskPts: 50, rewardPts: 100, taken: true });
+  });
+  it('nothing when it is off, when the price was already below, when it has not crossed, or when the tug is not bearish', () => {
+    expect(cross({ ...bears, spot: 23995, spots: [24010, 23995] }, {})).toEqual([]);
+    expect(cross({ ...bears, spot: 23995, spots: [23990, 23995] }, { breakdown: true })).toEqual([]);
+    expect(cross({ ...bears, spot: 24005, spots: [24030, 24005] }, { breakdown: true })).toEqual([]);
+    expect(cross({ ...bulls, spot: 23995, spots: [24010, 23995] }, { breakdown: true })).toEqual([]);
+    expect(cross({ pressure: { support: 'B', resistance: 'U' }, spot: 23995, spots: [24010, 23995] }, { breakdown: true })).toEqual([]);
+  });
+  it('the mirror: a bullish tug and the price rising through the resistance strike is a long, stop one diversion below, target two above', () => {
+    const c = only(cross({ ...bulls, spot: 24255, spots: [24240, 24255] }, { breakup: true }));
+    expect(c).toMatchObject({ setup: 'breakup', direction: 'long', level: { label: 'Breakup', value: 24250 }, entry: 24255, stop: 24205, target: 24355, plannedRiskPts: 50, rewardPts: 100, taken: true });
+    expect(cross({ ...bears, spot: 24255, spots: [24240, 24255] }, { breakup: true })).toEqual([]);
+  });
+  it('the Watch list shows the strike it waits for', () => {
+    const w = watchLevels(fakeAnalysis({ ...bears, spot: 24100, spots: [24150, 24100] }), on({ breakdown: true }), idle).find((x) => x.setup === 'breakdown');
+    expect(w).toMatchObject({ direction: 'short', level: { label: 'Breakdown', value: 24000 }, entry: 24000, stop: 24050, target: 23900 });
+  });
+  it('they are tunable, so the Backtest tab and the experiments can switch them on', () => {
+    expect(TUNABLE_FIELDS['setups_enabled.breakdown']).toEqual({ values: [true, false] });
+    expect(TUNABLE_FIELDS['setups_enabled.breakup']).toEqual({ values: [true, false] });
   });
 });
 
