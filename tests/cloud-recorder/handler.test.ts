@@ -121,3 +121,40 @@ describe('exporting a day to pull into the local database', () => {
     expect((await call(env, `/export?date=${DAY}`)).status).toBe(400);
   });
 });
+
+describe('receiving the agent journal pushed from the Mac (so the tablet can show it)', () => {
+  const journalDb = () => createD1Fake(['drizzle/0008_ltp.sql', 'drizzle/0009_ltp_bidask.sql', 'drizzle/0010_ltp_agent.sql', 'cloud-recorder/schema.sql']);
+  const decision = (id: string) => ({ decision_id: id, ts: 1000, trade_date: DAY, underlying: 'NSE:NIFTY50-INDEX', strategy_version: '0.1', setup: 'coa1_reversal', direction: 'long', book: 'both', taken: 1, skip_reason: null, context_json: '{}', trace_json: '[]', reason: 'why', expectation_json: '{}', data_quality_json: '{}' });
+  const put = (env: Env, body: unknown) => call(env, '/journal', { method: 'PUT', body: JSON.stringify(body) });
+
+  it('needs the secret like every other route', async () => {
+    expect((await call(envOf(journalDb()), '/journal', { method: 'PUT', secret: null, body: '{}' })).status).toBe(401);
+  });
+  it('stores rows of an agent table, and a decision sent twice is kept as it was first written', async () => {
+    const db = journalDb();
+    const env = envOf(db);
+    const first = await put(env, { table: 'agent_decisions', rows: [decision('d1'), decision('d2')] });
+    expect(first.status).toBe(200);
+    expect(await first.json()).toEqual({ written: 2 });
+    await put(env, { table: 'agent_decisions', rows: [{ ...decision('d1'), reason: 'CHANGED' }] });
+    expect((await db.prepare('SELECT reason FROM agent_decisions WHERE decision_id = ?').bind('d1').first<{ reason: string }>())?.reason).toBe('why');
+    expect((await db.prepare('SELECT COUNT(*) AS n FROM agent_decisions').first<{ n: number }>())?.n).toBe(2);
+  });
+  it('a state row sent again replaces the old value', async () => {
+    const db = journalDb();
+    const env = envOf(db);
+    await put(env, { table: 'agent_state', rows: [{ key: 'active_version', value: '0.1' }] });
+    await put(env, { table: 'agent_state', rows: [{ key: 'active_version', value: '0.2' }] });
+    expect((await db.prepare('SELECT value FROM agent_state WHERE key = ?').bind('active_version').first<{ value: string }>())?.value).toBe('0.2');
+  });
+  it('refuses a table that is not part of the journal, a column that does not exist, and too many rows', async () => {
+    const env = envOf(journalDb());
+    expect((await put(env, { table: 'recorder_token', rows: [{ id: 1, token: 'x', saved_at: 1 }] })).status).toBe(400);
+    expect((await put(env, { table: 'ltp_snapshots', rows: [{ underlying: 'x' }] })).status).toBe(400);
+    expect((await put(env, { table: 'agent_state', rows: [{ key: 'a', value: 'b', evil: 'c' }] })).status).toBe(400);
+    expect((await put(env, { table: 'agent_state', rows: [{ 'key) VALUES (1); DROP TABLE agent_state; --': 'x' }] })).status).toBe(400);
+    expect((await put(env, { table: 'agent_state', rows: Array.from({ length: 31 }, (_, i) => ({ key: `k${i}`, value: 'v' })) })).status).toBe(400);
+    expect((await put(env, { table: 'agent_state', rows: [] })).status).toBe(400);
+    expect((await call(env, '/journal', { method: 'PUT', body: 'nope' })).status).toBe(400);
+  });
+});

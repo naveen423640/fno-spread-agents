@@ -25,6 +25,8 @@
     "ltp:token": "tsx --env-file-if-exists=.env.local scripts/ltp-token.ts",
     "ltp:pull": "tsx --env-file-if-exists=.env.local scripts/ltp-pull.ts",
     "cloud:db": "wrangler d1 execute ltp-recorder --remote --config cloud-recorder/wrangler.jsonc --file drizzle/0008_ltp.sql && wrangler d1 execute ltp-recorder --remote --config cloud-recorder/wrangler.jsonc --file drizzle/0009_ltp_bidask.sql && wrangler d1 execute ltp-recorder --remote --config cloud-recorder/wrangler.jsonc --file cloud-recorder/schema.sql",
+    "cloud:app:db": "for f in 0000_preflight 0001_strategy_lab_reports 0002_agent_team 0003_screener 0004_board 0005_board_history 0006_vwap 0007_vwap_history 0010_ltp_agent; do wrangler d1 execute ltp-recorder --remote --config cloud-recorder/wrangler.jsonc --file drizzle/$f.sql || exit 1; done",
+    "cloud:app:deploy": "vinext build && wrangler deploy --config cloud-app/wrangler.jsonc",
     "cloud:deploy": "wrangler deploy --config cloud-recorder/wrangler.jsonc",
     "agent-run": "tsx scripts/ltp-agent.ts run",
     "agent-replay": "tsx scripts/ltp-agent.ts replay",

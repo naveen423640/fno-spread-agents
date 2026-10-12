@@ -15,6 +15,7 @@ import { istDate, istHhmm } from '@/lib/ltp/time';
 import { healthBadge, tradeLevels } from '@/lib/ltp/view';
 
 import { LtpChainTable } from '@/app/ltp-chain-table';
+import { useCloudMode } from '@/app/use-cloud-mode';
 import { LtpScenarioDialog } from '@/app/ltp-scenario-dialog';
 import { LTP_CONFIG } from '@/lib/ltp/config';
 
@@ -58,6 +59,7 @@ function LtpLevels() {
   const [loading, setLoading] = useState(false);
   const [now, setNow] = useState(() => Math.floor(Date.now() / 1000));
   const [recordMsg, setRecordMsg] = useState<string | null>(null);
+  const cloud = useCloudMode();
   const [auto, setAuto] = useState(false);
   const [popup, setPopup] = useState(false);
 
@@ -186,10 +188,10 @@ function LtpLevels() {
         <span className="flex flex-wrap items-center gap-2 text-xs">
           <span className={`rounded-md px-2 py-1 font-medium ${BADGE_CLASS[badge]}`}>{BADGE_TEXT[badge]}{state ? ` · last ${clock(state.health.lastSuccessTs)}` : ''}</span>
           <Button size="sm" variant="secondary" onClick={() => { setLoading(true); void load(); }} disabled={loading}><RefreshCw className={loading ? 'animate-spin' : ''} />Refresh</Button>
-          <Button size="sm" variant="secondary" onClick={() => void recordNow()}>Record now</Button>
+          {cloud ? null : <Button size="sm" variant="secondary" onClick={() => void recordNow()}>Record now</Button>}
           <Button size="sm" variant="secondary" onClick={() => void sendCloudToken()}>Send token to cloud</Button>
-          <Button size="sm" variant="secondary" onClick={() => void pullCloud()}>Pull from cloud</Button>
-          <label className="flex items-center gap-1.5"><input type="checkbox" checked={auto} onChange={(e) => setAuto(e.target.checked)} />Auto-record</label>
+          {cloud ? null : <Button size="sm" variant="secondary" onClick={() => void pullCloud()}>Pull from cloud</Button>}
+          {cloud ? null : <label className="flex items-center gap-1.5"><input type="checkbox" checked={auto} onChange={(e) => setAuto(e.target.checked)} />Auto-record</label>}
         </span>
       </div>
       {recordMsg ? <p className="text-[11px] text-muted-foreground">{recordMsg}</p> : null}

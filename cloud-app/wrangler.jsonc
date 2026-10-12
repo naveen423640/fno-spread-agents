@@ -1,0 +1,23 @@
+{
+  // The cloud copy of the app for the tablet (see docs/cloud-app.md). Built first with `vinext build`; runs behind Cloudflare Access.
+  "name": "fno-calculator",
+  "main": "entry.ts",
+  "compatibility_date": "2026-05-15",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": true,
+  "assets": { "directory": "../dist/client", "binding": "ASSETS" },
+  // The same database the cloud recorder writes to, so the tablet sees the recorded chains and the agent journal pushed from the Mac.
+  "d1_databases": [{ "binding": "DB", "database_name": "ltp-recorder", "database_id": "90c9e5d1-9583-4f8b-a8e7-15e5ebb921b9" }],
+  "vars": {
+    "CLOUD_MODE": "true",
+    "CF_ACCESS_TEAM_DOMAIN": "SET-TEAM-DOMAIN.cloudflareaccess.com",
+    "CF_ACCESS_AUD": "SET-ACCESS-APPLICATION-AUD",
+    "SITE_URL": "https://fno-calculator.fnocalculator.workers.dev",
+    "FYERS_CLIENT_ID": "S6D79OFRXR-100",
+    "FYERS_REDIRECT_URI": "https://fno-calculator.fnocalculator.workers.dev/api/fyers/callback",
+    "LTP_RECORDER_URL": "https://ltp-recorder.fnocalculator.workers.dev",
+    "EXECUTION_MODE": "paper",
+    "LIVE_EXECUTION_ENABLED": "false"
+  },
+  "observability": { "enabled": true }
+}

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Pause, Play, RefreshCw } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
+import { useCloudMode } from '@/app/use-cloud-mode';
 import type { AgentState, WatchRow } from '@/lib/ltp-agent/state';
 import { istHhmm } from '@/lib/ltp/time';
 import { colour, inr, short, TradeCard } from '@/app/ltp-agent-parts/trade-card';
@@ -68,6 +69,17 @@ export function LtpAgentTab() {
   const [error, setError] = useState<string | null>(null);
   const [section, setSection] = useState<Section>('today');
   const [busy, setBusy] = useState(false);
+  const cloud = useCloudMode();
+  const [pushMsg, setPushMsg] = useState<string | null>(null);
+  // Copies the last week of the journal to the cloud recorder's database so the tablet can show it.
+  const pushToCloud = useCallback(async () => {
+    setPushMsg('Sending the journal to the cloud…');
+    try {
+      const res = await fetch('/api/ltp/agent/push-journal', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+      const b = (await res.json()) as { ok?: boolean; rows?: number; error?: string };
+      setPushMsg(b.ok ? `Sent ${b.rows ?? 0} journal rows to the cloud. The tablet shows them after a refresh.` : (b.error ?? 'Could not send the journal.'));
+    } catch { setPushMsg('Could not send the journal.'); }
+  }, []);
 
   const load = useCallback(async () => {
     try {
@@ -117,11 +129,13 @@ export function LtpAgentTab() {
           <span className={`rounded-md px-2.5 py-1 font-semibold ${h.phase.unlocked ? 'bg-blue-500/15 text-blue-700 dark:text-blue-300' : 'bg-amber-500/15 text-amber-700 dark:text-amber-400'}`}>{h.phase.counter}</span>
           <span className={`rounded-md px-2 py-1 font-medium ${BADGE[h.recorder.badge]}`}>Recorder {h.recorder.badge === 'green' ? 'recording' : h.recorder.badge === 'amber' ? 'lagging' : 'stopped'}{h.recorder.lastSuccessTs ? ` · last ${istHhmm(h.recorder.lastSuccessTs)}` : ''}</span>
           <span className={`rounded-md px-2 py-1 font-medium ${BADGE[h.heartbeat]}`}>Agent heartbeat {h.heartbeatAgeSeconds === null ? 'none yet' : `${h.heartbeatAgeSeconds}s ago`}</span>
-          <Button size="sm" variant={h.paused ? 'default' : 'outline'} onClick={() => void togglePause()} disabled={busy}>{h.paused ? <Play /> : <Pause />}{h.paused ? 'Resume paper trading' : 'Pause paper trading'}</Button>
+          {cloud ? <span className="rounded-md bg-slate-500/15 px-2 py-1 font-medium">Read-only copy: the agent runs on the Mac, this is what it last sent</span> : <Button size="sm" variant="outline" onClick={() => void pushToCloud()}>Send journal to cloud</Button>}
+          {cloud ? null : <Button size="sm" variant={h.paused ? 'default' : 'outline'} onClick={() => void togglePause()} disabled={busy}>{h.paused ? <Play /> : <Pause />}{h.paused ? 'Resume paper trading' : 'Pause paper trading'}</Button>}
           <Button size="sm" variant="ghost" onClick={() => void load()}><RefreshCw />Refresh</Button>
           {h.paused ? <span className="font-semibold text-amber-600">PAUSED: no new trades; open trades are still managed.</span> : null}
         </div>
       ) : null}
+      {pushMsg ? <p className="text-[11px] text-muted-foreground">{pushMsg}</p> : null}
       {error ? <p className="rounded-md border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm">{error}</p> : null}
       {h && h.heartbeat === 'red' && h.heartbeatAgeSeconds === null ? <p className="rounded-md border border-dashed border-border px-3 py-2 text-xs text-muted-foreground">The agent has not run yet. Start it with <code>npm run agent-run</code> (the recorder must be running too); it steps the agent once a minute during market hours.</p> : null}
 

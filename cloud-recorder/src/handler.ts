@@ -12,6 +12,9 @@ export type Env = { DB: D1Like; ADMIN_SECRET: string; FYERS_CLIENT_ID: string };
 type MakeSource = (credentials: { clientId: string; accessToken: string }) => ChainSource;
 
 const MAX_TOKEN_LENGTH = 4000;
+const MAX_JOURNAL_ROWS = 30; // each row is one database call, and a Worker run may make only so many
+// The agent journal tables the Mac may push. Decisions and outcomes are written once, so a repeat is ignored; the rest are replaced by the newer copy.
+const JOURNAL_TABLES: Record<string, 'ignore' | 'replace'> = { agent_decisions: 'ignore', trade_outcomes: 'ignore', agent_trades: 'replace', trade_reviews: 'replace', agent_experiments: 'replace', agent_state: 'replace', agent_strategies: 'replace' };
 const json = (body: unknown, status = 200) => Response.json(body, { status, headers: { 'Cache-Control': 'no-store' } });
 
 async function readToken(db: D1Like): Promise<{ token: string; savedAt: number } | null> {
@@ -65,6 +68,23 @@ export async function handleRequest(request: Request, env: Env, now: Date = new 
     const snapshots = (await env.DB.prepare('SELECT * FROM ltp_snapshots WHERE trade_date = ? AND underlying = ? ORDER BY snapshot_ts, strike, side').bind(date, underlying).all()).results;
     const gaps = (await env.DB.prepare('SELECT * FROM recorder_gaps WHERE trade_date = ? AND underlying = ? ORDER BY minute_ts').bind(date, underlying).all()).results;
     return json({ snapshots, gaps });
+  }
+
+  if (request.method === 'PUT' && url.pathname === '/journal') {
+    const body = (await request.json().catch(() => null)) as { table?: unknown; rows?: unknown } | null;
+    const table = typeof body?.table === 'string' ? body.table : '';
+    const rows = body?.rows;
+    if (!Object.hasOwn(JOURNAL_TABLES, table) || !Array.isArray(rows) || rows.length === 0 || rows.length > MAX_JOURNAL_ROWS) return json({ error: `Send {"table": one of ${Object.keys(JOURNAL_TABLES).join(', ')}, "rows": 1 to ${MAX_JOURNAL_ROWS} rows}.` }, 400);
+    const columns = new Set(((await env.DB.prepare(`PRAGMA table_info(${table})`).all<{ name: string }>()).results).map((c) => c.name));
+    for (const row of rows as Record<string, unknown>[]) {
+      const keys = row && typeof row === 'object' ? Object.keys(row) : [];
+      if (!keys.length || keys.some((k) => !columns.has(k))) return json({ error: 'A row has a column that this table does not have.' }, 400);
+    }
+    for (const row of rows as Record<string, string | number | null>[]) {
+      const keys = Object.keys(row);
+      await env.DB.prepare(`INSERT OR ${JOURNAL_TABLES[table] === 'ignore' ? 'IGNORE' : 'REPLACE'} INTO ${table} (${keys.join(', ')}) VALUES (${keys.map(() => '?').join(', ')})`).bind(...keys.map((k) => row[k] ?? null)).run();
+    }
+    return json({ written: rows.length });
   }
 
   return json({ error: 'Not found.' }, 404);
