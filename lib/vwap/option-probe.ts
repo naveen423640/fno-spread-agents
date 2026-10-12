@@ -13,7 +13,7 @@ export type ContractCheck = {
 };
 export type OptionProbe = {
   underlying: string;
-  chain: { ok: boolean; error?: string; legs: number; spot: number | null; expiries: string[]; legKeys: string[]; hasSymbolField: boolean; sampleLeg: Record<string, unknown> | null };
+  chain: { ok: boolean; error?: string; legs: number; spot: number | null; expiries: string[]; legKeys: string[]; hasSymbolField: boolean; sampleLeg: Record<string, unknown> | null; rawSample: Record<string, unknown>[] };
   atmStrike: number | null;
   contracts: ContractCheck[];
   verdict: string[];
@@ -42,7 +42,7 @@ export async function probeOptionData(deps: { credentials: Creds; underlying?: s
   const fetchImpl = deps.fetchImpl ?? fetch;
   const underlying = deps.underlying ?? 'NIFTY';
   const indexSymbol = deps.indexSymbol ?? 'NSE:NIFTY50-INDEX';
-  const out: OptionProbe = { underlying, chain: { ok: false, legs: 0, spot: null, expiries: [], legKeys: [], hasSymbolField: false, sampleLeg: null }, atmStrike: null, contracts: [], verdict: [], loginRequired: false };
+  const out: OptionProbe = { underlying, chain: { ok: false, legs: 0, spot: null, expiries: [], legKeys: [], hasSymbolField: false, sampleLeg: null, rawSample: [] }, atmStrike: null, contracts: [], verdict: [], loginRequired: false };
 
   const url = new URL(`${FYERS_DATA_BASE}/options-chain-v3`);
   url.searchParams.set('symbol', indexSymbol);
@@ -55,7 +55,7 @@ export async function probeOptionData(deps: { credentials: Creds; underlying?: s
   const optionLegs = legs.filter((l) => l.option_type === 'CE' || l.option_type === 'PE');
   const spotRow = legs.find((l) => !l.option_type);
   const spot = typeof spotRow?.ltp === 'number' ? spotRow.ltp : null;
-  out.chain = { ok: true, legs: optionLegs.length, spot, expiries: (data?.expiryData ?? []).map((e) => String(e.date ?? '')), legKeys: Object.keys(optionLegs[0] ?? {}), hasSymbolField: typeof optionLegs[0]?.symbol === 'string', sampleLeg: optionLegs[0] ?? null };
+  out.chain = { ok: true, legs: optionLegs.length, spot, expiries: (data?.expiryData ?? []).map((e) => String(e.date ?? '')), legKeys: Object.keys(optionLegs[0] ?? {}), hasSymbolField: typeof optionLegs[0]?.symbol === 'string', sampleLeg: optionLegs[0] ?? null, rawSample: legs.slice(0, 6) };
 
   const strikes = [...new Set(optionLegs.map((l) => Number(l.strike_price)).filter((s) => Number.isFinite(s) && s > 0))].sort((a, b) => a - b);
   const atm = spot === null ? strikes[Math.floor(strikes.length / 2)] : strikes.reduce((n, s) => (Math.abs(s - spot) < Math.abs(n - spot) ? s : n), strikes[0]);
@@ -68,7 +68,9 @@ export async function probeOptionData(deps: { credentials: Creds; underlying?: s
   const mon = months[Number(deps.today.slice(5, 7)) - 1];
   for (const type of ['CE', 'PE'] as const) {
     const leg = optionLegs.find((l) => l.option_type === type && Number(l.strike_price) === atm);
-    const symbol = typeof leg?.symbol === 'string' ? leg.symbol : fyersOption(underlying, yy, mon, atm, type);
+    // fyersOption builds an NSE symbol; a BSE index (SENSEX) trades on BSE, so the prefix follows the index symbol.
+    const built = fyersOption(underlying, yy, mon, atm, type);
+    const symbol = typeof leg?.symbol === 'string' ? leg.symbol : indexSymbol.startsWith('BSE:') ? built.replace(/^NSE:/, 'BSE:') : built;
     const intradayRows = await candles(deps.credentials, symbol, '5', addDays(deps.today, -10), deps.today, fetchImpl);
     if (intradayRows.auth) { out.loginRequired = true; return out; }
     const dailyRows = await candles(deps.credentials, symbol, 'D', addDays(deps.today, -60), deps.today, fetchImpl);

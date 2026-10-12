@@ -44,3 +44,6 @@ engine/**/__pycache__/
 engine/**/*.egg-info/
 engine/.pytest_cache/
 .vwap-cache/
+
+# inline-plan execution scratch
+.superpowers/

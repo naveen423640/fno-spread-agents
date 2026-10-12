@@ -46,6 +46,19 @@ describe('probeOptionData', () => {
     expect(urls.filter((u) => u.includes('oi_flag=1')).length).toBe(4); // two contracts, intraday and daily
   });
 
+  it('returns the first six legs of the real response untouched, so a real fixture can be saved from it', async () => {
+    const { fetchImpl } = fakeFyers({ candles: rows(7) });
+    const r = await probeOptionData({ credentials: creds, today: '2026-10-12', fetchImpl });
+    expect(r.chain.rawSample).toEqual(chain(true).data.optionsChain.slice(0, 6));
+  });
+
+  it('can probe another index and builds BSE contract symbols with the BSE prefix', async () => {
+    const { fetchImpl, urls } = fakeFyers({ symbols: false, candles: rows(7) });
+    const r = await probeOptionData({ credentials: creds, today: '2026-10-12', fetchImpl, underlying: 'SENSEX', indexSymbol: 'BSE:SENSEX-INDEX' });
+    expect(urls[0]).toContain('symbol=BSE%3ASENSEX-INDEX');
+    expect(r.contracts[0].symbol.startsWith('BSE:SENSEX26OCT')).toBe(true);
+  });
+
   it('builds the monthly contract symbol when the chain gives none', async () => {
     const { fetchImpl } = fakeFyers({ symbols: false, candles: rows(6) });
     const r = await probeOptionData({ credentials: creds, today: '2026-10-12', fetchImpl });
