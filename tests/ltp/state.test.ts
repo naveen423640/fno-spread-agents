@@ -31,7 +31,7 @@ describe('buildState', () => {
 
   it('shows the live day: levels, scenario, extensions, the chain around the imaginary line and the health badge', async () => {
     const store = await seeded(61); // 09:15 to 10:15
-    const r = await buildState(store, { underlying: U, nowTs: istTs(DAY, '10:15', 20), holidays: none });
+    const r = await buildState(store, { underlying: U, nowTs: istTs(DAY, '10:15', 20), holidays: none, method: 'writer_breakeven' });
     if (r.empty) throw new Error('expected data');
     expect(r).toMatchObject({ date: DAY, viewingStoredDay: false, snapshotTs: istTs(DAY, '10:15') });
     expect(r.health.badge).toBe('green');
@@ -45,7 +45,7 @@ describe('buildState', () => {
     const row = r.chain.find((c) => c.strike === 23900)!;
     expect(row.putReversal).toBe(23860); // proxy: 23900 less the put LTP of 40
     expect(row.pe?.oi).toBeGreaterThan(0);
-    expect(r.methods.map((m) => m.id)).toEqual(['writer_breakeven', 'time_value_only']);
+    expect(r.methods.map((m) => m.id)).toEqual(['iv_move', 'writer_breakeven', 'time_value_only']);
   });
 
   it('outside market hours it renders the last stored day, as stored', async () => {
@@ -72,7 +72,7 @@ describe('buildState', () => {
     const store = await seeded(10); // 09:15 to 09:24
     const first = await buildState(store, { underlying: U, nowTs: istTs(DAY, '09:24', 20), holidays: none });
     if (first.empty) throw new Error('expected data');
-    expect(first.lines0920?.eos.value).toBe(23860);
+    expect(first.lines0920?.eos.method).toBe('iv_move');
     expect(await store.getLines0920(DAY, U)).not.toBeNull();
     // A different chain stored later must not change the frozen lines.
     for (let m = 25; m < 40; m += 1) await store.insertSnapshot(makeChain({ spot: 24037, step: 50, ts: istTs(DAY, `09:${m}`), pe: { 23900: { volume: 9000, oi: 9000, ltp: 1 } }, ce: { 24200: { volume: 9000, oi: 9000, ltp: 1 } } }));
@@ -104,7 +104,7 @@ describe('buildState', () => {
     const tv = await buildState(store, { underlying: U, nowTs: istTs(DAY, '09:34'), method: 'time_value_only', holidays: none });
     expect(usable(tv).extensions.eos.method).toBe('time_value_only');
     const bogus = await buildState(store, { underlying: U, nowTs: istTs(DAY, '09:34'), method: 'nope', holidays: none });
-    expect(usable(bogus).extensions.eos.method).toBe('writer_breakeven');
+    expect(usable(bogus).extensions.eos.method).toBe('iv_move');
   });
 
   it('a snapshot with no imaginary line gives an unusable analysis and an empty chain view, not an error', async () => {

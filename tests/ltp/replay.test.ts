@@ -35,7 +35,7 @@ describe('replayDay', () => {
   });
 
   it('shows the levels, statuses, scenario and the proxy reversal values', async () => {
-    const lines = (await replayDay(await storeWith(10), U, '2026-10-12'))!.trim().split('\n');
+    const lines = (await replayDay(await storeWith(10), U, '2026-10-12', writerBreakeven))!.trim().split('\n');
     const row = Object.fromEntries(REPLAY_COLUMNS.map((c, i) => [c, lines[10].split(',')[i]]));
     expect(row).toMatchObject({ time: '09:24', support: '23900', resistance: '24200', eos_proxy: '23860', eor_proxy: '24255' });
     expect(['strong', 'wtt', 'wtb']).toContain(row.support_status);

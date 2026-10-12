@@ -1,7 +1,7 @@
 // Replay: run the same engine over a stored day, one row per snapshot, each row seeing only the snapshots up to its own time (as the live view would).
 import { analyzeSession } from './analyze';
 import { LTP_CONFIG, type LtpConfig } from './config';
-import { writerBreakeven, type ExtensionMethod } from './extensions';
+import { ivMove, type ExtensionMethod } from './extensions';
 import type { LtpStore } from './store';
 import { istHhmm } from './time';
 
@@ -17,7 +17,7 @@ export function replayCsv(rows: Record<string, Cell>[], columns: string[]): stri
 const r2 = (v: number | null) => (v === null ? null : Math.round(v * 100) / 100);
 
 // Null when nothing is stored for that underlying and day.
-export async function replayDay(store: LtpStore, underlying: string, date: string, method: ExtensionMethod = writerBreakeven, cfg: LtpConfig = LTP_CONFIG): Promise<string | null> {
+export async function replayDay(store: LtpStore, underlying: string, date: string, method: ExtensionMethod = ivMove, cfg: LtpConfig = LTP_CONFIG): Promise<string | null> {
   const snaps = await store.snapshotsForDay(underlying, date);
   if (!snaps.length) return null;
   const rows = snaps.map((s, i): Record<string, Cell> => {

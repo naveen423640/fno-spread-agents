@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { writerBreakeven } from '@/lib/ltp/extensions';
 import { analyzeSession } from '@/lib/ltp/analyze';
 import { timeValueOnly } from '@/lib/ltp/extensions';
 import { istTs } from '@/lib/ltp/time';
@@ -34,7 +35,7 @@ describe('analyzeSession (C1 to C10 together)', () => {
   });
 
   it('reads the levels, status, scenario and extensions of the latest snapshot', () => {
-    const r = analyzeSession(day, { now: at('12:00', 0) });
+    const r = analyzeSession(day, { now: at('12:00', 0), method: writerBreakeven });
     if (r.empty || !r.usable) throw new Error('expected a usable analysis');
     expect(r.levels.support.strike).toBe(23900);
     expect(r.levels.resistance.strike).toBe(24200);

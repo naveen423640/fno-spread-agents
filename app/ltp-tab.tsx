@@ -46,7 +46,7 @@ const Proxy = ({ level }: { level: ExtLevel | null }) => (
 
 export function LtpTab() {
   const [underlying, setUnderlying] = useState(UNDERLYING_OPTIONS[0].value);
-  const [method, setMethod] = useState('writer_breakeven');
+  const [method, setMethod] = useState('iv_move');
   const [date, setDate] = useState('');
   const [state, setState] = useState<LtpState | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -133,6 +133,7 @@ export function LtpTab() {
         <Select value={method} onValueChange={(v) => v && setMethod(v)}>
           <SelectTrigger className="w-[250px]"><SelectValue>{`EOS/EOR proxy: ${method.replace(/_/g, ' ')}`}</SelectValue></SelectTrigger>
           <SelectContent>
+            <SelectItem value="iv_move">EOS/EOR proxy: IV move (fitted to the real tool)</SelectItem>
             <SelectItem value="writer_breakeven">EOS/EOR proxy: writer breakeven</SelectItem>
             <SelectItem value="time_value_only">EOS/EOR proxy: time value only</SelectItem>
           </SelectContent>

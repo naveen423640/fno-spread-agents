@@ -17,7 +17,7 @@ describe('proxiesAt', () => {
     expect(r.snapshotTs).toBe(istTs(DAY, '10:00'));
     expect(r.proxies.writer_breakeven).toBe(23860); // support 23900 less its put LTP of 40
     expect(r.proxies.time_value_only).toBe(23860); // out of the money, so all of the premium is time value
-    expect(Object.keys(r.proxies).sort()).toEqual(['time_value_only', 'writer_breakeven']);
+    expect(Object.keys(r.proxies).sort()).toEqual(['iv_move', 'time_value_only', 'writer_breakeven']);
   });
 
   it('covers the extension labels: EOR, EOS-1 and EOR+1', () => {

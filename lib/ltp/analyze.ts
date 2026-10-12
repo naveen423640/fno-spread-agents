@@ -4,7 +4,7 @@ import { classifyTrend, selectCoa2, type Coa2Result, type Trend } from './coa2';
 import { countHits, hitLabel, scenarioLevels, selectCoa1, type Coa1Scenario } from './coa1';
 import { LTP_CONFIG, type LtpConfig } from './config';
 import { diversionCount, diversionPath, type DiversionPoint } from './diversions';
-import { extensionLevels, writerBreakeven, type ExtLevel, type Extensions, type ExtensionMethod } from './extensions';
+import { extensionLevels, ivMove, type ExtLevel, type Extensions, type ExtensionMethod } from './extensions';
 import type { Levels } from './levels';
 import { freezeLines0920, type Lines0920 } from './lines0920';
 import { detectSoc, type SocResult } from './soc';
@@ -42,7 +42,7 @@ export type SessionAnalysis = { empty: true } | UnusableAnalysis | UsableAnalysi
 
 export function analyzeSession(snapshots: Snapshot[], opts: AnalysisOptions): SessionAnalysis {
   const cfg = opts.cfg ?? LTP_CONFIG;
-  const method = opts.method ?? writerBreakeven;
+  const method = opts.method ?? ivMove;
   const upToNow = snapshots.filter((s) => s.ts <= opts.now).sort((a, b) => a.ts - b.ts);
   if (!upToNow.length) return { empty: true };
   const latest = upToNow[upToNow.length - 1];

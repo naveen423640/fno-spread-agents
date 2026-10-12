@@ -1,7 +1,7 @@
 // Everything the LTP Levels tab shows for one underlying, built from the store only (never from FYERS). The route is a thin wrapper so this
 // can be tested against an in-memory database.
 import { analyzeSession, type SessionAnalysis } from './analyze';
-import { EXTENSION_METHODS, writerBreakeven } from './extensions';
+import { EXTENSION_METHODS, ivMove } from './extensions';
 import { freezeLines0920, type Lines0920 } from './lines0920';
 import { health, UNDERLYINGS, type Health } from './recorder';
 import type { LtpStore } from './store';
@@ -45,13 +45,13 @@ export async function buildState(store: LtpStore, opts: StateOptions): Promise<L
   if (!snaps.length) return { empty: true, reason: 'no_data_for_date', underlying, date, health: h };
 
   const last = snaps[snaps.length - 1];
-  const method = EXTENSION_METHODS.find((m) => m.id === opts.method) ?? writerBreakeven;
+  const method = EXTENSION_METHODS.find((m) => m.id === opts.method) ?? ivMove;
   const analysis = analyzeSession(snaps, { now: last.ts, method });
 
   // The 9:20 lines are frozen: the first time they can be computed they are saved, and from then on the saved copy is shown.
   let lines0920 = (await store.getLines0920(date, underlying)) as Lines0920 | null;
   if (!lines0920) {
-    lines0920 = freezeLines0920(snaps, writerBreakeven);
+    lines0920 = freezeLines0920(snaps, ivMove);
     if (lines0920) await store.saveLines0920(date, underlying, lines0920);
   }
 
