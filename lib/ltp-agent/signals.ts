@@ -31,12 +31,22 @@ function ladder(a: UsableAnalysis): Record<string, number | null> {
 type Raw = { setup: SetupType; direction: Direction; level: { label: string; value: number }; stop: number | null; target: number | null };
 
 export function evaluate(a: UsableAnalysis, strategy: Strategy, ctx: EvalContext): Candidate[] {
+  return build(a, strategy, ctx, 'touch');
+}
+
+// Where the agent WOULD trade from the current state, whether or not the spot is near the level: the same levels, plan and rules, with the entry taken
+// at the level and the hit number being the one the next touch would be. Used to show the user the levels being watched; nothing is journaled or booked.
+export function watchLevels(a: UsableAnalysis, strategy: Strategy, ctx: EvalContext): Candidate[] {
+  return build(a, strategy, ctx, 'watch');
+}
+
+function build(a: UsableAnalysis, strategy: Strategy, ctx: EvalContext, mode: 'touch' | 'watch'): Candidate[] {
   const hhmm = istHhmm(a.asOf);
   const spot = a.spot;
   const spots = a.series.spot.map((p) => p.spot);
   const previous = spots.length > 1 ? spots[spots.length - 2] : null;
   const tol = strategy.touch_tolerance_pts;
-  const touched = (value: number) => Math.abs(spot - value) <= tol && (previous === null || Math.abs(previous - value) > tol);
+  const touched = (value: number) => mode === 'watch' || (Math.abs(spot - value) <= tol && (previous === null || Math.abs(previous - value) > tol));
   const buffer = strategy.stop_buffer_pts;
   const rungs = ladder(a);
   const scenario = a.coa1.scenario;
@@ -91,13 +101,15 @@ export function evaluate(a: UsableAnalysis, strategy: Strategy, ctx: EvalContext
   return raws.map((r) => judge(r));
 
   function judge(r: Raw): Candidate {
-    const hit = countHits(spots, r.level.value, tol);
+    const inBand = Math.abs(spot - r.level.value) <= tol;
+    const hit = countHits(spots, r.level.value, tol) + (mode === 'watch' && !inBand ? 1 : 0);
+    const entry = mode === 'watch' ? r.level.value : spot;
     const allowed = strategy.scenarios_traded[String(scenario.number) as '1'][r.direction];
     const blocked = strategy.block_scenarios.includes(scenario.number);
     const start = r.setup === 'nine_twenty' ? strategy.window.nine_twenty_start : strategy.window.start;
     const stop = r.stop;
     const target = r.target;
-    const planOk = stop !== null && target !== null && (r.direction === 'long' ? stop < spot && spot < target : target < spot && spot < stop);
+    const planOk = stop !== null && target !== null && (r.direction === 'long' ? stop < entry && entry < target : target < entry && entry < stop);
     const coa2 = a.coa2.result;
     const agrees = coa2.status === 'ok'
       ? (r.direction === 'long' ? /^Reversal at (both|support)/.test(coa2.outcome) : /^Reversal at (both|resistance)/.test(coa2.outcome))
@@ -108,8 +120,8 @@ export function evaluate(a: UsableAnalysis, strategy: Strategy, ctx: EvalContext
     const checks: RuleStep[] = [
       { rule: 'scenario_allowed', inputs: { scenario: scenario.number, direction: r.direction, allowed, blocked }, passed: allowed && !blocked },
       { rule: 'time_window', inputs: { time: hhmm, start, end: strategy.window.end }, passed: hhmm >= start && hhmm <= strategy.window.end },
-      { rule: 'level_touched', inputs: { spot, level: r.level.value, tolerance: tol, previous_spot: previous }, passed: true },
-      { rule: 'valid_plan', inputs: { entry: spot, stop, target }, passed: planOk },
+      { rule: 'level_touched', inputs: mode === 'watch' ? { spot, level: r.level.value, tolerance: tol, previous_spot: previous, watching: true } : { spot, level: r.level.value, tolerance: tol, previous_spot: previous }, passed: true },
+      { rule: 'valid_plan', inputs: { entry, stop, target }, passed: planOk },
       { rule: 'hit_number', inputs: { hit, max: strategy.max_hit_number }, passed: hit <= strategy.max_hit_number },
       { rule: 'coa2_agree', inputs: { status: coa2.status, agrees, required: strategy.require_coa2_agree }, passed: !strategy.require_coa2_agree || agrees === true },
       { rule: 'soc_opposes', inputs: { soc: soc ? `${soc.type} ${soc.bias}` : null, opposes, blocking: strategy.block_on_opposing_soc }, passed: !strategy.block_on_opposing_soc || !opposes },
@@ -122,7 +134,7 @@ export function evaluate(a: UsableAnalysis, strategy: Strategy, ctx: EvalContext
     const failed = trace.find((s) => !s.passed);
     return {
       setup: r.setup, direction: r.direction, scenario: scenario.number, level: r.level, hit, trace, taken: !failed, skipReason: failed?.rule ?? null,
-      entry: spot, stop, target, plannedRiskPts: stop === null ? null : Math.abs(spot - stop), rewardPts: target === null ? null : Math.abs(target - spot),
+      entry, stop, target, plannedRiskPts: stop === null ? null : Math.abs(entry - stop), rewardPts: target === null ? null : Math.abs(target - entry),
       anchorStrike: r.direction === 'long' ? a.levels.support.strike : a.levels.resistance.strike,
     };
   }

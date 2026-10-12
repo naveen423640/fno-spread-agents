@@ -1,7 +1,10 @@
 // Everything the Agent tab shows, built from the journal and the snapshot store only (never FYERS).
+import { analyzeSession } from '@/lib/ltp/analyze';
 import { health, UNDERLYINGS, type Health } from '@/lib/ltp/recorder';
 import type { LtpStore } from '@/lib/ltp/store';
 import { istDate } from '@/lib/ltp/time';
+import { dayCounts } from './agent';
+import { watchLevels } from './signals';
 import type { Book, ClosedTrade, ExitReason, Position } from './books';
 import type { FillQuality } from './fills';
 import type { JournalStore, OutcomeRow } from './journal-store';
@@ -14,7 +17,11 @@ export type BookToday = { status: 'open' | 'closed'; fillQuality: FillQuality; p
 export type TodayTrade = { decisionId: string; ts: number; underlying: string; setup: string; direction: string; reason: string; entry: number | null; stop: number | null; target: number | null; plannedRiskPts: number | null; rewardPts: number | null; books: Partial<Record<Book, BookToday>> };
 export type SkippedSignal = { decisionId: string; ts: number; underlying: string; setup: string; direction: string; skipReason: string; reason: string };
 export type EquityPoint = { ts: number; equity: number };
+// One level the agent is watching: where it would enter, with the plan and whether it would trade there now (and if not, what stops it).
+export type WatchLevel = { setup: string; direction: string; label: string; value: number; distance: number; entry: number; stop: number | null; target: number | null; plannedRiskPts: number | null; rewardPts: number | null; hit: number; wouldTrade: boolean; blockedBy: string | null };
+export type WatchRow = { underlying: string; date: string; asOf: number; spot: number; scenario: number; scenarioBias: string; banner: string; levels: WatchLevel[] };
 export type AgentState = {
+  watch: WatchRow[];
   header: { activeVersion: string; phase: ReturnType<typeof phaseOf>; closedTrades: number; paused: boolean; heartbeatAgeSeconds: number | null; heartbeat: 'green' | 'amber' | 'red'; recorder: Pick<Health, 'badge' | 'lastSuccessTs' | 'gapsToday' | 'recordingNow'> };
   today: { date: string; open: TodayTrade[]; closed: TodayTrade[]; skipped: SkippedSignal[] };
   performance: {
@@ -56,6 +63,21 @@ export async function buildAgentState(deps: { store: LtpStore; journal: JournalS
     (Object.values(books).some((b) => b.status === 'open') ? today.open : today.closed).push(trade);
   }
 
+  const watch: WatchRow[] = [];
+  for (const u of UNDERLYINGS) {
+    const day = (await store.countForDay(u, date)) > 0 ? date : await store.latestDate(u);
+    if (!day) continue;
+    const snaps = await store.snapshotsForDay(u, day);
+    const last = snaps[snaps.length - 1];
+    const analysis = last ? analyzeSession(snaps, { now: last.ts }) : null;
+    if (!analysis || analysis.empty || !analysis.usable) continue;
+    const levels = watchLevels(analysis, strategy, await dayCounts(journal, u, day)).map((c) => ({
+      setup: c.setup, direction: c.direction, label: c.level.label, value: c.level.value, distance: c.level.value - analysis.spot, entry: c.entry, stop: c.stop, target: c.target,
+      plannedRiskPts: c.plannedRiskPts, rewardPts: c.rewardPts, hit: c.hit, wouldTrade: c.taken, blockedBy: c.skipReason,
+    })).sort((a, b) => Math.abs(a.distance) - Math.abs(b.distance));
+    watch.push({ underlying: u, date: day, asOf: last.ts, spot: analysis.spot, scenario: analysis.coa1.scenario.number, scenarioBias: analysis.coa1.scenario.bias, banner: analysis.direction.banner.text, levels });
+  }
+
   const records = await journal.closedTrades();
   const curve = (rows: ClosedTradeRecordLike[], book: Book) => equityCurve(rows.flatMap((r) => r.outcomes.filter((o) => o.book === book).map((o) => ({ ts: o.closedTs, net: o.netPnl }))));
   const byVersion: Record<string, Record<Book, EquityPoint[]>> = {};
@@ -65,6 +87,7 @@ export async function buildAgentState(deps: { store: LtpStore; journal: JournalS
   }
   const breakdowns = summarizeTrades(records.map(summaryTradeOf));
   return {
+    watch,
     header: { activeVersion: strategy.version, phase, closedTrades, paused: (await journal.getState('paused')) === 'true', heartbeatAgeSeconds, heartbeat: heartbeatBadge(heartbeatAgeSeconds), recorder: { badge: recorder.badge, lastSuccessTs: recorder.lastSuccessTs, gapsToday: recorder.gapsToday, recordingNow: recorder.recordingNow } },
     today,
     performance: { equity: { buy: curve(records, 'buy'), sell: curve(records, 'sell') }, byVersion, buyVsSell: breakdowns.byBook, breakdowns },

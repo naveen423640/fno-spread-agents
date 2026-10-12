@@ -58,6 +58,15 @@ async function contextOf(ctx: AgentContext, a: UsableAnalysis, c: Candidate, sna
   };
 }
 
+// What the caps look at: trades taken today on this underlying, trades open now, and the worse book's loss so far today.
+export async function dayCounts(journal: AgentJournal, underlying: string, date: string) {
+  const todays = await journal.decisionsForDay(date, underlying);
+  const open = await journal.openTrades(underlying, date);
+  const byBook = { buy: 0, sell: 0 };
+  for (const o of await journal.outcomesForDay(date)) byBook[o.book] += o.netPnl;
+  return { dayTradeCount: todays.filter((d) => d.taken).length, openCount: new Set(open.map((o) => o.decisionId)).size, dayLossInr: Math.max(0, -Math.min(byBook.buy, byBook.sell)) };
+}
+
 export async function agentStep(ctx: AgentContext, underlying: string, ts: number): Promise<StepResult> {
   const date = istDate(ts);
   const snaps = (await ctx.store.snapshotsForDay(underlying, date)).filter((s) => s.ts <= ts);
@@ -73,11 +82,7 @@ export async function agentStep(ctx: AgentContext, underlying: string, ts: numbe
   const closed = await manageOpen(ctx, underlying, date, cur, prev, analysis, null);
   if (ctx.paused || !analysis) return { decisions: 0, opened: 0, closed };
 
-  const todays = await ctx.journal.decisionsForDay(date, underlying);
-  const open = await ctx.journal.openTrades(underlying, date);
-  const byBook = { buy: 0, sell: 0 };
-  for (const o of await ctx.journal.outcomesForDay(date)) byBook[o.book] += o.netPnl;
-  const counts = { dayTradeCount: todays.filter((d) => d.taken).length, openCount: new Set(open.map((o) => o.decisionId)).size, dayLossInr: Math.max(0, -Math.min(byBook.buy, byBook.sell)) };
+  const counts = await dayCounts(ctx.journal, underlying, date);
   const gaps = snaps.slice(1).filter((s, i) => s.ts - snaps[i].ts > 60).length;
 
   let decisions = 0;

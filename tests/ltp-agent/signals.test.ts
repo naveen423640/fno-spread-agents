@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 
 import { describe, expect, it } from 'vitest';
 
-import { evaluate, type Candidate } from '@/lib/ltp-agent/signals';
+import { evaluate, watchLevels, type Candidate } from '@/lib/ltp-agent/signals';
 import { parseStrategy, type Strategy } from '@/lib/ltp-agent/strategy';
 import { istTs } from '@/lib/ltp/time';
 import { EXT, fakeAnalysis, fakeLines, type FakeOpts } from '../support/ltp-analysis';
@@ -158,5 +158,39 @@ describe('the SOC setup', () => {
 describe('the clock comes from the analysis, not from the machine', () => {
   it('asOf 10:42 on 2026-10-12 is what the window check sees', () => {
     expect(fakeAnalysis().asOf).toBe(istTs('2026-10-12', '10:42'));
+  });
+});
+
+describe('watchLevels: where the agent would trade from the current state, touched or not', () => {
+  const watch = (opts: FakeOpts = {}, strategy: Strategy = v01, ctx = idle) => watchLevels(fakeAnalysis(opts), strategy, ctx);
+  it('lists the long and the short level of the scenario even though the spot is nowhere near either', () => {
+    const w = watch({ spot: 24100, spots: [24150, 24100] });
+    expect(w.map((x) => [x.direction, x.level.label, x.level.value])).toEqual([['long', 'EOS', 24010], ['short', 'EOR', 24200]]);
+  });
+  it('the plan is built from the level, not the spot: entry at the level, stop and target around it, with risk and reward in points', () => {
+    const long = watch({ spot: 24100, spots: [24150, 24100] }).find((x) => x.direction === 'long')!;
+    expect(long).toMatchObject({ entry: 24010, stop: 23900, target: 24200, plannedRiskPts: 110, rewardPts: 190 });
+  });
+  it('says whether it would trade there now, and if not which rule stops it', () => {
+    const open = watch({ spot: 24100, spots: [24150, 24100] });
+    expect(open.every((x) => x.taken)).toBe(true);
+    const bloodBath = watch({ support: 'wtb', resistance: 'wtb', spot: 24100, spots: [24150, 24100] });
+    expect(bloodBath.find((x) => x.direction === 'long')).toMatchObject({ taken: false, skipReason: 'scenario_allowed' });
+    expect(bloodBath.find((x) => x.direction === 'short')).toMatchObject({ taken: true });
+    expect(watch({ hhmm: '09:20', spot: 24100, spots: [24150, 24100] }).every((x) => x.skipReason === 'time_window')).toBe(true);
+    expect(watch({ spot: 24100, spots: [24150, 24100] }, v01, { ...idle, openCount: 1 }).every((x) => x.skipReason === 'max_concurrent')).toBe(true);
+  });
+  it('the hit number is the one the next touch would be: approaches so far plus one, unless the spot is already in the band', () => {
+    const approaches = [24100, 24012, 24100, 24012, 24100];
+    expect(watch({ spot: 24100, spots: approaches }).find((x) => x.direction === 'long')?.hit).toBe(3);
+    expect(watch({ spot: 24100, spots: approaches }).find((x) => x.direction === 'long')?.skipReason).toBe('hit_number');
+    expect(watch({ spot: 24012, spots: [24100, 24012] }).find((x) => x.direction === 'long')?.hit).toBe(1);
+  });
+  it('includes the 9:20 lines and the SOC level when those setups apply', () => {
+    const w = watch({ hhmm: '10:00', spot: 24100, spots: [24150, 24100], lines: fakeLines() });
+    expect(w.filter((x) => x.setup === 'nine_twenty').map((x) => [x.direction, x.level.label, x.level.value])).toEqual([['long', '9:20 Risky', 24060], ['short', '9:20 Risky', 24150]]);
+  });
+  it('a level that cannot be worked out (missing LTP) is left out rather than shown with a made-up value', () => {
+    expect(watch({ spot: 24100, spots: [24150, 24100], missing: ['eos'] }).map((x) => x.direction)).toEqual(['short']);
   });
 });

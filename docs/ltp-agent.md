@@ -120,6 +120,8 @@ If the signal passes but neither book can open (no usable quote), it is journale
 
 **Stop** (`nine_twenty`): EOS-2 minus the buffer for longs, EOR+2 plus the buffer for shorts (`next_level`: the next rung beyond the entry). **Target**: the opposite extension of the live pair (EOR for longs, EOS for shorts). The scenario comes from each side's direction (see `docs/ltp-levels.md`).
 
+The tab's **Today** view starts with "Where the agent would trade now": for each underlying, the levels it is watching (COA 1.0, 9:20 and SOC), how far each is from the spot, the stop and target planned at each, the risk and reward in points, and whether it would trade there on a touch or which rule stops it (for example, the current scenario does not allow that side). The first level that would trade is spelled out as the next trade level. Nothing is journaled or booked from this view.
+
 ## Books, fills and costs
 
 Every signal is booked in both books, so the comparison is fair.

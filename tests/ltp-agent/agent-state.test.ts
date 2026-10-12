@@ -92,10 +92,26 @@ describe('buildAgentState: what the Agent tab shows', () => {
     expect(s.experimentsLocked).toBe(false);
     expect(s.header.phase.counter).toBe('Learning phase');
   });
+  it('watch: where the agent would trade now, from the latest snapshot of each underlying, nearest level first', async () => {
+    const stores = await replayed();
+    const s = await buildAgentState({ ...stores, holidays: none }, { nowTs: NOW });
+    expect(s.watch).toHaveLength(1); // only NIFTY has data
+    const w = s.watch[0];
+    expect(w).toMatchObject({ underlying: U, spot: 24260, scenario: expect.any(Number), asOf: istTs(DAY, '10:04') });
+    expect(w.levels.length).toBeGreaterThan(0);
+    const distances = w.levels.map((l) => Math.abs(l.distance));
+    expect(distances).toEqual([...distances].sort((a, b) => a - b));
+    expect(w.levels[0]).toMatchObject({ direction: expect.stringMatching(/long|short/), stop: expect.any(Number), target: expect.any(Number), wouldTrade: expect.any(Boolean) });
+  });
+  it('watch: nothing recorded means nothing to watch', async () => {
+    const { store, journal } = freshStores();
+    expect((await buildAgentState({ store, journal, holidays: none }, { nowTs: NOW })).watch).toEqual([]);
+  });
   it('a day with nothing on it is a valid, empty state', async () => {
     const { store, journal } = freshStores();
     const s = await buildAgentState({ store, journal, holidays: none }, { nowTs: NOW });
     expect(s.today).toEqual({ date: DAY, open: [], closed: [], skipped: [] });
+    expect(s.watch).toEqual([]);
     expect(s.performance.equity).toEqual({ buy: [], sell: [] });
   });
 });

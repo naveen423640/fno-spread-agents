@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Pause, Play, RefreshCw } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
-import type { AgentState, TodayTrade } from '@/lib/ltp-agent/state';
+import type { AgentState, TodayTrade, WatchRow } from '@/lib/ltp-agent/state';
 import { istHhmm } from '@/lib/ltp/time';
 import { AgentExperiments } from '@/app/ltp-agent-parts/experiments';
 import { AgentJournal } from '@/app/ltp-agent-parts/journal';
@@ -36,6 +36,43 @@ function TradeCard({ t }: { t: TodayTrade }) {
           );
         })}
       </div>
+    </div>
+  );
+}
+
+const BLOCKED: Record<string, string> = {
+  scenario_allowed: 'the current scenario does not allow this side', time_window: 'outside the trading window right now', valid_plan: 'no usable stop or target', hit_number: 'too many touches of this level already today',
+  coa2_agree: 'COA 2.0 does not agree', soc_opposes: 'an opposing State of Confusion is active', daily_trade_cap: 'the daily trade cap is reached', max_concurrent: 'a trade is already open', daily_loss_cap: 'the daily loss cap is reached',
+};
+const pts = (v: number) => `${v >= 0 ? '+' : '-'}${Math.abs(v).toFixed(0)}`;
+
+// "Where would you trade now?": the levels the agent is watching for each underlying, the plan at each, and what stops it if it would not trade there yet.
+function Watch({ rows }: { rows: WatchRow[] }) {
+  if (!rows.length) return <p className="text-xs text-muted-foreground">No snapshots recorded yet, so there is nothing to watch.</p>;
+  return (
+    <div className="grid gap-3">
+      {rows.map((r) => {
+        const next = r.levels.find((l) => l.wouldTrade);
+        return (
+          <div key={r.underlying} className="rounded-lg border border-border bg-card p-3 text-xs">
+            <div className="mb-1 flex flex-wrap items-baseline gap-x-3"><strong className="text-sm">{short(r.underlying)}</strong><span className="tabular-nums">spot {r.spot.toLocaleString('en-IN')}</span><span className="text-muted-foreground">scenario {r.scenario} ({r.scenarioBias}) · banner {r.banner} · as of {r.date.slice(5)} {istHhmm(r.asOf)} IST</span></div>
+            <p className={`mb-2 rounded-md px-2 py-1.5 font-semibold ${next ? 'bg-emerald-500/10 text-emerald-800 dark:text-emerald-300' : 'bg-muted/60 text-muted-foreground'}`}>
+              {next ? `Next trade level: ${next.direction.toUpperCase()} at ${next.label} ${next.value.toLocaleString('en-IN', { maximumFractionDigits: 2 })} (${Math.abs(next.distance).toFixed(0)} pts ${next.distance > 0 ? 'above' : 'below'} the spot), stop ${next.stop?.toFixed(0)}, target ${next.target?.toFixed(0)}.` : 'No level would be traded right now (see why below).'}
+            </p>
+            <table className="w-full tabular-nums"><thead className="text-muted-foreground"><tr><th className="text-left font-normal">Side</th><th className="text-left font-normal">Level</th><th className="text-right font-normal">Price</th><th className="text-right font-normal">From spot</th><th className="text-right font-normal">Stop</th><th className="text-right font-normal">Target</th><th className="text-right font-normal">Risk : reward</th><th className="text-left pl-3 font-normal">Would it trade?</th></tr></thead>
+              <tbody>{r.levels.map((l) => (
+                <tr key={`${l.setup}-${l.direction}-${l.label}`} className={`border-t border-border ${l === next ? 'bg-emerald-500/10' : ''}`}>
+                  <td className={`font-semibold ${l.direction === 'long' ? 'text-emerald-600' : 'text-red-600'}`}>{l.direction.toUpperCase()}</td>
+                  <td>{l.label}<span className="text-muted-foreground"> · {l.setup === 'coa1_reversal' ? 'COA 1.0' : l.setup === 'nine_twenty' ? '9:20' : 'SOC'}</span></td>
+                  <td className="text-right">{l.value.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</td><td className="text-right">{pts(l.distance)}</td>
+                  <td className="text-right">{l.stop?.toFixed(0) ?? '–'}</td><td className="text-right">{l.target?.toFixed(0) ?? '–'}</td>
+                  <td className="text-right">{l.plannedRiskPts?.toFixed(0) ?? '–'} : {l.rewardPts?.toFixed(0) ?? '–'}</td>
+                  <td className="pl-3">{l.wouldTrade ? <span className="font-semibold text-emerald-600">yes, on a touch (hit #{l.hit})</span> : <span className="text-amber-700 dark:text-amber-400">no: {BLOCKED[l.blockedBy ?? ''] ?? l.blockedBy}</span>}</td>
+                </tr>))}</tbody></table>
+          </div>
+        );
+      })}
+      <p className="text-[11px] text-muted-foreground">The agent trades a level only when the spot comes within the touch tolerance of it. EOS/EOR-based prices are proxies and move with the options&apos; prices; this view refreshes every minute.</p>
     </div>
   );
 }
@@ -119,6 +156,8 @@ export function LtpAgentTab() {
 
       {section === 'today' && state ? (
         <div className="grid gap-3">
+          <h2 className="text-sm font-semibold">Where the agent would trade now</h2>
+          <Watch rows={state.watch} />
           <h2 className="text-sm font-semibold">Open trades ({state.today.open.length})</h2>
           {state.today.open.length ? state.today.open.map((t) => <TradeCard key={t.decisionId} t={t} />) : <p className="text-xs text-muted-foreground">No open trades.</p>}
           <h2 className="text-sm font-semibold">Closed today ({state.today.closed.length})</h2>
