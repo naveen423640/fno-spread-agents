@@ -1,6 +1,6 @@
 import { getDatabaseBinding } from '@/db';
 import { checkRequestOrigin } from '@/lib/agent-service/guard';
-import { agentStep, finishDay, type AgentContext } from '@/lib/ltp-agent/agent';
+import { agentCatchUp, finishDay, type AgentContext } from '@/lib/ltp-agent/agent';
 import { createJournalStore } from '@/lib/ltp-agent/journal-store';
 import { loadActiveStrategy } from '@/lib/ltp-agent/strategy-store';
 import { UNDERLYINGS } from '@/lib/ltp/recorder';
@@ -23,7 +23,7 @@ export async function POST(request: Request) {
     const now = Math.floor(Date.now() / 1000);
     const ts = Math.floor(now / 60) * 60;
     const results: Record<string, unknown> = {};
-    for (const underlying of UNDERLYINGS) results[underlying] = body?.action === 'finish_day' ? { closed: await finishDay(ctx, underlying, istDate(ts)) } : await agentStep(ctx, underlying, ts);
+    for (const underlying of UNDERLYINGS) results[underlying] = body?.action === 'finish_day' ? { closed: await finishDay(ctx, underlying, istDate(ts)) } : await agentCatchUp(ctx, journal, underlying, now);
     await journal.setState('heartbeat_ts', String(now));
     return Response.json({ ts, version: strategy.version, paused: ctx.paused, results }, { headers: NO_STORE });
   } catch (error) {

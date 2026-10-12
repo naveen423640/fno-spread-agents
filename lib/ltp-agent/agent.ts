@@ -137,3 +137,30 @@ export async function agentReplayDay(ctx: AgentContext, underlying: string, date
   for (const snap of await ctx.store.snapshotsForDay(underlying, date)) await agentStep(ctx, underlying, snap.ts);
   await finishDay(ctx, underlying, date);
 }
+
+// How old a recorded minute may be and still be acted on. Older unprocessed minutes were not tradable when the agent finally looked at them.
+export const MAX_CATCH_UP_SECONDS = 300;
+
+// The live entry point. It steps every recorded minute that has not been processed yet, oldest first, so a recorder that stores a minute a few
+// seconds late does not make the agent miss it (replay would have seen it). If the agent was away for more than five minutes, the old minutes are
+// not replayed as tradable: anything open is closed as a data gap at the last of them, and only the fresh minutes are processed.
+export async function agentCatchUp(ctx: AgentContext, state: { getState(key: string): Promise<string | null>; setState(key: string, value: string): Promise<void> }, underlying: string, nowTs: number): Promise<StepResult> {
+  const date = istDate(nowTs);
+  const key = `last_step_${underlying}`;
+  const last = Number(await state.getState(key)) || 0;
+  const all = await ctx.store.snapshotsForDay(underlying, date);
+  const pending = all.filter((s) => s.ts > last && s.ts <= nowTs);
+  const total: StepResult = { decisions: 0, opened: 0, closed: 0 };
+  if (!pending.length) return total;
+  const stale = pending.filter((s) => nowTs - s.ts > MAX_CATCH_UP_SECONDS);
+  if (stale.length) {
+    const at = all.findIndex((s) => s.ts === stale[stale.length - 1].ts);
+    total.closed += await manageOpen(ctx, underlying, date, all[at], at > 0 ? all[at - 1] : null, null, 'data_gap');
+  }
+  for (const s of pending.filter((x) => nowTs - x.ts <= MAX_CATCH_UP_SECONDS)) {
+    const r = await agentStep(ctx, underlying, s.ts);
+    total.decisions += r.decisions; total.opened += r.opened; total.closed += r.closed;
+  }
+  await state.setState(key, String(pending[pending.length - 1].ts));
+  return total;
+}

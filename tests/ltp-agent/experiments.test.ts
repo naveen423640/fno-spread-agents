@@ -4,6 +4,7 @@ import { join } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
+import { holdoutDaysFor } from '@/lib/ltp-agent/holdout';
 import { experimentFileName, nextExperimentId, parseProposals, proposeExperiments, serializeExperiment } from '@/lib/ltp-agent/experiments';
 import { writeExperimentFile } from '@/lib/ltp-agent/experiment-files';
 import { PhaseLockedError } from '@/lib/ltp-agent/phase';
@@ -149,5 +150,15 @@ describe('experiments are never deleted, and the file matches the stored record'
     expect(readFileSync(join(dir, 'EXP-001.json'), 'utf8')).toBe(serializeExperiment(stored));
     expect(JSON.parse(readFileSync(join(dir, 'EXP-001.json'), 'utf8'))).toEqual(stored);
     rmSync(dir, { recursive: true });
+  });
+});
+
+describe('holdoutDaysFor tells the reviewer which days are off limits', () => {
+  it('returns the held-out days of the version\'s stored split, and nothing when no split exists yet', async () => {
+    const { journal } = freshStores();
+    expect(await holdoutDaysFor(journal, '0.1')).toEqual([]);
+    await journal.setState('split_0.1', JSON.stringify({ discovery: ['2026-10-01'], holdout: ['2026-10-02', '2026-10-03'] }));
+    expect(await holdoutDaysFor(journal, '0.1')).toEqual(['2026-10-02', '2026-10-03']);
+    expect(await holdoutDaysFor(journal, '0.2')).toEqual([]);
   });
 });

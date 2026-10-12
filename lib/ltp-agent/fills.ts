@@ -16,5 +16,7 @@ export function fillPrice(row: ChainRow, action: 'buy' | 'sell', fills: Strategy
   }
   if (row.ltp === null || !(row.ltp > 0)) return null;
   const moved = action === 'buy' ? row.ltp * (1 + fills.fallback_slippage_pct / 100) : row.ltp * (1 - fills.fallback_slippage_pct / 100);
-  return { price: cents(action === 'sell' ? Math.max(fills.tick, moved) : moved), quality: 'ltp_fallback' };
+  const price = cents(action === 'sell' ? Math.max(fills.tick, moved) : moved);
+  if (action === 'buy' && price < fills.tick) return null; // an option worth less than one tick is not something to buy
+  return { price, quality: 'ltp_fallback' };
 }

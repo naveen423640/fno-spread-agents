@@ -68,7 +68,7 @@ This is the scheduler. IST, weekdays only:
 | Friday 15:40 | asks for proposals (refused until 100 closed trades) |
 | first weekday of a month | writes last month's report to `data/agent_reports/YYYY-MM.txt` |
 
-It does not know market holidays; on a holiday the jobs find no snapshots and do nothing.
+If the recorder stores a minute a few seconds late, the next call processes the missed minute first, so live matches replay. A minute older than 5 minutes is never acted on as if it were tradable: if the agent was away that long, anything open is closed as a data gap and only the fresh minutes are processed. The agent does not know market holidays; on a holiday the jobs find no snapshots and do nothing.
 
 Other commands (the tab offers the same actions):
 
@@ -126,7 +126,7 @@ Every signal is booked in both books, so the comparison is fair.
 
 - **BUY**: one lot, ATM (or 1-OTM) call for a long, put for a short.
 - **SELL**: one lot of a hedged credit spread: sell the option at the support (long) or resistance (short) strike and buy the same side `hedge_width` strikes further out.
-- **Fills**: buys at the ask plus `slippage_ticks` ticks, sells at the bid minus them (tick 0.05). With no quote on that side, LTP plus or minus `fallback_slippage_pct` (2%) and `fill_quality = ltp_fallback`. With no LTP either, no fill and no trade.
+- **Fills**: buys at the ask plus `slippage_ticks` ticks, sells at the bid minus them (tick 0.05). With no quote on that side, LTP plus or minus `fallback_slippage_pct` (2%) and `fill_quality = ltp_fallback`. With no LTP either, or with a fallback buy price below one tick (a worthless option), no fill and no trade.
 - **Exits** are driven by the spot levels, checked every minute: data gap, then stop or target (if both are crossed within one step, the stop is booked), then the 15:15 time exit, then a level shift if enabled.
 - **Costs**: brokerage, STT (sell side, plus the exercise case), exchange charge, SEBI fee, GST and stamp duty, each rounded to the paisa, with rates by effective date in `lib/ltp-agent/config/costs.ts`. Lot sizes by date in `config/lots.ts` (NIFTY 65, BANKNIFTY 30, SENSEX 20 from 2026-10-01; earlier days throw until rows are added).
 - **Per trade**: gross and net P&L, R multiple (net over planned risk: the premium paid for BUY, the maximum loss for SELL), MAE and MFE in spot points and rupees, holding minutes, exit reason (`target`, `stop`, `time`, `level_shift`, `data_gap`), fill quality, and for SELL a margin estimate.
@@ -148,7 +148,7 @@ Outcomes live in `trade_outcomes` (one row per decision and book) and reviews in
 
 ## The review and its mistake taxonomy
 
-After 15:35 each closed trade is shown to the model (the Anthropic provider, model from `AGENT_REVIEW_MODEL`, default `claude-sonnet-5-5`): the frozen decision, both outcomes and a minute-by-minute path of spot, levels, weakness % and OI at the walls. It must answer with JSON, validated against a schema; invalid output is retried once, then logged as a failure (a trade is left alone after 3 failed days).
+After 15:35 each closed trade is shown to the model (the Anthropic provider, model from `AGENT_REVIEW_MODEL`, default `claude-sonnet-5-5`): the frozen decision, both outcomes and a minute-by-minute path of spot, levels, weakness % and OI at the walls. It must answer with JSON, validated against a schema; invalid output is retried once, then logged as a failure (a trade is left alone after 3 failed days). Held-out days are never reviewed, even when asked for by date.
 
 - `outcome_class`: `good_trade_good_result`, `good_trade_bad_result` (rules followed, normal variance), `bad_trade` (a rule or data problem), `lucky_win`
 - `mistake_tags`, from a fixed list: `level_shifted_after_entry`, `scenario_flipped_after_entry`, `entered_late_hit`, `coa2_conflict_ignored`, `soc_conflict`, `stop_too_tight`, `stop_too_wide`, `target_too_far`, `premium_decay`, `gamma_spike`, `slippage_or_spread`, `late_in_day`, `expiry_day_effect`, `proxy_extension_error`, `data_gap`, `other` (an unknown tag becomes `other` with a note)

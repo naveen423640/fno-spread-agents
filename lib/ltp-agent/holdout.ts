@@ -20,3 +20,9 @@ export async function discoverySet(journal: JournalStore, version: string, split
   const trades = (await journal.closedTrades({ version, excludeDays: split.holdout })).map(summaryTradeOf);
   return { version, days: [...new Set(trades.map((t) => t.date))].sort(), trades, summary: summarizeTrades(trades) };
 }
+
+// The held-out days of a version's stored split, so the reviewer can be kept away from them. Empty until a split exists.
+export async function holdoutDaysFor(journal: Pick<JournalStore, 'getState'>, version: string): Promise<string[]> {
+  const stored = await journal.getState(`split_${version}`);
+  return stored ? (JSON.parse(stored) as Split).holdout : [];
+}

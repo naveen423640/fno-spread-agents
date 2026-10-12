@@ -24,6 +24,10 @@ describe('fillPrice', () => {
   it('with no quote and no LTP there is no price: null, never an invented one', () => {
     expect(fillPrice(row({ ltp: null }), 'buy', fills)).toBeNull();
   });
+  it('a buy whose fallback price would be below one tick is no fill: a worthless option is not a trade', () => {
+    expect(fillPrice(row({ ltp: 0.03 }), 'buy', fills)).toBeNull();
+    expect(fillPrice(row({ ltp: 0.05 }), 'buy', fills)).toEqual({ price: 0.05, quality: 'ltp_fallback' });
+  });
   it('a sell never fills below one tick', () => {
     expect(fillPrice(row({ bid: 0.05, ask: 0.1 }), 'sell', fills)).toEqual({ price: 0.05, quality: 'quote' });
   });
