@@ -174,7 +174,7 @@ export function LtpTab() {
                   <div className="grid gap-2 sm:grid-cols-2">{sidePill('resistance')}{sidePill('support')}</div>
                   <LtpChainTable chain={state.chain} analysis={a} methodLabel={methodLabel} spot={spot} />
                 </div>
-                <Suspense fallback={<p className="text-xs text-muted-foreground">Loading chart…</p>}><LtpCharts analysis={a} lines0920={state.lines0920} only="spot" height={420} /></Suspense>
+                <Suspense fallback={<p className="text-xs text-muted-foreground">Loading chart…</p>}><LtpCharts analysis={a} lines0920={state.lines0920} only="spot" height={680} /></Suspense>
               </div>
 
               <div className="flex flex-wrap gap-1 border-b border-border">

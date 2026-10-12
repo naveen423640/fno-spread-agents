@@ -66,7 +66,7 @@ class ChartBoundary extends Component<{ children: ReactNode }, { failed: boolean
   }
 }
 
-function ChartCard({ title, note, series, guides, height = 220 }: { title: string; note: string; series: Series[]; guides: Guide[]; height?: number }) {
+function ChartCard({ title, note, series, guides, height = 260 }: { title: string; note: string; series: Series[]; guides: Guide[]; height?: number }) {
   return (
     <div className="rounded-lg border border-border bg-card p-3">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
