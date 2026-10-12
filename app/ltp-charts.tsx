@@ -185,7 +185,7 @@ export function MagicalChart({ analysis, lines0920, height = 560 }: { analysis: 
         <span>Magical SPOT Lines <span className="ml-1 rounded bg-red-600 px-1.5 py-0.5 text-[10px] text-white">Live</span></span>
         <span className="flex items-center gap-2 font-normal text-slate-500">
           <button type="button" onClick={toggle920} disabled={!lines0920} aria-pressed={show920} title={lines0920 ? 'Show or hide the frozen 9:20 lines' : 'The 9:20 lines are not available yet'}
-            className={`rounded px-2 py-0.5 text-[11px] font-bold text-white ${lines0920 && show920 ? 'bg-amber-500' : 'bg-slate-400'} disabled:opacity-50`}>9:20 lines {lines0920 && show920 ? 'ON' : 'OFF'}</button>
+            className={`rounded px-2 py-0.5 text-[11px] font-bold text-white ${lines0920 && show920 ? 'bg-amber-500' : 'bg-slate-400'} disabled:opacity-50`}>9:20 {lines0920 && show920 ? 'ON' : 'OFF'}</button>
           5 min candles · proxy ({analysis.method.label})
         </span>
       </div>
