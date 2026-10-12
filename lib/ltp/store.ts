@@ -22,9 +22,9 @@ export type LtpStore = {
   addGap(g: Gap): Promise<void>;
   gapsForDay(date: string): Promise<Required<Gap>[]>;
   saveLines0920(date: string, underlying: string, lines: unknown): Promise<void>;
-  getLines0920(date: string, underlying: string): Promise<unknown | null>;
+  getLines0920(date: string, underlying: string): Promise<unknown>;
   saveWeekly(weekStart: string, underlying: string, range: unknown): Promise<void>;
-  getWeekly(weekStart: string, underlying: string): Promise<unknown | null>;
+  getWeekly(weekStart: string, underlying: string): Promise<unknown>;
   addCalibration(e: CalibrationEntry): Promise<void>;
   calibrationEntries(underlying: string): Promise<CalibrationEntry[]>;
 };
