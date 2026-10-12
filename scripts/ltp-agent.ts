@@ -1,6 +1,8 @@
 // LTP agent commands (paper trading only; nothing here can place an order).
 //   npm run agent-run                              every minute: asks the running app to step the agent (the app reads the recorded snapshots)
 //   npm run agent-review -- --date 2026-10-12      asks the running app to review that day's closed trades (needs ANTHROPIC_API_KEY in the app's environment)
+//   npm run experiment-run -- EXP-001              runs one proposed experiment through the gate (in the running app) and writes experiments/EXP-001.json
+//   npm run report -- --month 2026-10              prints the monthly readiness report (paper results only)
 //   npm run agent-replay -- --from 2026-10-12 --to 2026-10-12 --version 0.1 [--db <file>] [--underlying <symbol>]
 //                                                  re-runs the agent over recorded days into a throwaway journal and prints what it would have done
 // `run` needs the app running, like the recorder. `agent-replay` reads the app's local database read-only and needs neither the app nor FYERS.
@@ -8,6 +10,8 @@ import { existsSync, mkdirSync, readdirSync, statSync, writeFileSync } from 'nod
 import { join } from 'node:path';
 
 import { agentReplayDay, type AgentContext } from '../lib/ltp-agent/agent';
+import { writeExperimentFile } from '../lib/ltp-agent/experiment-files';
+import type { Experiment } from '../lib/ltp-agent/experiment-types';
 import { createJournalStore } from '../lib/ltp-agent/journal-store';
 import { readStrategyFile } from '../lib/ltp-agent/strategy-files';
 import { UNDERLYINGS } from '../lib/ltp/recorder';
@@ -25,6 +29,25 @@ async function post(action: string): Promise<string> {
   if (!response.ok || body.error) return `${new Date().toISOString()} ${body.error ?? `HTTP ${response.status}`}`;
   const parts = Object.entries(body.results ?? {}).map(([u, r]) => `${u.split(':')[1]} d${r.decisions ?? 0}/o${r.opened ?? 0}/c${r.closed ?? 0}`);
   return `${new Date().toISOString()} v${body.version}${body.paused ? ' PAUSED' : ''} ${parts.join('  ')}`;
+}
+
+async function experimentRun(id: string | undefined): Promise<string> {
+  if (!id) return 'Usage: experiment-run EXP-###';
+  const response = await fetch(`${base}/api/ltp/agent/experiments`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action: 'run', id }) });
+  const body = (await response.json().catch(() => ({}))) as Experiment & { error?: string };
+  if (!response.ok || body.error) return `${id}: ${body.error ?? `HTTP ${response.status}`}`;
+  const file = writeExperimentFile(body);
+  const line = (book: 'buy' | 'sell') => { const g = body.results![book]; return `${book.toUpperCase()}: ${g.passed ? 'PASSED' : 'failed'} (${g.criteria.filter((c) => !c.passed).map((c) => c.name).join(', ') || 'all criteria'}), n=${g.candidate.n}, expectancy ${g.candidate.expectancy.toFixed(2)} vs ${g.current.expectancy.toFixed(2)}, diff 90% CI [${g.expectancyDiff.lo90.toFixed(2)}, ${g.expectancyDiff.hi90.toFixed(2)}]${g.weakEvidence ? ' WEAK EVIDENCE' : ''}, random-entry percentile ${g.baselinePercentile ?? 'n/a'}`; };
+  return `${id} -> ${body.status} (experiments tried so far: ${body.triedCount})\n${line('buy')}\n${line('sell')}\nwrote ${file}`;
+}
+
+async function report(month: string | undefined): Promise<string> {
+  const response = await fetch(`${base}/api/ltp/agent/report${month ? `?month=${month}` : ''}`);
+  const body = (await response.json().catch(() => ({}))) as { error?: string; text?: string[]; rows?: unknown[]; topTags?: unknown[] };
+  if (!response.ok || body.error) return body.error ?? `HTTP ${response.status}`;
+  console.table(body.rows);
+  console.table(body.topTags);
+  return (body.text ?? []).join('\n');
 }
 
 async function review(date?: string): Promise<string> {
@@ -101,6 +124,8 @@ async function main() {
   if (command === 'run') await run();
   else if (command === 'replay') await replay();
   else if (command === 'review') console.log(await review(option('date')));
-  else { console.error('Usage: ltp-agent <run | replay | review>'); process.exitCode = 1; }
+  else if (command === 'experiment') console.log(await experimentRun(argv[1]));
+  else if (command === 'report') console.log(await report(option('month')));
+  else { console.error('Usage: ltp-agent <run | replay | review | experiment | report>'); process.exitCode = 1; }
 }
 void main();

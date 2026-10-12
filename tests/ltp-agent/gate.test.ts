@@ -96,7 +96,6 @@ describe('randomBaseline: seeded, same count and times of day, same exits', () =
 });
 
 describe('runGate replays the candidate and the current version over the same holdout days', () => {
-  const experiment = (diff: Record<string, unknown>): Experiment => ({ id: 'EXP-001', hypothesis: 'h', diff, expectedEffect: 'e', evidence: [], baseVersion: '0.1', split: { discovery: [], holdout: [DAY] }, status: 'proposed', triedCount: 1, createdTs: 1 });
   async function setup() {
     const { store, journal } = freshStores();
     for (const s of pathDay(WINNER)) await store.insertSnapshot(s);

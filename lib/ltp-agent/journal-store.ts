@@ -73,6 +73,9 @@ export function createJournalStore(db: D1Like) {
     async saveStrategy(version: string, yaml: string, changelog: string) {
       await db.prepare('INSERT INTO agent_strategies (version, yaml, changelog, created_ts) VALUES (?, ?, ?, ?)').bind(version, yaml, changelog, Math.floor(Date.now() / 1000)).run();
     },
+    async listStrategies() {
+      return (await all('SELECT version, changelog FROM agent_strategies ORDER BY version')).map((r) => ({ version: r.version as string, changelog: r.changelog as string }));
+    },
     async strategyYaml(version: string) {
       return ((await first('SELECT yaml FROM agent_strategies WHERE version = ?', version))?.yaml as string | undefined) ?? null;
     },

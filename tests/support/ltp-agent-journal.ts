@@ -25,7 +25,7 @@ export async function seedClosedTrades(journal: JournalStore, opts: { n: number;
   const days = opts.days ?? ['2026-10-01', '2026-10-02', '2026-10-03', '2026-10-04', '2026-10-05'];
   for (let i = 0; i < opts.n; i += 1) {
     const date = days[i % days.length];
-    const id = `seed-${opts.version ?? '0.1'}-${i}`;
+    const id = `seed-${opts.version ?? '0.1'}-${days[0]}-${i}`;
     const d = makeDecision({ decisionId: id, tradeDate: date, ts: Date.parse(`${date}T05:00:00Z`) / 1000 + i, strategyVersion: opts.version ?? '0.1', context: { scenario: 1, hit: 1 + (i % 2), hhmm: '10:42' } });
     await journal.recordDecision(d);
     const net = opts.net?.(i) ?? { buy: 10, sell: 5 };
