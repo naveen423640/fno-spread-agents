@@ -31,7 +31,7 @@ function Watch({ rows }: { rows: WatchRow[] }) {
         const next = r.levels.find((l) => l.wouldTrade);
         return (
           <div key={r.underlying} className="rounded-lg border border-border bg-card p-3 text-xs">
-            <div className="mb-1 flex flex-wrap items-baseline gap-x-3"><strong className="text-sm">{short(r.underlying)}</strong><span className="tabular-nums">spot {r.spot.toLocaleString('en-IN')}</span><span className="text-muted-foreground"><strong className="text-foreground">{r.tag}</strong>{r.riskyAllowed ? ' · risky OK' : ''} · as of {r.date.slice(5)} {istHhmm(r.asOf)} IST</span></div>
+            <div className="mb-1 flex flex-wrap items-baseline gap-x-3"><strong className="text-sm">{short(r.underlying)}</strong><span className="tabular-nums">spot {r.spot.toLocaleString('en-IN')}</span><span className="text-muted-foreground"><strong className="text-foreground">{r.tag}</strong>{r.veryRiskyAllowed ? ' · very risky OK' : r.riskyAllowed ? ' · risky OK' : ''} · as of {r.date.slice(5)} {istHhmm(r.asOf)} IST</span></div>
             <p className={`mb-2 rounded-md px-2 py-1.5 font-semibold ${next ? 'bg-emerald-500/10 text-emerald-800 dark:text-emerald-300' : 'bg-muted/60 text-muted-foreground'}`}>
               {next ? `Next trade level: ${next.direction.toUpperCase()} at ${next.label} ${next.value.toLocaleString('en-IN', { maximumFractionDigits: 2 })} (${Math.abs(next.distance).toFixed(0)} pts ${next.distance > 0 ? 'above' : 'below'} the spot), stop ${next.stop?.toFixed(0)}, target ${next.target?.toFixed(0)}.` : 'No level would be traded right now (see why below).'}
             </p>
@@ -39,7 +39,7 @@ function Watch({ rows }: { rows: WatchRow[] }) {
               <tbody>{r.levels.map((l) => (
                 <tr key={`${l.setup}-${l.direction}-${l.label}`} className={`border-t border-border ${l === next ? 'bg-emerald-500/10' : ''}`}>
                   <td className={`font-semibold ${l.direction === 'long' ? 'text-emerald-600' : 'text-red-600'}`}>{l.direction.toUpperCase()}</td>
-                  <td>{l.label}<span className="text-muted-foreground"> · {l.setup === 'coa1_reversal' ? 'COA 1.0' : l.setup === 'nine_twenty' ? '9:20' : 'SOC'}</span></td>
+                  <td>{l.label}<span className="text-muted-foreground"> · {l.setup === 'coa1_reversal' ? 'COA 1.0' : l.setup === 'nine_twenty' ? '9:20' : l.setup === 'risky_tug' ? 'Risky' : l.setup === 'very_risky_eod' ? 'Very risky' : 'SOC'}</span></td>
                   <td className="text-right">{l.value.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</td><td className="text-right">{pts(l.distance)}</td>
                   <td className="text-right">{l.stop?.toFixed(0) ?? '–'}</td><td className="text-right">{l.target?.toFixed(0) ?? '–'}</td>
                   <td className="text-right">{l.plannedRiskPts?.toFixed(0) ?? '–'} : {l.rewardPts?.toFixed(0) ?? '–'}</td>

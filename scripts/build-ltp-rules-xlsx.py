@@ -30,6 +30,7 @@ def tug_text(sp, rp):
     return {'bears': 'Bears winning', 'bulls': 'Bulls winning', 'contested': 'Contested (sides pull apart)', 'none': 'Balanced'}[pair(sp, rp)['winner']]
 def risky_text(sp, rp):
     n = pair(sp, rp)
+    if n['veryRiskyAllowed']: return f"VERY RISKY {n['riskyDirection'].upper()} allowed at the nearest end of diversion (and a risky one at the tool's Risky level)"
     return f"Risky {n['riskyDirection'].upper()} allowed at the tool's Risky level" if n['riskyAllowed'] else 'No risky trade'
 def trades(top, bottom, rare, sp, rp):
     if rare: return 'Do not trade (very volatile). For anyone who still trades: risky short at the top shown, risky long at the bottom shown.'
@@ -86,7 +87,7 @@ lines = [
     ('', body),
     ('What this is not', bold),
     ('The practice tool gives the top and bottom only. Which entries are safe, moderate or risky in each scenario, and the stops, targets and times, are NOT in it and are still open (sheet "Open questions").', body),
-    ('Tug of war (owner rule): a risky trade is allowed when both sides push the same way, or one pushes highly and the other is stable. Bears winning = risky short, bulls winning = risky long, at the level the live tool shows as Risky. Sides pulling against each other are contested: no risky trade. Decide from the outcome, not from the first-level scenario number.', body),
+    ('Tug of war (owner rule): a risky trade is allowed when both sides push the same way, or one pushes highly and the other is stable. Bears winning = risky short, bulls winning = risky long, at the level the live tool shows as Risky. Very high push (both the same way, at least one high): a very risky trade at the nearest end of diversion. Sides pulling against each other are contested: no risky trade. Decide from the outcome, not from the first-level scenario number.', body),
     ('The pressure of each condition is our reading of the tool\'s wording, confirmed with the owner condition by condition on 2026-10-13. "~" in the app means the history is not one of the listed shapes.', body),
 ]
 for r, (text, font) in enumerate(lines, 1):

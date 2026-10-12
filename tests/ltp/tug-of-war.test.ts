@@ -27,6 +27,16 @@ describe('tugOfWar: who is winning, and when a risky trade is allowed', () => {
     expect(all).toHaveLength(25);
     expect(all.filter((t) => t.riskyAllowed)).toHaveLength(12); // 4 + 4 both-same-way (bears, bulls) + 4 highly-and-stable
   });
+  it('very high: both sides push the same way and at least one pushes highly (including both highly); then a very risky trade is allowed too', () => {
+    for (const [s, r] of [['HB', 'B'], ['B', 'HB'], ['HB', 'HB']] as [Pressure, Pressure][]) expect(tugOfWar(s, r)).toMatchObject({ winner: 'bears', veryHigh: true, veryRiskyAllowed: true, riskyAllowed: true });
+    for (const [s, r] of [['HU', 'U'], ['U', 'HU'], ['HU', 'HU']] as [Pressure, Pressure][]) expect(tugOfWar(s, r)).toMatchObject({ winner: 'bulls', veryHigh: true, veryRiskyAllowed: true });
+  });
+  it('high but not very high: both plain (B|B), or one highly with the other stable (HB|S)', () => {
+    for (const [s, r] of [['B', 'B'], ['U', 'U'], ['HB', 'S'], ['S', 'HU']] as [Pressure, Pressure][]) expect(tugOfWar(s, r)).toMatchObject({ riskyAllowed: true, veryHigh: false, veryRiskyAllowed: false });
+  });
+  it('exactly 6 of the 25 pairs are very high', () => {
+    expect(P.flatMap((s) => P.map((r) => tugOfWar(s, r))).filter((t) => t.veryHigh)).toHaveLength(6);
+  });
   it('a side tag is short: S-Bearish, R-Bullish, with (H) when high, Stable when nothing pushes', () => {
     expect(sideTag('S', 'B')).toBe('S-Bearish');
     expect(sideTag('R', 'HU')).toBe('R-Bullish(H)');

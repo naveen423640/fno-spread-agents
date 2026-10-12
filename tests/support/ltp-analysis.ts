@@ -11,6 +11,13 @@ import { istTs } from '@/lib/ltp/time';
 export const EXT = { eorMinus1: 24150, eor: 24200, eorPlus1: 24250, eorPlus2: 24300, eosPlus1: 24060, eos: 24010, eosMinus1: 23960, eosMinus2: 23910, wtbPlus1: 23985, wttMinus1: 24175 };
 
 const ext = (label: string, value: number | null, strike = 0): ExtLevel => ({ label: `${label} (proxy: test)`, strike, value, method: 'test', isProxy: true });
+// Ends of diversion (and diversions) between support and resistance, fixed so expectations can be read off this file: bearish path (for shorts) ends at 24110 and 24160,
+// bullish path (for longs) ends at 24090 and 24040.
+const point = (kind: 'diversion' | 'end_of_diversion', strike: number, price: number) => ({ kind, strike, price, method: 'test', isProxy: true as const });
+export const DIVERSIONS = {
+  bearish: [point('diversion', 24150, 24100), point('end_of_diversion', 24150, 24160), point('diversion', 24100, 24050), point('end_of_diversion', 24100, 24110)],
+  bullish: [point('diversion', 24050, 24120), point('end_of_diversion', 24050, 24040), point('diversion', 24100, 24170), point('end_of_diversion', 24100, 24090)],
+};
 export type FakeOpts = {
   date?: string; hhmm?: string; underlying?: string; spot?: number; spots?: number[];
   support?: Status; resistance?: Status; pressure?: { support: Pressure; resistance: Pressure }; soc?: UsableAnalysis['soc']; coa2?: Partial<UsableAnalysis['coa2']>;
@@ -41,7 +48,7 @@ export function fakeAnalysis(o: FakeOpts = {}): UsableAnalysis {
     method: { id: 'test', label: 'test' }, extensions: e,
     coa1: { label: `${scenario.number}(S1/R1)`, conditions: { support: { number: 1, exact: true, wording: 'STRONG SINCE MORNING', pressure: pressure(o.support ?? 'strong'), phases: 1, currentPhaseMinutes: 0, continuation: false }, resistance: { number: 1, exact: true, wording: 'STRONG SINCE MORNING', pressure: pressure(o.resistance ?? 'strong'), phases: 1, currentPhaseMinutes: 0, continuation: false } }, scenario, pressure: pr, top, bottom, hits: { top: { level: top?.value ?? null, count: 0, label: null }, bottom: { level: bottom?.value ?? null, count: 0, label: null } } },
     coa2: { atmStrike: 24050, callTrend: 'stable', putTrend: 'increasing', result: { status: 'ok', number: 4, outcome: 'Reversal at support; resistance may break out' }, firstHitOfExtension: false, ...o.coa2 },
-    diversions: { count: 5, bullish: [], bearish: [] }, pctTrend: { support: null, resistance: null }, soc: o.soc ?? null,
+    diversions: { count: 5, bullish: DIVERSIONS.bullish, bearish: DIVERSIONS.bearish }, pctTrend: { support: null, resistance: null }, soc: o.soc ?? null,
     direction: { support: dir(o.supportDirection), resistance: dir(o.resistanceDirection), banner: { kind: 'mixed', text: 'Mixed' } },
     lines0920: o.lines ?? null, events: [], flags: [],
     series: { spot: spots.map((s, i) => ({ ts: istTs(date, '10:00') + i * 60, spot: s })), pct: [], ceOiAtResistance: [], peOiAtSupport: [] },

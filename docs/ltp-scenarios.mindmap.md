@@ -107,6 +107,7 @@ markmap:
 - [course] The first touch of a level is generally safe; risk rises with each further touch
 - [course] Weekly range: risky, moderate and generally safe bands
 - [user] Tug of war: risky trades are allowed when both sides push one way, or one pushes highly and the other is stable
+- [user] Very high push allows very risky trades at the nearest end of diversion (EOD)
 - [user] The live tool shows the risky and moderate levels itself
 - **Open questions**
   - Which of the tool's lines is the safe, the moderate and the risky entry in each scenario?

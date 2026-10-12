@@ -31,6 +31,8 @@ describe('the nine-scenario mind map', () => {
     expect(map).toContain('Short at EOR (resistance side)');
     expect(map).toContain('No long from a bottom (Blood Bath)');
     expect(map).toContain('S-Bearish R-Bearish · risky short OK');
+    expect(map).toContain('S-Bearish(H) R-Bearish · very risky short OK');
+    expect(map).not.toMatch(/S-Bearish R-Bearish · very risky/);
     expect(map).toContain('S-Bearish R-Stable'); // a mild lead: no risky tag
     expect(map).not.toMatch(/S-Bearish R-Stable · risky/);
     expect(map).toContain('Rare scenario: do not trade');

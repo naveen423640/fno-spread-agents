@@ -9,7 +9,7 @@ import { tugOfWar } from '@/lib/ltp/tug-of-war';
 import { graphTrace } from './graph-use';
 import type { Strategy } from './strategy';
 
-export type SetupType = 'coa1_reversal' | 'nine_twenty' | 'soc' | 'risky_tug';
+export type SetupType = 'coa1_reversal' | 'nine_twenty' | 'soc' | 'risky_tug' | 'very_risky_eod';
 export type RuleStep = { rule: string; inputs: Record<string, number | string | boolean | null>; passed: boolean };
 export type EvalContext = { dayTradeCount: number; openCount: number; dayLossInr: number };
 export type Candidate = {
@@ -109,6 +109,21 @@ function build(a: UsableAnalysis, strategy: Strategy, ctx: EvalContext, mode: 't
       const direction = tug.riskyDirection;
       const risky = direction === 'short' ? a.extensions.riskyShort : a.extensions.riskyLong;
       if (risky.value !== null && touched(risky.value)) raws.push({ setup: 'risky_tug', direction, level: { label: 'Risky', value: risky.value }, stop: coaStop(direction, direction === 'short' ? 'EOR-1' : 'EOS+1'), target: coaTarget(direction) });
+    }
+  }
+
+  // Very high push (both sides the same way, at least one highly): a very risky trade at the nearest end of diversion on the entry side, in the winner's
+  // direction. In touch mode any end of diversion the spot has just reached; in watch mode the nearest one above the spot (shorts) or below it (longs).
+  if (strategy.setups_enabled.very_risky_eod) {
+    const tug = tugOfWar(a.coa1.pressure.support, a.coa1.pressure.resistance);
+    const direction = tug.riskyDirection;
+    // (In touch mode it does not double up with another signal entering the same way in the same minute; the Watch list shows every level.)
+    if (tug.veryRiskyAllowed && direction && (mode === 'watch' || (!coaDirections.has(direction) && !raws.some((r) => r.direction === direction)))) {
+      const ends = (direction === 'short' ? a.diversions.bearish : a.diversions.bullish).flatMap((p) => (p.kind === 'end_of_diversion' && p.price !== null ? [p.price] : []));
+      const entry = mode === 'watch'
+        ? (direction === 'short' ? ends.filter((v) => v >= spot).sort((x, y) => x - y)[0] : ends.filter((v) => v <= spot).sort((x, y) => y - x)[0])
+        : ends.filter((v) => touched(v)).sort((x, y) => Math.abs(x - spot) - Math.abs(y - spot))[0];
+      if (entry !== undefined) raws.push({ setup: 'very_risky_eod', direction, level: { label: 'EOD', value: entry }, stop: coaStop(direction, direction === 'short' ? 'EOR-1' : 'EOS+1'), target: coaTarget(direction) });
     }
   }
 

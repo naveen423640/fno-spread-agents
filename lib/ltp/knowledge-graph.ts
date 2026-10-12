@@ -77,7 +77,7 @@ export function buildKnowledgeGraph(): KnowledgeGraph {
     node({
       id, type: 'pair', label: `Support ${support}, resistance ${resistance}`, support, resistance, top: plain.top, bottom: plain.bottom, tradable: plain.tradable, rare,
       topWhenResistanceWeakTowardTop: weakTop.top !== plain.top ? weakTop.top : null, bottomWhenSupportWeakTowardBottom: weakBottom.bottom !== plain.bottom ? weakBottom.bottom : null,
-      winner: tug.winner, strength: tug.strength, riskyAllowed: tug.riskyAllowed, riskyDirection: tug.riskyDirection,
+      winner: tug.winner, strength: tug.strength, riskyAllowed: tug.riskyAllowed, veryHigh: tug.veryHigh, veryRiskyAllowed: tug.veryRiskyAllowed, riskyDirection: tug.riskyDirection,
       ...(rare ? { riskyTop: plain.risky?.top, riskyBottom: plain.risky?.bottom } : {}),
     });
     edge(id, `pressure:${support}`, 'support_pressure');
@@ -99,10 +99,12 @@ export function buildKnowledgeGraph(): KnowledgeGraph {
   rule('first-hit-safe', 'The first touch of a level is generally safe; risk rises with each further touch', 'course', 'confirmed', 'From the chart of accuracy chapter.');
   rule('weekly-range-bands', 'Weekly range: risky, moderate and generally safe bands', 'course', 'confirmed', 'L1 risky, L2 moderate, L3 generally safe (price plus or minus S, 2S, 3S).');
   rule('risky-high-pressure', 'Tug of war: risky trades are allowed when both sides push one way, or one pushes highly and the other is stable', 'user', 'confirmed', 'Bears winning gives a risky short, bulls winning a risky long, at the level the live tool shows as Risky. Sides pulling against each other are contested: no risky trade. A plain push against a stable side is only a mild lead: no risky trade. Do not skip on the first-level scenario: decide from the mind-map outcome.');
+  rule('very-risky-eod', 'Very high push allows very risky trades at the nearest end of diversion (EOD)', 'user', 'confirmed', 'Very high = both sides push the same way and at least one pushes highly (highly with plain, or both highly). Bears winning: a very risky short at the nearest end of diversion above the price; bulls winning: a very risky long at the nearest end of diversion below it.');
   rule('tool-lines-define-tiers', 'The live tool shows the risky and moderate levels itself', 'user', 'confirmed', 'Use the tool\'s displayed Risky and Moderate values, not our own formula (ours, EOR-1 / EOS+1, was a guess).');
   edge('rule:risky-high-pressure', 'outcome:blood_bath', 'applies_to'); edge('rule:risky-high-pressure', 'outcome:bull_run', 'applies_to');
   edge('rule:risky-high-pressure', 'trade:risky_short', 'allows', { when: 'bears win: both sides push down, or one pushes down highly and the other is stable' });
   edge('rule:risky-high-pressure', 'trade:risky_long', 'allows', { when: 'bulls win: both sides push up, or one pushes up highly and the other is stable' });
+  edge('rule:very-risky-eod', 'trade:risky_short', 'extends', { when: 'very high push down: entry at the nearest end of diversion' }); edge('rule:very-risky-eod', 'trade:risky_long', 'extends', { when: 'very high push up: entry at the nearest end of diversion' });
   edge('rule:rare-do-not-trade', 'outcome:rare', 'applies_to');
   edge('rule:first-hit-safe', 'trade:short_at_top', 'applies_to'); edge('rule:first-hit-safe', 'trade:long_at_bottom', 'applies_to');
   edge('rule:wtt1-wtb1-substitution', 'level:WTT-1', 'applies_to'); edge('rule:wtt1-wtb1-substitution', 'level:WTB+1', 'applies_to');

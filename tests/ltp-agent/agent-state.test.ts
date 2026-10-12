@@ -99,7 +99,7 @@ describe('buildAgentState: what the Agent tab shows', () => {
     const s = await buildAgentState({ ...stores, holidays: none }, { nowTs: NOW });
     expect(s.watch).toHaveLength(1); // only NIFTY has data
     const w = s.watch[0];
-    expect(w).toMatchObject({ underlying: U, spot: 24275, tag: expect.stringMatching(/^\d\(S\d+~?\/R\d+~?\) S-\w+(\(H\))? R-\w+(\(H\))?$/), riskyAllowed: expect.any(Boolean), asOf: istTs(DAY, '10:04') });
+    expect(w).toMatchObject({ underlying: U, spot: 24275, tag: expect.stringMatching(/^\d\(S\d+~?\/R\d+~?\) S-\w+(\(H\))? R-\w+(\(H\))?$/), riskyAllowed: expect.any(Boolean), veryRiskyAllowed: expect.any(Boolean), asOf: istTs(DAY, '10:04') });
     expect(w.levels.length).toBeGreaterThan(0);
     const distances = w.levels.map((l) => Math.abs(l.distance));
     expect(distances).toEqual([...distances].sort((a, b) => a - b));

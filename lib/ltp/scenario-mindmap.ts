@@ -69,11 +69,11 @@ export function buildScenarioMindmap(): string {
       for (const [pair, bySupport] of g.pairs) {
         const [s, r] = pair.split('|');
         const tug = tugOfWar(s as Pressure, r as Pressure);
-        w(`    - ${sideTag('S', s as Pressure)} ${sideTag('R', r as Pressure)}${tug.riskyAllowed ? ` · risky ${tug.riskyDirection} OK` : ''}`);
+        w(`    - ${sideTag('S', s as Pressure)} ${sideTag('R', r as Pressure)}${tug.veryRiskyAllowed ? ` · very risky ${tug.riskyDirection} OK` : tug.riskyAllowed ? ` · risky ${tug.riskyDirection} OK` : ''}`);
         for (const [i, js] of bySupport) w(`      - S${i + 1} with R${range(js)}`);
       }
     }
   });
-  w('## Rules behind the outcomes\n- No bottom (Blood Bath) = highly bearish pressure; no top (Bull Run) = highly bullish\n- A highly bearish side against a bullish side stops the Blood Bath, and the bottom is EOS-1\n- Highly bearish against highly bullish = rare scenario, do not trade\n- WTT-1 replaces the top, WTB+1 the bottom, only for a weak side that is bullish (resistance) or bearish (support)\n- Tug of war [owner rule]: risky trade allowed when both sides push one way, or one pushes highly and the other is stable; bears winning = risky short, bulls = risky long; level = the tool\'s Risky line\n- Do not skip on the first-level scenario: decide from this outcome\n- Safe, moderate and risky entries for the other scenarios: still open');
+  w('## Rules behind the outcomes\n- No bottom (Blood Bath) = highly bearish pressure; no top (Bull Run) = highly bullish\n- A highly bearish side against a bullish side stops the Blood Bath, and the bottom is EOS-1\n- Highly bearish against highly bullish = rare scenario, do not trade\n- WTT-1 replaces the top, WTB+1 the bottom, only for a weak side that is bullish (resistance) or bearish (support)\n- Tug of war [owner rule]: risky trade allowed when both sides push one way, or one pushes highly and the other is stable; bears winning = risky short, bulls = risky long; level = the tool\'s Risky line\n- Very high push (both the same way, at least one high): a very risky trade at the nearest end of diversion [owner rule]\n- Do not skip on the first-level scenario: decide from this outcome\n- Safe, moderate and risky entries for the other scenarios: still open');
   return `${out.join('\n')}\n`;
 }

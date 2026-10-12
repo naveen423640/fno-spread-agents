@@ -595,6 +595,8 @@
    "winner": "none",
    "strength": null,
    "riskyAllowed": false,
+   "veryHigh": false,
+   "veryRiskyAllowed": false,
    "riskyDirection": null
   },
   {
@@ -612,6 +614,8 @@
    "winner": "bears",
    "strength": "mild",
    "riskyAllowed": false,
+   "veryHigh": false,
+   "veryRiskyAllowed": false,
    "riskyDirection": null
   },
   {
@@ -629,6 +633,8 @@
    "winner": "bulls",
    "strength": "mild",
    "riskyAllowed": false,
+   "veryHigh": false,
+   "veryRiskyAllowed": false,
    "riskyDirection": null
   },
   {
@@ -646,6 +652,8 @@
    "winner": "bears",
    "strength": "high",
    "riskyAllowed": true,
+   "veryHigh": false,
+   "veryRiskyAllowed": false,
    "riskyDirection": "short"
   },
   {
@@ -663,6 +671,8 @@
    "winner": "bulls",
    "strength": "high",
    "riskyAllowed": true,
+   "veryHigh": false,
+   "veryRiskyAllowed": false,
    "riskyDirection": "long"
   },
   {
@@ -680,6 +690,8 @@
    "winner": "bears",
    "strength": "mild",
    "riskyAllowed": false,
+   "veryHigh": false,
+   "veryRiskyAllowed": false,
    "riskyDirection": null
   },
   {
@@ -697,6 +709,8 @@
    "winner": "bears",
    "strength": "high",
    "riskyAllowed": true,
+   "veryHigh": false,
+   "veryRiskyAllowed": false,
    "riskyDirection": "short"
   },
   {
@@ -714,6 +728,8 @@
    "winner": "contested",
    "strength": null,
    "riskyAllowed": false,
+   "veryHigh": false,
+   "veryRiskyAllowed": false,
    "riskyDirection": null
   },
   {
@@ -731,6 +747,8 @@
    "winner": "bears",
    "strength": "high",
    "riskyAllowed": true,
+   "veryHigh": true,
+   "veryRiskyAllowed": true,
    "riskyDirection": "short"
   },
   {
@@ -748,6 +766,8 @@
    "winner": "contested",
    "strength": null,
    "riskyAllowed": false,
+   "veryHigh": false,
+   "veryRiskyAllowed": false,
    "riskyDirection": null
   },
   {
@@ -765,6 +785,8 @@
    "winner": "bulls",
    "strength": "mild",
    "riskyAllowed": false,
+   "veryHigh": false,
+   "veryRiskyAllowed": false,
    "riskyDirection": null
   },
   {
@@ -782,6 +804,8 @@
    "winner": "contested",
    "strength": null,
    "riskyAllowed": false,
+   "veryHigh": false,
+   "veryRiskyAllowed": false,
    "riskyDirection": null
   },
   {
@@ -799,6 +823,8 @@
    "winner": "bulls",
    "strength": "high",
    "riskyAllowed": true,
+   "veryHigh": false,
+   "veryRiskyAllowed": false,
    "riskyDirection": "long"
   },
   {
@@ -816,6 +842,8 @@
    "winner": "contested",
    "strength": null,
    "riskyAllowed": false,
+   "veryHigh": false,
+   "veryRiskyAllowed": false,
    "riskyDirection": null
   },
   {
@@ -833,6 +861,8 @@
    "winner": "bulls",
    "strength": "high",
    "riskyAllowed": true,
+   "veryHigh": true,
+   "veryRiskyAllowed": true,
    "riskyDirection": "long"
   },
   {
@@ -850,6 +880,8 @@
    "winner": "bears",
    "strength": "high",
    "riskyAllowed": true,
+   "veryHigh": false,
+   "veryRiskyAllowed": false,
    "riskyDirection": "short"
   },
   {
@@ -867,6 +899,8 @@
    "winner": "bears",
    "strength": "high",
    "riskyAllowed": true,
+   "veryHigh": true,
+   "veryRiskyAllowed": true,
    "riskyDirection": "short"
   },
   {
@@ -884,6 +918,8 @@
    "winner": "contested",
    "strength": null,
    "riskyAllowed": false,
+   "veryHigh": false,
+   "veryRiskyAllowed": false,
    "riskyDirection": null
   },
   {
@@ -901,6 +937,8 @@
    "winner": "bears",
    "strength": "high",
    "riskyAllowed": true,
+   "veryHigh": true,
+   "veryRiskyAllowed": true,
    "riskyDirection": "short"
   },
   {
@@ -918,6 +956,8 @@
    "winner": "contested",
    "strength": null,
    "riskyAllowed": false,
+   "veryHigh": false,
+   "veryRiskyAllowed": false,
    "riskyDirection": null,
    "riskyTop": "EOR+1",
    "riskyBottom": "EOS-1"
@@ -937,6 +977,8 @@
    "winner": "bulls",
    "strength": "high",
    "riskyAllowed": true,
+   "veryHigh": false,
+   "veryRiskyAllowed": false,
    "riskyDirection": "long"
   },
   {
@@ -954,6 +996,8 @@
    "winner": "contested",
    "strength": null,
    "riskyAllowed": false,
+   "veryHigh": false,
+   "veryRiskyAllowed": false,
    "riskyDirection": null
   },
   {
@@ -971,6 +1015,8 @@
    "winner": "bulls",
    "strength": "high",
    "riskyAllowed": true,
+   "veryHigh": true,
+   "veryRiskyAllowed": true,
    "riskyDirection": "long"
   },
   {
@@ -988,6 +1034,8 @@
    "winner": "contested",
    "strength": null,
    "riskyAllowed": false,
+   "veryHigh": false,
+   "veryRiskyAllowed": false,
    "riskyDirection": null,
    "riskyTop": "EOR+1",
    "riskyBottom": "EOS-1"
@@ -1007,6 +1055,8 @@
    "winner": "bulls",
    "strength": "high",
    "riskyAllowed": true,
+   "veryHigh": true,
+   "veryRiskyAllowed": true,
    "riskyDirection": "long"
   },
   {
@@ -1082,6 +1132,14 @@
    "source": "user",
    "status": "confirmed",
    "detail": "Bears winning gives a risky short, bulls winning a risky long, at the level the live tool shows as Risky. Sides pulling against each other are contested: no risky trade. A plain push against a stable side is only a mild lead: no risky trade. Do not skip on the first-level scenario: decide from the mind-map outcome."
+  },
+  {
+   "id": "rule:very-risky-eod",
+   "type": "rule",
+   "label": "Very high push allows very risky trades at the nearest end of diversion (EOD)",
+   "source": "user",
+   "status": "confirmed",
+   "detail": "Very high = both sides push the same way and at least one pushes highly (highly with plain, or both highly). Bears winning: a very risky short at the nearest end of diversion above the price; bulls winning: a very risky long at the nearest end of diversion below it."
   },
   {
    "id": "rule:tool-lines-define-tiers",
@@ -1939,6 +1997,18 @@
    "to": "trade:risky_long",
    "type": "allows",
    "when": "bulls win: both sides push up, or one pushes up highly and the other is stable"
+  },
+  {
+   "from": "rule:very-risky-eod",
+   "to": "trade:risky_short",
+   "type": "extends",
+   "when": "very high push down: entry at the nearest end of diversion"
+  },
+  {
+   "from": "rule:very-risky-eod",
+   "to": "trade:risky_long",
+   "type": "extends",
+   "when": "very high push up: entry at the nearest end of diversion"
   },
   {
    "from": "rule:rare-do-not-trade",

@@ -1,9 +1,10 @@
 // The tug of war between the two sides. Each side pushes the market down (bearish), up (bullish) or not at all (stable), plainly or highly (H).
 // Who is winning, and when a RISKY trade is allowed (owner rule, 2026-10-13): when both sides push the same way, or one pushes highly and the other
-// is stable. Sides pulling against each other are contested: nobody wins, no risky trade. Pure.
+// is stable. VERY HIGH (owner rule, same day): both push the same way and at least one pushes highly (highly with plain, or both highly): a very risky
+// trade is allowed too, at the nearest end of diversion. Sides pulling against each other are contested: nobody wins, no risky trade. Pure.
 import type { Pressure } from './pressure';
 
-export type Tug = { winner: 'bears' | 'bulls' | 'contested' | 'none'; strength: 'high' | 'mild' | null; riskyAllowed: boolean; riskyDirection: 'short' | 'long' | null };
+export type Tug = { winner: 'bears' | 'bulls' | 'contested' | 'none'; strength: 'high' | 'mild' | null; riskyAllowed: boolean; veryHigh: boolean; veryRiskyAllowed: boolean; riskyDirection: 'short' | 'long' | null };
 
 const push = (p: Pressure): -1 | 0 | 1 => (p === 'B' || p === 'HB' ? -1 : p === 'U' || p === 'HU' ? 1 : 0);
 const high = (p: Pressure) => p === 'HB' || p === 'HU';
@@ -11,13 +12,14 @@ const high = (p: Pressure) => p === 'HB' || p === 'HU';
 export function tugOfWar(support: Pressure, resistance: Pressure): Tug {
   const s = push(support);
   const r = push(resistance);
-  if (s !== 0 && r !== 0 && s !== r) return { winner: 'contested', strength: null, riskyAllowed: false, riskyDirection: null };
-  if (s === 0 && r === 0) return { winner: 'none', strength: null, riskyAllowed: false, riskyDirection: null };
+  if (s !== 0 && r !== 0 && s !== r) return { winner: 'contested', strength: null, riskyAllowed: false, veryHigh: false, veryRiskyAllowed: false, riskyDirection: null };
+  if (s === 0 && r === 0) return { winner: 'none', strength: null, riskyAllowed: false, veryHigh: false, veryRiskyAllowed: false, riskyDirection: null };
   const dir = (s || r) as -1 | 1;
   const sameWay = s === r; // both push
   const oneHighOtherStable = (high(support) && r === 0) || (high(resistance) && s === 0);
   const riskyAllowed = sameWay || oneHighOtherStable;
-  return { winner: dir === -1 ? 'bears' : 'bulls', strength: high(support) || high(resistance) || sameWay ? 'high' : 'mild', riskyAllowed, riskyDirection: riskyAllowed ? (dir === -1 ? 'short' : 'long') : null };
+  const veryHigh = sameWay && (high(support) || high(resistance));
+  return { winner: dir === -1 ? 'bears' : 'bulls', strength: high(support) || high(resistance) || sameWay ? 'high' : 'mild', riskyAllowed, veryHigh, veryRiskyAllowed: veryHigh, riskyDirection: riskyAllowed ? (dir === -1 ? 'short' : 'long') : null };
 }
 
 // "S-Bearish", "R-Bullish(H)", "R-Stable": the short tag of one side.

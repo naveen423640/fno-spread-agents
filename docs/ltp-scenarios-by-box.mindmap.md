@@ -59,7 +59,7 @@ markmap:
       - S10 with R2, 5, 10, 11, 12
       - S11 with R2, 5, 10, 11, 12
       - S12 with R2, 5, 10, 11, 12
-    - S-Bearish R-Bearish(H) · risky short OK
+    - S-Bearish R-Bearish(H) · very risky short OK
       - S2 with R6
       - S5 with R6
       - S10 with R6
@@ -67,9 +67,9 @@ markmap:
       - S12 with R6
     - S-Bearish(H) R-Stable · risky short OK
       - S6 with R1
-    - S-Bearish(H) R-Bearish · risky short OK
+    - S-Bearish(H) R-Bearish · very risky short OK
       - S6 with R2, 5, 10, 11, 12
-    - S-Bearish(H) R-Bearish(H) · risky short OK
+    - S-Bearish(H) R-Bearish(H) · very risky short OK
       - S6 with R6
 - **No top (Bull Run), bottom EOS**
   - Trades
@@ -84,7 +84,7 @@ markmap:
       - S8 with R3, 4, 8, 9, 13
       - S9 with R3, 4, 8, 9, 13
       - S13 with R3, 4, 8, 9, 13
-    - S-Bullish R-Bullish(H) · risky long OK
+    - S-Bullish R-Bullish(H) · very risky long OK
       - S3 with R7
       - S4 with R7
       - S8 with R7
@@ -92,9 +92,9 @@ markmap:
       - S13 with R7
     - S-Bullish(H) R-Stable · risky long OK
       - S7 with R1
-    - S-Bullish(H) R-Bullish · risky long OK
+    - S-Bullish(H) R-Bullish · very risky long OK
       - S7 with R3, 4, 8, 9, 13
-    - S-Bullish(H) R-Bullish(H) · risky long OK
+    - S-Bullish(H) R-Bullish(H) · very risky long OK
       - S7 with R7
 - **Top EOR, bottom EOS-1**
   - Trades
@@ -206,15 +206,15 @@ markmap:
       - S10 with R1, 4, 5
       - S11 with R1, 4, 5
       - S12 with R1, 4, 5
-    - S-Bearish R-Bearish(H) · risky short OK
+    - S-Bearish R-Bearish(H) · very risky short OK
       - S2 with R2
       - S5 with R2
       - S10 with R2
       - S11 with R2
       - S12 with R2
-    - S-Bearish(H) R-Bearish · risky short OK
+    - S-Bearish(H) R-Bearish · very risky short OK
       - S6 with R1, 4, 5
-    - S-Bearish(H) R-Bearish(H) · risky short OK
+    - S-Bearish(H) R-Bearish(H) · very risky short OK
       - S6 with R2
 - **Top EOR, bottom EOS-1**
   - Trades
@@ -268,7 +268,7 @@ markmap:
       - S8 with R3
       - S9 with R3
       - S13 with R3
-    - S-Bullish(H) R-Bullish · risky long OK
+    - S-Bullish(H) R-Bullish · very risky long OK
       - S7 with R3
 - **Rare scenario: do not trade**
   - Trades
@@ -312,15 +312,15 @@ markmap:
       - S8 with R1, 4, 5
       - S9 with R1, 4, 5
       - S13 with R1, 4, 5
-    - S-Bullish R-Bullish(H) · risky long OK
+    - S-Bullish R-Bullish(H) · very risky long OK
       - S3 with R2
       - S4 with R2
       - S8 with R2
       - S9 with R2
       - S13 with R2
-    - S-Bullish(H) R-Bullish · risky long OK
+    - S-Bullish(H) R-Bullish · very risky long OK
       - S7 with R1, 4, 5
-    - S-Bullish(H) R-Bullish(H) · risky long OK
+    - S-Bullish(H) R-Bullish(H) · very risky long OK
       - S7 with R2
 - **Top WTT-1, bottom EOS**
   - Trades
@@ -361,7 +361,7 @@ markmap:
       - S10 with R3
       - S11 with R3
       - S12 with R3
-    - S-Bearish(H) R-Bearish · risky short OK
+    - S-Bearish(H) R-Bearish · very risky short OK
       - S6 with R3
 - **Top EOR, bottom EOS-1**
   - Trades
@@ -426,15 +426,15 @@ markmap:
       - S1 with R2, 5, 10, 11, 12
       - S4 with R2, 5, 10, 11, 12
       - S5 with R2, 5, 10, 11, 12
-    - S-Bearish R-Bearish(H) · risky short OK
+    - S-Bearish R-Bearish(H) · very risky short OK
       - S1 with R6
       - S4 with R6
       - S5 with R6
     - S-Bearish(H) R-Stable · risky short OK
       - S2 with R1
-    - S-Bearish(H) R-Bearish · risky short OK
+    - S-Bearish(H) R-Bearish · very risky short OK
       - S2 with R2, 5, 10, 11, 12
-    - S-Bearish(H) R-Bearish(H) · risky short OK
+    - S-Bearish(H) R-Bearish(H) · very risky short OK
       - S2 with R6
 - **Top EOR, bottom WTB+1**
   - Trades
@@ -469,7 +469,7 @@ markmap:
   - Tug of war and when it happens
     - S-Bullish R-Bullish · risky long OK
       - S3 with R3, 4, 8, 9, 13
-    - S-Bullish R-Bullish(H) · risky long OK
+    - S-Bullish R-Bullish(H) · very risky long OK
       - S3 with R7
 - **Top EOR+1, bottom EOS**
   - Trades
@@ -530,15 +530,15 @@ markmap:
       - S1 with R3, 4, 8, 9, 13
       - S4 with R3, 4, 8, 9, 13
       - S5 with R3, 4, 8, 9, 13
-    - S-Bullish R-Bullish(H) · risky long OK
+    - S-Bullish R-Bullish(H) · very risky long OK
       - S1 with R7
       - S4 with R7
       - S5 with R7
     - S-Bullish(H) R-Stable · risky long OK
       - S2 with R1
-    - S-Bullish(H) R-Bullish · risky long OK
+    - S-Bullish(H) R-Bullish · very risky long OK
       - S2 with R3, 4, 8, 9, 13
-    - S-Bullish(H) R-Bullish(H) · risky long OK
+    - S-Bullish(H) R-Bullish(H) · very risky long OK
       - S2 with R7
 - **Top EOR+1, bottom EOS**
   - Trades
@@ -582,7 +582,7 @@ markmap:
   - Tug of war and when it happens
     - S-Bearish R-Bearish · risky short OK
       - S3 with R2, 5, 10, 11, 12
-    - S-Bearish R-Bearish(H) · risky short OK
+    - S-Bearish R-Bearish(H) · very risky short OK
       - S3 with R6
 - **Rare scenario: do not trade**
   - Trades
@@ -614,13 +614,13 @@ markmap:
       - S1 with R1, 4, 5
       - S4 with R1, 4, 5
       - S5 with R1, 4, 5
-    - S-Bearish R-Bearish(H) · risky short OK
+    - S-Bearish R-Bearish(H) · very risky short OK
       - S1 with R2
       - S4 with R2
       - S5 with R2
-    - S-Bearish(H) R-Bearish · risky short OK
+    - S-Bearish(H) R-Bearish · very risky short OK
       - S2 with R1, 4, 5
-    - S-Bearish(H) R-Bearish(H) · risky short OK
+    - S-Bearish(H) R-Bearish(H) · very risky short OK
       - S2 with R2
 - **Top EOR+1, bottom WTB+1**
   - Trades
@@ -684,13 +684,13 @@ markmap:
       - S1 with R1, 4, 5
       - S4 with R1, 4, 5
       - S5 with R1, 4, 5
-    - S-Bullish R-Bullish(H) · risky long OK
+    - S-Bullish R-Bullish(H) · very risky long OK
       - S1 with R2
       - S4 with R2
       - S5 with R2
-    - S-Bullish(H) R-Bullish · risky long OK
+    - S-Bullish(H) R-Bullish · very risky long OK
       - S2 with R1, 4, 5
-    - S-Bullish(H) R-Bullish(H) · risky long OK
+    - S-Bullish(H) R-Bullish(H) · very risky long OK
       - S2 with R2
 - **Top EOR+1, bottom EOS-1**
   - Trades
@@ -770,7 +770,7 @@ markmap:
       - S1 with R3
       - S4 with R3
       - S5 with R3
-    - S-Bearish(H) R-Bearish · risky short OK
+    - S-Bearish(H) R-Bearish · very risky short OK
       - S2 with R3
 - **No top (Bull Run), bottom EOS**
   - Trades
@@ -779,7 +779,7 @@ markmap:
   - Tug of war and when it happens
     - S-Bullish R-Bullish · risky long OK
       - S3 with R1, 4, 5
-    - S-Bullish R-Bullish(H) · risky long OK
+    - S-Bullish R-Bullish(H) · very risky long OK
       - S3 with R2
 - **Top EOR+1, bottom EOS-1**
   - Trades
@@ -829,7 +829,7 @@ markmap:
       - S1 with R3
       - S4 with R3
       - S5 with R3
-    - S-Bullish(H) R-Bullish · risky long OK
+    - S-Bullish(H) R-Bullish · very risky long OK
       - S2 with R3
 - **Top EOR, no bottom (Blood Bath)**
   - Trades
@@ -838,7 +838,7 @@ markmap:
   - Tug of war and when it happens
     - S-Bearish R-Bearish · risky short OK
       - S3 with R1, 4, 5
-    - S-Bearish R-Bearish(H) · risky short OK
+    - S-Bearish R-Bearish(H) · very risky short OK
       - S3 with R2
 - **Top EOR, bottom EOS-1**
   - Trades
@@ -869,5 +869,6 @@ markmap:
 - Highly bearish against highly bullish = rare scenario, do not trade
 - WTT-1 replaces the top, WTB+1 the bottom, only for a weak side that is bullish (resistance) or bearish (support)
 - Tug of war [owner rule]: risky trade allowed when both sides push one way, or one pushes highly and the other is stable; bears winning = risky short, bulls = risky long; level = the tool's Risky line
+- Very high push (both the same way, at least one high): a very risky trade at the nearest end of diversion [owner rule]
 - Do not skip on the first-level scenario: decide from this outcome
 - Safe, moderate and risky entries for the other scenarios: still open

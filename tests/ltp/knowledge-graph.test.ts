@@ -46,6 +46,11 @@ describe('the LTP knowledge graph', () => {
     expect(byId.get('pair:B|S')).toMatchObject({ winner: 'bears', riskyAllowed: false, riskyDirection: null });
     expect(byId.get('pair:HB|U')).toMatchObject({ winner: 'contested', riskyAllowed: false });
     expect(graph.nodes.filter((n) => n.type === 'pair' && n.riskyAllowed === true)).toHaveLength(12);
+    expect(byId.get('pair:HB|B')).toMatchObject({ veryHigh: true, veryRiskyAllowed: true });
+    expect(byId.get('pair:HB|HB')).toMatchObject({ veryHigh: true, veryRiskyAllowed: true });
+    expect(byId.get('pair:B|B')).toMatchObject({ veryHigh: false, veryRiskyAllowed: false });
+    expect(graph.nodes.filter((n) => n.type === 'pair' && n.veryRiskyAllowed === true)).toHaveLength(6);
+    expect(byId.get('rule:very-risky-eod')).toMatchObject({ type: 'rule', source: 'user', status: 'confirmed' });
   });
   it('records the owner rule on risky trades with its source, and the questions still open', () => {
     expect(byId.get('rule:risky-high-pressure')).toMatchObject({ type: 'rule', source: 'user', status: 'confirmed' });

@@ -124,6 +124,33 @@ describe('v2.0 decides from the mind-map outcome, not from the first-level scena
   });
 });
 
+describe('very high push: a very risky trade at the nearest end of diversion', () => {
+  const v20e = parseStrategy(readFileSync('strategies/ltp_v2.0.yaml', 'utf8'));
+  const veryRisky = (opts: FakeOpts, strategy: Strategy = v20e) => evaluate(fakeAnalysis(opts), strategy, idle).filter((x) => x.setup === 'very_risky_eod');
+  it('highly bearish with bearish: a very risky short when the spot touches an end of diversion above it (24,110)', () => {
+    const c = veryRisky({ pressure: { support: 'HB', resistance: 'B' }, spot: 24108, spots: [24040, 24108] });
+    expect(c).toHaveLength(1);
+    expect(c[0]).toMatchObject({ direction: 'short', taken: true, level: { label: 'EOD', value: 24110 } });
+  });
+  it('both highly bearish counts too; the mirror for bulls is a very risky long at the nearest end of diversion below (24,090)', () => {
+    expect(veryRisky({ pressure: { support: 'HB', resistance: 'HB' }, spot: 24158, spots: [24040, 24158] })).toMatchObject([{ direction: 'short', taken: true, level: { value: 24160 } }]);
+    expect(veryRisky({ pressure: { support: 'U', resistance: 'HU' }, spot: 24092, spots: [24170, 24092] })).toMatchObject([{ direction: 'long', taken: true, level: { label: 'EOD', value: 24090 } }]);
+  });
+  it('high but not very high (both plain, or one highly with the other stable), contested, mild and v0.1: no very risky trade', () => {
+    for (const pressure of [{ support: 'B', resistance: 'B' }, { support: 'HB', resistance: 'S' }, { support: 'HB', resistance: 'U' }, { support: 'B', resistance: 'S' }] as const) expect(veryRisky({ pressure, spot: 24108, spots: [24040, 24108] })).toEqual([]);
+    expect(veryRisky({ pressure: { support: 'HB', resistance: 'B' }, spot: 24108, spots: [24040, 24108] }, v01)).toEqual([]);
+  });
+  it('a spot away from every end of diversion raises nothing; the Watch list shows the nearest end of diversion on the entry side', () => {
+    expect(veryRisky({ pressure: { support: 'HB', resistance: 'B' }, spot: 24130, spots: [24040, 24130] })).toEqual([]);
+    const watch = watchLevels(fakeAnalysis({ pressure: { support: 'HB', resistance: 'B' }, spot: 24130, spots: [24040, 24130] }), v20e, idle).filter((x) => x.setup === 'very_risky_eod');
+    expect(watch).toMatchObject([{ direction: 'short', level: { label: 'EOD', value: 24160 } }]); // 24,110 is below the spot, 24,160 is the nearest above
+  });
+  it('it does not double up with the ordinary risky trade when both would enter in the same minute', () => {
+    const a = fakeAnalysis({ pressure: { support: 'HB', resistance: 'B' }, spot: EXT.eorMinus1 - 2, spots: [EXT.eorMinus1 - 60, EXT.eorMinus1 - 2] });
+    expect(evaluate(a, v20e, idle).filter((x) => x.direction === 'short' && (x.setup === 'risky_tug' || x.setup === 'very_risky_eod')).length).toBeLessThanOrEqual(1);
+  });
+});
+
 describe('the knowledge-graph guard of v2.0', () => {
   const v20 = parseStrategy(readFileSync('strategies/ltp_v2.0.yaml', 'utf8'));
   const inconsistent = () => { const a = fakeAnalysis({ spot: EXT.eos + 2, spots: [EXT.eos + 90, EXT.eos + 2] }); a.coa1.scenario = { ...a.coa1.scenario, top: 'EOR+1' }; return a; }; // the graph says EOR, the live scenario says EOR+1
