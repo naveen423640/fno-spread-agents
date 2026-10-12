@@ -13,6 +13,10 @@ import { trackStrength, type LevelShift, type SideStrength } from './strength';
 import { istDate, istHhmm } from './time';
 import { valueAt, type Snapshot, type Status } from './types';
 
+// An event with what the real tool's popup shows beside it: the spot and the EOR/EOS family at that moment (null: no data, 'broken': already passed).
+export type Reversal = number | 'broken' | null;
+export type LoggedEvent = SideEvent & { spot: number | null; reversals: { center: Reversal; plus1: Reversal; minus1: Reversal } | null };
+
 export type AnalysisOptions = { now: number; method?: ExtensionMethod; cfg?: LtpConfig };
 
 type Hit = { level: number | null; count: number; label: 'generally safe' | 'risk rising' | null };
@@ -28,7 +32,7 @@ export type UsableAnalysis = {
   coa2: { callTrend: Trend | null; putTrend: Trend | null; result: Coa2Result; firstHitOfExtension: boolean };
   diversions: { count: number; bullish: DiversionPoint[]; bearish: DiversionPoint[] };
   soc: SocResult | null;
-  direction: { support: { events: SideEvent[]; current: Direction }; resistance: { events: SideEvent[]; current: Direction }; banner: Banner };
+  direction: { support: { events: LoggedEvent[]; current: Direction }; resistance: { events: LoggedEvent[]; current: Direction }; banner: Banner };
   lines0920: Lines0920 | null;
   events: LevelShift[];
   series: {
@@ -66,8 +70,18 @@ export function analyzeSession(snapshots: Snapshot[], opts: AnalysisOptions): Se
     if (!strength || !level) return [];
     return [{ ts: p.ts, strike: strength.strike, status: strength.status, second: strength.status === 'strong' ? null : weakStrike(strength, level) }];
   });
-  const supportEvents = sideEvents(statesOf('support'));
-  const resistanceEvents = sideEvents(statesOf('resistance'));
+  const snapAt = new Map(snaps.map((x) => [x.ts, x]));
+  const lineAt = new Map(perSnapshot.map((p) => [p.ts, p.levels?.line]));
+  const logged = (side: 'support' | 'resistance', list: SideEvent[]): LoggedEvent[] => list.map((e) => {
+    const snap = snapAt.get(e.ts);
+    const line = lineAt.get(e.ts);
+    if (!snap || !line) return { ...e, spot: snap?.spot ?? null, reversals: null };
+    // Puts are shown up to the line's upper strike and calls from its lower strike; beyond that the tool says Break Down / Break Out.
+    const at = (k: number): Reversal => (side === 'support' ? (k <= line.high ? method.reversal(snap, k, 'PE') : 'broken') : (k >= line.low ? method.reversal(snap, k, 'CE') : 'broken'));
+    return { ...e, spot: snap.spot, reversals: { center: at(e.strike), plus1: at(e.strike + snap.step), minus1: at(e.strike - snap.step) } };
+  });
+  const supportEvents = logged('support', sideEvents(statesOf('support')));
+  const resistanceEvents = logged('resistance', sideEvents(statesOf('resistance')));
   const direction = {
     support: { events: supportEvents, current: currentDirection(supportEvents) },
     resistance: { events: resistanceEvents, current: currentDirection(resistanceEvents) },

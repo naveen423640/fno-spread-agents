@@ -33,6 +33,18 @@ describe('COA 1.0 scenario follows the side directions, like the real tool', () 
   });
 });
 
+describe('Risky entry', () => {
+  const chain = (ce: Record<number, { volume: number; oi: number }>) => makeChain({ spot: 24037, step: 50, ts: istTs(DAY, '09:30'), pe: { 23900: { volume: 10000, oi: 10000 } }, ce });
+  it('is one strike inside the level normally, and the reversal at the weak strike when resistance is WTB (real tool: Risky 22521.5 with resistance 22600 WTB-22500)', () => {
+    const strong = analyzeSession([chain({ 24200: { volume: 10000, oi: 10000 } })], { now: istTs(DAY, '09:31') });
+    const weak = analyzeSession([chain({ 24200: { volume: 10000, oi: 10000 }, 24100: { volume: 9000, oi: 9000 } })], { now: istTs(DAY, '09:31') });
+    if (strong.empty || !strong.usable || weak.empty || !weak.usable) throw new Error('expected usable analyses');
+    expect(strong.extensions.riskyShort.strike).toBe(24150); // EOR-1
+    expect(weak.strength.resistance.status).toBe('wtb');
+    expect(weak.extensions.riskyShort.strike).toBe(24100); // the weak strike, not EOR-1
+  });
+});
+
 describe('analyzeSession (C1 to C10 together)', () => {
   it('has 376 synthetic snapshots from 09:15 to 15:30', () => {
     expect(day).toHaveLength(376);
@@ -63,6 +75,17 @@ describe('analyzeSession (C1 to C10 together)', () => {
     expect(['bullish', 'bearish', 'neutral']).toContain(r.direction.support.current);
     expect(['blood_bath', 'bull_run', 'mixed']).toContain(r.direction.banner.kind);
     expect(r.direction.resistance.events.length).toBeGreaterThan(0);
+  });
+
+  it('each logged event carries the spot and the EOS/EOR family at that moment, as in the real tool\'s popup', () => {
+    const r = analyzeSession(day, { now: at('09:30'), method: writerBreakeven });
+    if (r.empty || !r.usable) throw new Error('expected a usable analysis');
+    const first = r.direction.support.events[0];
+    expect(first.spot).toBe(day[0].spot);
+    // Support 23900: EOS 23900-40, EOS+1 at 23950 (PE LTP 100) and EOS-1 at 23850 (PE LTP 30).
+    expect(first.reversals).toEqual({ center: 23860, plus1: 23850, minus1: 23820 });
+    const res = r.direction.resistance.events[0];
+    expect(res.reversals).toEqual({ center: 24255, plus1: 24295, minus1: 24250 }); // CE 24200:55, 24250:45, 24150:100
   });
 
   it('reads the levels, status, scenario and extensions of the latest snapshot', () => {

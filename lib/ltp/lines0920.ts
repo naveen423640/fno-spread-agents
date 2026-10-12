@@ -1,7 +1,7 @@
 // C9 the 9:20 lines: computed once at the first snapshot at or after 09:20:00 IST and frozen for the day. Display only: nothing is executed.
 // Laid out the way the real tool's header shows them (checked against its values on 2026-10-12):
-//   short side (at resistance): Risky = EOR-1, Moderate = EOR, Max Pain = EOR+2, Max Gain = EOS
-//   long side (at support):     Risky = EOS+1, Moderate = EOS, Max Pain = EOS-2, Max Gain = EOR
+//   short side (at resistance): Risky = EOR-1 (or the weak strike when resistance is WTB), Moderate = EOR, Max Pain = EOR+2, Max Gain = EOS
+//   long side (at support):     Risky = EOS+1 (or the weak strike when support is WTT), Moderate = EOS, Max Pain = EOS-2, Max Gain = EOR
 // Max Pain is where the idea fails, so it doubles as the stop. Every value is a proxy (see extensions.ts).
 import { LTP_CONFIG, type LtpConfig } from './config';
 import { extensionLevels, type ExtLevel, type ExtensionMethod } from './extensions';
@@ -48,7 +48,7 @@ export function freezeLines0920(snaps: Snapshot[], method: ExtensionMethod, cfg:
   return {
     date, snapshotTs: snap.ts, delaySeconds: snap.ts - at, method: method.id,
     eorMinus1: e.eorMinus1, eor: e.eor, eorPlus1, eorPlus2, eosPlus1: e.eosPlus1, eos: e.eos, eosMinus1, eosMinus2,
-    short: trade(e.eorMinus1, e.eor, eorPlus2, e.eos),
-    long: trade(e.eosPlus1, e.eos, eosMinus2, e.eor),
+    short: trade(e.riskyShort, e.eor, eorPlus2, e.eos),
+    long: trade(e.riskyLong, e.eos, eosMinus2, e.eor),
   };
 }

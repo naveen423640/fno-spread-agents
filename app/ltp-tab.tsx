@@ -12,9 +12,10 @@ import { CALIBRATION_LABELS } from '@/lib/ltp/calibration';
 import type { LtpState } from '@/lib/ltp/state';
 import type { CalibrationEntry } from '@/lib/ltp/store';
 import { istDate, istHhmm } from '@/lib/ltp/time';
-import { healthBadge } from '@/lib/ltp/view';
+import { healthBadge, tradeLevels } from '@/lib/ltp/view';
 
 import { LtpChainTable } from '@/app/ltp-chain-table';
+import { LtpScenarioDialog } from '@/app/ltp-scenario-dialog';
 import { LTP_CONFIG } from '@/lib/ltp/config';
 
 const LtpCharts = lazy(() => import('@/app/ltp-charts').then((m) => ({ default: m.LtpCharts })));
@@ -56,6 +57,7 @@ export function LtpTab() {
   const [now, setNow] = useState(() => Math.floor(Date.now() / 1000));
   const [recordMsg, setRecordMsg] = useState<string | null>(null);
   const [auto, setAuto] = useState(false);
+  const [popup, setPopup] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -114,12 +116,10 @@ export function LtpTab() {
   // The tool's header strip: Risky / Moderate / Max Pain / Max Gain on each side. The side the banner rules out shows NA.
   const tradeStrip = (which: 'short' | 'long') => {
     if (!a) return null;
-    const e = a.extensions;
-    const v = which === 'short'
-      ? { risky: e.eorMinus1, moderate: e.eor, maxPain: e.eorPlus[1], maxGain: e.eos }
-      : { risky: e.eosPlus1, moderate: e.eos, maxPain: e.eosMinus[1], maxGain: e.eor };
-    const ruledOut = (which === 'long' && kind === 'blood_bath') || (which === 'short' && kind === 'bull_run');
-    const cell = (name: string, l: { value: number | null }) => <span key={name} className="whitespace-nowrap">{name} : <strong className="tabular-nums">{ruledOut || l.value === null ? 'NA' : num(l.value)}</strong></span>;
+    const t = tradeLevels(a);
+    const v = t[which];
+    const off = t.ruledOut[which];
+    const cell = (label: string, c: { value: number | null; broken: string | null }) => <span key={label} className="whitespace-nowrap">{label} : <strong className="tabular-nums">{off || c.value === null ? 'NA' : c.broken ?? num(c.value)}</strong></span>;
     return (
       <div className="text-center text-sm font-bold" title={`proxy values (${a.method.label})`}>
         <div className="flex flex-wrap justify-center gap-x-4">{cell('Risky', v.risky)}{cell('Moderate', v.moderate)}</div>
@@ -160,7 +160,7 @@ export function LtpTab() {
             <SelectItem value="time_value_only">EOS/EOR proxy: time value only</SelectItem>
           </SelectContent>
         </Select>
-        {a ? <span className={`mx-auto rounded-full px-5 py-1.5 text-sm font-extrabold uppercase tracking-wide text-white ${bannerClass}`}>{name} IS {kind === 'mixed' ? 'MIXED' : `IN ${a.direction.banner.text.toUpperCase()}`}</span> : <span className="mx-auto" />}
+        {a ? <button type="button" onClick={() => setPopup(true)} title="Click for the support and resistance changes since the open" className={`mx-auto cursor-pointer rounded-full px-5 py-1.5 text-sm font-extrabold uppercase tracking-wide text-white ${bannerClass}`}>{name} IS {kind === 'mixed' ? 'MIXED' : `IN ${a.direction.banner.text.toUpperCase()}`}</button> : <span className="mx-auto" />}
         <span className="flex flex-wrap items-center gap-2 text-xs">
           <span className={`rounded-md px-2 py-1 font-medium ${BADGE_CLASS[badge]}`}>{BADGE_TEXT[badge]}{state ? ` · last ${clock(state.health.lastSuccessTs)}` : ''}</span>
           <Button size="sm" variant="secondary" onClick={() => { setLoading(true); void load(); }} disabled={loading}><RefreshCw className={loading ? 'animate-spin' : ''} />Refresh</Button>
@@ -284,6 +284,7 @@ export function LtpTab() {
         </>
       ) : null}
 
+      {a ? <LtpScenarioDialog open={popup} onOpenChange={setPopup} analysis={a} name={name} nowLabel={state && !state.empty ? `${clock(state.snapshotTs)}` : ''} /> : null}
       <p className="border-t border-border pt-3 text-[11px] text-muted-foreground">Rule-based reading of OI/volume; not validated; levels using EOS/EOR are proxies.</p>
     </div>
   );

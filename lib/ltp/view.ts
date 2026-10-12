@@ -1,4 +1,5 @@
 // Pure helpers for the LTP Levels tab: which table cells to highlight, the health badge colour and the COA 2.0 window label.
+import type { UsableAnalysis } from './analyze';
 import { LTP_CONFIG } from './config';
 import type { ChainView } from './state';
 import { minutesOf } from './time';
@@ -52,4 +53,26 @@ export function columnPercents(chain: ChainView[], line: { low: number; high: nu
     }
   }
   return out;
+}
+
+export type TradeCell = { value: number | null; broken: 'Break Down' | 'Break Out' | null };
+export type TradeLevels = {
+  short: { risky: TradeCell; moderate: TradeCell; maxPain: TradeCell; maxGain: TradeCell };
+  long: { risky: TradeCell; moderate: TradeCell; maxPain: TradeCell; maxGain: TradeCell };
+  ruledOut: { short: boolean; long: boolean };
+};
+
+// The live Risky / Moderate / Max Pain / Max Gain on each side, like the real tool's header. Max Gain reads "Break Down" (short side) or
+// "Break Out" (long side) once the spot has already passed it. Blood Bath rules out longs, Bull Run rules out shorts.
+export function tradeLevels(a: UsableAnalysis): TradeLevels {
+  const e = a.extensions;
+  const cell = (l: { value: number | null }, broken: TradeCell['broken'] = null): TradeCell => ({ value: l.value, broken: l.value !== null ? broken : null });
+  const gainShort = e.eos.value !== null && a.spot < e.eos.value;
+  const gainLong = e.eor.value !== null && a.spot > e.eor.value;
+  const kind = a.direction.banner.kind;
+  return {
+    short: { risky: cell(e.riskyShort), moderate: cell(e.eor), maxPain: cell(e.eorPlus[1]), maxGain: cell(e.eos, gainShort ? 'Break Down' : null) },
+    long: { risky: cell(e.riskyLong), moderate: cell(e.eos), maxPain: cell(e.eosMinus[1]), maxGain: cell(e.eor, gainLong ? 'Break Out' : null) },
+    ruledOut: { short: kind === 'bull_run', long: kind === 'blood_bath' },
+  };
 }

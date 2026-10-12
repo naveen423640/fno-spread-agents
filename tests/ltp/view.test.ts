@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
-import { columnPercents, highlightCells, healthBadge, windowLabel } from '@/lib/ltp/view';
+import { analyzeSession } from '@/lib/ltp/analyze';
+import { istTs } from '@/lib/ltp/time';
+import { columnPercents, highlightCells, healthBadge, tradeLevels, windowLabel } from '@/lib/ltp/view';
+import { makeChain } from '../support/ltp-chain';
 import type { ChainView } from '@/lib/ltp/state';
 
 const cell = (volume: number, oi = volume) => ({ ltp: 10, oi, oiChange: 0, volume });
@@ -75,5 +78,25 @@ describe('columnPercents', () => {
     expect(p['23950|PE|volume']).toBe(80);
     expect(p['24100|CE|oi']).toBe(50);
     expect(p['24050|PE|volume']).toBeUndefined();
+  });
+});
+
+const makeChainSnap = (spot: number, pe: Record<number, { volume: number; oi: number }>, ce: Record<number, { volume: number; oi: number }>) => makeChain({ spot, step: 50, ts: istTs('2026-10-12', '09:30'), expiry: '2026-10-13', pe, ce });
+
+describe('tradeLevels', () => {
+  const analysis = (pe: Record<number, { volume: number; oi: number }>, ce: Record<number, { volume: number; oi: number }>, spot: number) => {
+    const r = analyzeSession([makeChainSnap(spot, pe, ce)], { now: istTs('2026-10-12', '09:31') });
+    if (r.empty || !r.usable) throw new Error('expected usable levels');
+    return r;
+  };
+  it('Max Gain on the short side reads Break Down once the spot is below EOS, and not before', () => {
+    const below = analysis({ 24050: { volume: 10000, oi: 10000 } }, { 24200: { volume: 10000, oi: 10000 } }, 24020); // EOS is about 24025, above the spot
+    expect(tradeLevels(below).short.maxGain.broken).toBe('Break Down');
+    const above = analysis({ 23900: { volume: 10000, oi: 10000 } }, { 24200: { volume: 10000, oi: 10000 } }, 24037);
+    expect(tradeLevels(above).short.maxGain.broken).toBeNull();
+  });
+  it('rules out the long side in Blood Bath and the short side in Bull Run', () => {
+    const r = analysis({ 23900: { volume: 10000, oi: 10000 } }, { 24200: { volume: 10000, oi: 10000 } }, 24037);
+    expect(tradeLevels(r).ruledOut).toEqual({ short: r.direction.banner.kind === 'bull_run', long: r.direction.banner.kind === 'blood_bath' });
   });
 });

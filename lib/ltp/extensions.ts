@@ -80,7 +80,7 @@ export const ivMove: ExtensionMethod = {
 export const EXTENSION_METHODS: ExtensionMethod[] = [ivMove, writerBreakeven, timeValueOnly];
 
 export type ExtLevel = { label: string; strike: number; value: number | null; method: string; isProxy: true };
-export type Extensions = { eos: ExtLevel; eor: ExtLevel; eosPlus1: ExtLevel; eorMinus1: ExtLevel; eosMinus: ExtLevel[]; eorPlus: ExtLevel[]; wtbPlus1: ExtLevel | null; wttMinus1: ExtLevel | null };
+export type Extensions = { eos: ExtLevel; eor: ExtLevel; eosPlus1: ExtLevel; eorMinus1: ExtLevel; riskyShort: ExtLevel; riskyLong: ExtLevel; eosMinus: ExtLevel[]; eorPlus: ExtLevel[]; wtbPlus1: ExtLevel | null; wttMinus1: ExtLevel | null };
 
 const level = (s: Snapshot, method: ExtensionMethod, name: string, strike: number, side: Side): ExtLevel => ({
   label: `${name} (proxy: ${method.label})`, strike, value: method.reversal(s, strike, side), method: method.id, isProxy: true,
@@ -103,7 +103,13 @@ export function extensionLevels(s: Snapshot, levels: Levels, support: SideStatus
   const res = levels.resistance.strike;
   const wtb = support.status === 'wtb' ? weakStrike(support, levels.support) : null;
   const wtt = resistance.status === 'wtt' ? weakStrike(resistance, levels.resistance) : null;
+  // "Risky" entry on each side (inferred from the real tool: 10:25 resistance Strong gave EOR-1, 10:59 resistance WTB-22500 gave the reversal at 22500):
+  // the reversal at the weak strike when the side is weak towards the line's far side, otherwise one strike inside the level.
+  const weakResistance = resistance.status === 'wtb' ? weakStrike(resistance, levels.resistance) : null;
+  const weakSupport = support.status === 'wtt' ? weakStrike(support, levels.support) : null;
   return {
+    riskyShort: weakResistance === null ? level(s, method, 'EOR-1', res - step, 'CE') : level(s, method, 'Risky', weakResistance, 'CE'),
+    riskyLong: weakSupport === null ? level(s, method, 'EOS+1', sup + step, 'PE') : level(s, method, 'Risky', weakSupport, 'PE'),
     eos: level(s, method, 'EOS', sup, 'PE'),
     eor: level(s, method, 'EOR', res, 'CE'),
     eosPlus1: level(s, method, 'EOS+1', sup + step, 'PE'),
