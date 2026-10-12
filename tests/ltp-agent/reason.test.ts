@@ -23,8 +23,12 @@ describe('reasonText is a short, deterministic line built only from the rule tra
     expect(textFor({ spot: 24198, spots: [24120, 24198], soc })).toContain(' · SOC 1h bearish');
   });
   it('a skip leads with the first failed rule in a few words, then the level', () => {
-    expect(textFor({ support: 'wtb', resistance: 'wtb', spot: 24012, spots: [24092, 24012] })).toBe('SKIPPED LONG NIFTY 6(S1/R1) S-Bearish R-Bearish · no level for this side · EOS 24,010 #1');
+    expect(textFor({ support: 'wtb', resistance: 'wtb', spot: 24012, spots: [24092, 24012] })).toBe('SKIPPED LONG NIFTY 6(S1/R1) S-Bearish R-Bearish · no bottom (Blood Bath) · EOS 24,010 #1');
     expect(textFor({ hhmm: '09:25', spot: 24012, spots: [24092, 24012] })).toBe('SKIPPED LONG NIFTY 1(S1/R1) S-Stable R-Stable · 09:25 outside 09:30-14:45 · EOS 24,010 #1');
+  });
+  it('a short with no top says so too', () => {
+    const a = fakeAnalysis({ pressure: { support: 'U', resistance: 'U' }, spot: 24198, spots: [24120, 24198] });
+    expect(reasonText(evaluate(a, v01, idle).find((x) => x.direction === 'short')!, a)).toContain(' · no top (Bull Run) · ');
   });
   it('a disagreement between the live scenario and the graph is named as such', () => {
     const v20 = parseStrategy(readFileSync('strategies/ltp_v2.0.yaml', 'utf8'));

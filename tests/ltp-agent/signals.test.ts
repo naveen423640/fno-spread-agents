@@ -86,10 +86,21 @@ describe('v2.0 decides from the mind-map outcome, not from the first-level scena
     expect(evaluate(a, { ...v20t, block_scenarios: [1] }, idle).find((x) => x.direction === 'long')).toMatchObject({ taken: true });
     expect(evaluate(a, { ...v01, block_scenarios: [1] }, idle).find((x) => x.direction === 'long')).toMatchObject({ taken: false });
   });
-  it('where the outcome has no bottom the long is still never taken, whatever the strategy table says', () => {
+  it('where the outcome has no bottom there is no long signal at all in v2.0 (nothing to show or skip); v0.1 still raises it and skips it', () => {
     const a = fakeAnalysis({ pressure: { support: 'B', resistance: 'B' }, spot: EXT.eos + 2, spots: [EXT.eos + 90, EXT.eos + 2] });
     expect(a.coa1.scenario.bottom).toBeNull();
-    expect(evaluate(a, v20t, idle).find((x) => x.direction === 'long')).toMatchObject({ taken: false, skipReason: 'scenario_allowed' });
+    expect(evaluate(a, v20t, idle).filter((x) => x.direction === 'long')).toEqual([]);
+    expect(evaluate(a, v01, idle).find((x) => x.direction === 'long')).toMatchObject({ taken: false, skipReason: 'scenario_allowed' });
+  });
+  it('the same for the top: in a Bull Run there is no short signal in v2.0, whichever setup would have raised it', () => {
+    const a = fakeAnalysis({ pressure: { support: 'U', resistance: 'U' }, spot: EXT.eor - 2, spots: [EXT.eor - 90, EXT.eor - 2] });
+    expect(a.coa1.scenario.top).toBeNull();
+    expect(evaluate(a, v20t, idle).filter((x) => x.direction === 'short')).toEqual([]);
+  });
+  it('the Watch list in v2.0 shows only the sides the outcome has a level for', () => {
+    const a = fakeAnalysis({ pressure: { support: 'B', resistance: 'B' } });
+    expect(watchLevels(a, v20t, idle).map((x) => x.direction)).not.toContain('long');
+    expect(watchLevels(a, v20t, idle).map((x) => x.direction)).toContain('short');
   });
   it('both sides pushing down: a risky short at the live Risky level is a candidate and is taken (bears are winning)', () => {
     const a = fakeAnalysis({ pressure: { support: 'B', resistance: 'B' }, spot: EXT.eorMinus1 - 2, spots: [EXT.eorMinus1 - 60, EXT.eorMinus1 - 2] });

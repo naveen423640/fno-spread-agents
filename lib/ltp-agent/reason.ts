@@ -10,7 +10,7 @@ const fmt = (x: number) => new Intl.NumberFormat('en-IN', { maximumFractionDigit
 function why(step: RuleStep): string {
   const i = step.inputs;
   switch (step.rule) {
-    case 'scenario_allowed': return i.graph_consistent === false ? 'graph mismatch' : 'no level for this side';
+    case 'scenario_allowed': return i.has_level === false ? (i.direction === 'long' ? 'no bottom (Blood Bath)' : 'no top (Bull Run)') : i.graph_consistent === false ? 'graph mismatch' : 'not allowed in this scenario';
     case 'time_window': return `${i.time} outside ${i.start}-${i.end}`;
     case 'valid_plan': return 'no usable SL/target';
     case 'hit_number': return `hit #${i.hit} over max ${i.max}`;

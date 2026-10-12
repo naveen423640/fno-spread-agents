@@ -112,7 +112,9 @@ function build(a: UsableAnalysis, strategy: Strategy, ctx: EvalContext, mode: 't
     }
   }
 
-  return raws.map((r) => judge(r));
+  // v2.0 raises no signal at all for a side the outcome has no level for (no long in a Blood Bath, no short in a Bull Run): nothing to show or to skip.
+  const hasLevelFor = (direction: Direction) => (direction === 'long' ? scenario.bottom : scenario.top) !== null;
+  return raws.filter((r) => !strategy.decide_by_graph || hasLevelFor(r.direction)).map((r) => judge(r));
 
   function judge(r: Raw): Candidate {
     const inBand = Math.abs(spot - r.level.value) <= tol;
@@ -135,7 +137,7 @@ function build(a: UsableAnalysis, strategy: Strategy, ctx: EvalContext, mode: 't
     const opposes = !!soc && r.setup !== 'soc' && (soc.bias === 'bearish' ? r.direction === 'long' : r.direction === 'short');
 
     const checks: RuleStep[] = [
-      { rule: 'scenario_allowed', inputs: { scenario: scenario.number, direction: r.direction, allowed, blocked, graph_consistent: graphConsistent }, passed: allowed && !blocked && (!strategy.graph_consistent_required || graphConsistent) },
+      { rule: 'scenario_allowed', inputs: { scenario: scenario.number, direction: r.direction, allowed, blocked, has_level: hasLevel, graph_consistent: graphConsistent }, passed: allowed && !blocked && (!strategy.graph_consistent_required || graphConsistent) },
       { rule: 'time_window', inputs: { time: hhmm, start, end: strategy.window.end }, passed: hhmm >= start && hhmm <= strategy.window.end },
       { rule: 'level_touched', inputs: mode === 'watch' ? { spot, level: r.level.value, tolerance: tol, previous_spot: previous, watching: true } : { spot, level: r.level.value, tolerance: tol, previous_spot: previous }, passed: true },
       { rule: 'valid_plan', inputs: { entry, stop, target }, passed: planOk },
