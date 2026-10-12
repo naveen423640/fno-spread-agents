@@ -15,7 +15,7 @@ function recorder(status = 200) {
   const asked: string[] = [];
   const fetchImpl = (async (input: string, init?: RequestInit) => {
     const url = new URL(input);
-    asked.push(`${url.searchParams.get('date')}|${url.searchParams.get('underlying')}|${(init?.headers as Record<string, string>).Authorization}`);
+    asked.push(`${url.searchParams.get('date')}|${url.searchParams.get('underlying')}|${((init?.headers ?? {}) as Record<string, string>).Authorization}`);
     if (status !== 200) return new Response('{}', { status });
     const date = url.searchParams.get('date')!;
     const underlying = url.searchParams.get('underlying')!;
