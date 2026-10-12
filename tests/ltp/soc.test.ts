@@ -10,7 +10,7 @@ const side = (status: Status, pct: number | null, strike: number): SideStrength 
   byMetric: { volume: { pct, weak: status !== 'strong', direction: null, toward: null, suppressed: false }, oi: { pct, weak: status !== 'strong', direction: null, toward: null, suppressed: false } },
 });
 // A strength history sampled every 5 minutes. `sup`/`res` give status and pct at minute m.
-const history = (minutes: number, sup: (m: number) => [Status, number], res: (m: number) => [Status, number], strike = (m: number) => 24000 - Math.floor(m / 60) * 0) =>
+const history = (minutes: number, sup: (m: number) => [Status, number], res: (m: number) => [Status, number], strike = (_m: number) => 24000) =>
   Array.from({ length: minutes / 5 + 1 }, (_, i): StrengthPoint => {
     const m = i * 5;
     const [ss, sp] = sup(m); const [rs, rp] = res(m);
