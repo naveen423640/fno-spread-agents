@@ -382,3 +382,57 @@ export const ltpCalibration = sqliteTable('ltp_calibration', {
   snapshotTs: integer('snapshot_ts').notNull(),
   proxiesJson: text('proxies_json').notNull(),
 });
+
+export const agentDecisions = sqliteTable('agent_decisions', {
+  decisionId: text('decision_id').primaryKey(),
+  ts: integer('ts').notNull(),
+  tradeDate: text('trade_date').notNull(),
+  underlying: text('underlying').notNull(),
+  strategyVersion: text('strategy_version').notNull(),
+  setup: text('setup').notNull(),
+  direction: text('direction').notNull(),
+  book: text('book').notNull(),
+  taken: integer('taken').notNull(),
+  skipReason: text('skip_reason'),
+  contextJson: text('context_json').notNull(),
+  traceJson: text('trace_json').notNull(),
+  reason: text('reason').notNull(),
+  expectationJson: text('expectation_json').notNull(),
+  dataQualityJson: text('data_quality_json').notNull(),
+}, (table) => [index('agent_decisions_day').on(table.tradeDate, table.underlying, table.ts)]);
+
+export const agentTrades = sqliteTable('agent_trades', {
+  decisionId: text('decision_id').notNull(),
+  book: text('book').notNull(),
+  status: text('status').notNull(),
+  openedTs: integer('opened_ts').notNull(),
+  positionJson: text('position_json').notNull(),
+}, (table) => [primaryKey({ columns: [table.decisionId, table.book] })]);
+
+export const tradeOutcomes = sqliteTable('trade_outcomes', {
+  decisionId: text('decision_id').notNull(),
+  book: text('book').notNull(),
+  tradeDate: text('trade_date').notNull(),
+  closedTs: integer('closed_ts').notNull(),
+  netPnl: real('net_pnl').notNull(),
+  outcomeJson: text('outcome_json').notNull(),
+}, (table) => [primaryKey({ columns: [table.decisionId, table.book] }), index('trade_outcomes_day').on(table.tradeDate)]);
+
+export const tradeReviews = sqliteTable('trade_reviews', {
+  decisionId: text('decision_id').primaryKey(),
+  model: text('model').notNull(),
+  reviewJson: text('review_json').notNull(),
+  createdTs: integer('created_ts').notNull(),
+}, () => []);
+
+export const agentExperiments = sqliteTable('agent_experiments', {
+  id: text('id').primaryKey(),
+  status: text('status').notNull(),
+  json: text('json').notNull(),
+  createdTs: integer('created_ts').notNull(),
+}, () => []);
+
+export const agentState = sqliteTable('agent_state', {
+  key: text('key').primaryKey(),
+  value: text('value').notNull(),
+}, () => []);
