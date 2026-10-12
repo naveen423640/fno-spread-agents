@@ -40,6 +40,19 @@ describe('ltp_v0.1.yaml is the pure course rules with the defaults of the brief'
   });
 });
 
+describe('a strategy saved before newer settings existed still loads, with those settings off', () => {
+  const old = () => v01().replace(/\n  risky_tug:[^\n]*/, '').replace(/\ngraph_consistent_required:[^\n]*/, '').replace(/\ndecide_by_graph:[^\n]*/, '');
+  it('the yaml really lacks them', () => { expect(old()).not.toMatch(/risky_tug|decide_by_graph|graph_consistent_required/); });
+  it('missing graph_consistent_required, decide_by_graph and setups_enabled.risky_tug read as false: the behaviour that version always had', () => {
+    const s = parseStrategy(old());
+    expect(s).toMatchObject({ graph_consistent_required: false, decide_by_graph: false });
+    expect(s.setups_enabled.risky_tug).toBe(false);
+  });
+  it('a value that is present but not a boolean is still refused, naming the field', () => {
+    expect(() => parseStrategy(v01().replace('decide_by_graph: false', 'decide_by_graph: maybe'))).toThrow(/decide_by_graph/);
+  });
+});
+
 describe('parseStrategy rejects a bad file and names the field', () => {
   const broken = (edit: (text: string) => string) => () => parseStrategy(edit(v01()));
   it('an unknown key', () => { expect(broken((t) => `${t}\nsurprise: 1\n`)).toThrow(/surprise/); });
