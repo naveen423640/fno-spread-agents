@@ -3,6 +3,7 @@ import { runBacktest } from '@/lib/ltp-agent/backtest';
 import { resolveBacktestStrategy } from '@/lib/ltp-agent/backtest-strategy';
 import { createJournalStore } from '@/lib/ltp-agent/journal-store';
 import { TUNABLE_FIELDS } from '@/lib/ltp-agent/strategy';
+import { DEFAULT_VERSION } from '@/lib/ltp-agent/default-version';
 import { listVersions } from '@/lib/ltp-agent/versions';
 import type { SessionAnalysis } from '@/lib/ltp/analyze';
 import { createLtpStore } from '@/lib/ltp/store';
@@ -24,7 +25,7 @@ export async function GET(request: Request) {
     if (params.get('list')) {
       const versions = await listVersions(journal);
       return Response.json({
-        days: recorded, versions, activeVersion: versions.find((v) => v.active)?.version ?? '0.1', tunables: TUNABLE_FIELDS,
+        days: recorded, versions, activeVersion: versions.find((v) => v.active)?.version ?? DEFAULT_VERSION, tunables: TUNABLE_FIELDS,
         experiments: (await journal.listExperiments()).map((e) => ({ id: e.id, status: e.status, hypothesis: e.hypothesis, diff: e.diff, baseVersion: e.baseVersion })),
       }, { headers: NO_STORE });
     }

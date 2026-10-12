@@ -32,6 +32,7 @@ window:
 max_hit_number: 2
 require_coa2_agree: false # COA 2.0 is logged either way
 block_on_opposing_soc: true
+graph_consistent_required: false # v2.0 turns this on: skip a signal when the live scenario and the knowledge graph disagree
 
 stop_rule: nine_twenty # EOR+2 / EOS-2 beyond the entry, plus the buffer; or next_level
 stop_buffer_pts: 10

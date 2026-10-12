@@ -8,10 +8,17 @@ import { freshStores } from '../support/ltp-agent-day';
 
 const v01Text = readFileSync('strategies/ltp_v0.1.yaml', 'utf8');
 
-describe('the live agent gets its strategy from the database, with v0.1 bundled as the fallback', () => {
-  it('with nothing stored, the active strategy is the bundled v0.1, identical to the file', async () => {
+const v20Text = readFileSync('strategies/ltp_v2.0.yaml', 'utf8');
+
+describe('the live agent gets its strategy from the database, with v2.0 and v0.1 bundled as the fallback', () => {
+  it('with nothing stored, the active strategy is the bundled v2.0, identical to the file', async () => {
     const { journal } = freshStores();
-    expect(await loadActiveStrategy(journal)).toEqual(parseStrategy(v01Text));
+    expect(await loadActiveStrategy(journal)).toEqual(parseStrategy(v20Text));
+    expect((await loadActiveStrategy(journal)).version).toBe('2.0');
+  });
+  it('v0.1 stays loadable, identical to its file', async () => {
+    const { journal } = freshStores();
+    expect(await loadStrategy(journal, '0.1')).toEqual(parseStrategy(v01Text));
   });
   it('a stored version wins over the bundled one, and the active version is read from the state', async () => {
     const { journal } = freshStores();

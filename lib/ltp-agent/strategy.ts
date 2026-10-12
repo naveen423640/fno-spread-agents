@@ -18,6 +18,7 @@ export const strategySchema = z.object({
   max_hit_number: z.number().int().min(1),
   require_coa2_agree: z.boolean(),
   block_on_opposing_soc: z.boolean(),
+  graph_consistent_required: z.boolean(), // skip a signal when the live scenario and the knowledge graph disagree
   stop_rule: z.enum(['nine_twenty', 'next_level']),
   stop_buffer_pts: z.number().nonnegative(),
   time_exit: hhmm,

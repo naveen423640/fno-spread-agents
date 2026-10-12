@@ -4,9 +4,10 @@ import type { SideEvent } from './direction';
 import type { Status } from './types';
 
 export type Pressure = 'S' | 'B' | 'U' | 'HB' | 'HU';
-type Kind = 'init' | 'up' | 'down' | 'wtt' | 'wtb' | 'fromWtt' | 'fromWtb';
+export type EventKind = 'init' | 'up' | 'down' | 'wtt' | 'wtb' | 'fromWtt' | 'fromWtb';
+type Kind = EventKind;
 
-function kindOf(e: SideEvent): Kind {
+export function kindOfEvent(e: SideEvent): EventKind {
   if (e.text.startsWith('Shifted from Bottom')) return 'up';
   if (e.text.startsWith('Shifted from Top')) return 'down';
   if (e.text === 'WTT TO STRONG') return 'fromWtt';
@@ -22,7 +23,7 @@ function kindOf(e: SideEvent): Kind {
 //   shows up right after a shift the other way, in that shift's continuation, points the other way; if the weak strike then moves
 //   again (a second weak event) it is back to the plain direction.
 export function pressureOf(events: SideEvent[], now: Status): Pressure {
-  const kinds = events.map(kindOf);
+  const kinds = events.map(kindOfEvent);
   const last = kinds[kinds.length - 1];
   if (!last) return 'S';
   if (now === 'strong') {

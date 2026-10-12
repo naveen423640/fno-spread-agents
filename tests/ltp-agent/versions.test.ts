@@ -15,6 +15,7 @@ const exp = (over: Partial<Experiment> = {}): Experiment => ({ id: 'EXP-001', hy
 async function ready() {
   const stores = freshStores();
   for (const s of [...pathDay([['10:00', 24037]]), ...pathDay([['10:00', 24037]], '09:15', '2026-10-13')]) await stores.store.insertSnapshot(s);
+  await stores.journal.setState('active_version', '0.1'); // these tests approve experiments made against v0.1
   await stores.journal.saveExperiment(exp());
   return stores;
 }
@@ -90,7 +91,7 @@ describe('reject and rollback', () => {
     await rollbackTo(journal, '0.1');
     expect((await loadActiveStrategy(journal)).version).toBe('0.1');
     expect((await loadStrategy(journal, '0.2')).version).toBe('0.2');
-    expect((await listVersions(journal)).map((v) => [v.version, v.active])).toEqual([['0.1', true], ['0.2', false]]);
+    expect((await listVersions(journal)).map((v) => [v.version, v.active])).toEqual([['0.1', true], ['0.2', false], ['2.0', false]]); // 2.0 is bundled too
     await rollbackTo(journal, '0.2');
     expect((await loadActiveStrategy(journal)).version).toBe('0.2');
   });

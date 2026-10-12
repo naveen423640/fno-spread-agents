@@ -73,6 +73,23 @@ describe('the nine COA 1.0 scenarios: which side is traded, at which level', () 
   });
 });
 
+describe('the knowledge-graph guard of v2.0', () => {
+  const v20 = parseStrategy(readFileSync('strategies/ltp_v2.0.yaml', 'utf8'));
+  const inconsistent = () => { const a = fakeAnalysis({ spot: EXT.eos + 2, spots: [EXT.eos + 90, EXT.eos + 2] }); a.coa1.scenario = { ...a.coa1.scenario, top: 'EOR+1' }; return a; }; // the graph says EOR, the live scenario says EOR+1
+  it('v2.0 skips a signal when the live scenario and the graph disagree, and says so in the scenario rule', () => {
+    const c = evaluate(inconsistent(), v20, idle).find((x) => x.direction === 'long')!;
+    expect(c).toMatchObject({ taken: false, skipReason: 'scenario_allowed' });
+    expect(c.trace.find((s) => s.rule === 'scenario_allowed')!.inputs).toMatchObject({ graph_consistent: false });
+  });
+  it('v0.1 does not use the guard and takes the same signal', () => {
+    expect(evaluate(inconsistent(), v01, idle).find((x) => x.direction === 'long')).toMatchObject({ taken: true });
+  });
+  it('when they agree v2.0 trades as before', () => {
+    const a = fakeAnalysis({ spot: EXT.eos + 2, spots: [EXT.eos + 90, EXT.eos + 2] });
+    expect(evaluate(a, v20, idle).find((x) => x.direction === 'long')).toMatchObject({ taken: true });
+  });
+});
+
 describe('a side the Detailed Chart gives no level for is never traded', () => {
   it('no bottom: the long is skipped as scenario_allowed even though the strategy table allows longs in this scenario', () => {
     const a = fakeAnalysis({ spot: EXT.eos + 2, spots: [EXT.eos + 90, EXT.eos + 2] });

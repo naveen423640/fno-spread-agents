@@ -5,6 +5,7 @@ import type { UsableAnalysis } from '@/lib/ltp/analyze';
 import { countHits } from '@/lib/ltp/coa1';
 import { istHhmm } from '@/lib/ltp/time';
 import type { Direction } from './books';
+import { graphTrace } from './graph-use';
 import type { Strategy } from './strategy';
 
 export type SetupType = 'coa1_reversal' | 'nine_twenty' | 'soc';
@@ -50,6 +51,7 @@ function build(a: UsableAnalysis, strategy: Strategy, ctx: EvalContext, mode: 't
   const buffer = strategy.stop_buffer_pts;
   const rungs = ladder(a);
   const scenario = a.coa1.scenario;
+  const graphConsistent = graphTrace(a).consistent;
   const moderate = strategy.entry_profile === 'moderate';
 
   const coaStop = (direction: Direction, label: string): number | null => {
@@ -120,7 +122,7 @@ function build(a: UsableAnalysis, strategy: Strategy, ctx: EvalContext, mode: 't
     const opposes = !!soc && r.setup !== 'soc' && (soc.bias === 'bearish' ? r.direction === 'long' : r.direction === 'short');
 
     const checks: RuleStep[] = [
-      { rule: 'scenario_allowed', inputs: { scenario: scenario.number, direction: r.direction, allowed, blocked }, passed: allowed && !blocked },
+      { rule: 'scenario_allowed', inputs: { scenario: scenario.number, direction: r.direction, allowed, blocked, graph_consistent: graphConsistent }, passed: allowed && !blocked && (!strategy.graph_consistent_required || graphConsistent) },
       { rule: 'time_window', inputs: { time: hhmm, start, end: strategy.window.end }, passed: hhmm >= start && hhmm <= strategy.window.end },
       { rule: 'level_touched', inputs: mode === 'watch' ? { spot, level: r.level.value, tolerance: tol, previous_spot: previous, watching: true } : { spot, level: r.level.value, tolerance: tol, previous_spot: previous }, passed: true },
       { rule: 'valid_plan', inputs: { entry, stop, target }, passed: planOk },

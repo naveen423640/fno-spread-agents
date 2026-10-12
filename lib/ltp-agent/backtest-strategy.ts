@@ -2,12 +2,13 @@
 // proposed against, and/or your own changes to the tunable fields. Trying one never changes a stored strategy or the active version.
 import type { JournalStore } from './journal-store';
 import { applyDiff, validateDiff, type Strategy } from './strategy';
+import { DEFAULT_VERSION } from './default-version';
 import { loadStrategy } from './strategy-store';
 
 export type BacktestSpec = { version?: string; experiment?: string; overrides?: Record<string, unknown> };
 
 export async function resolveBacktestStrategy(journal: JournalStore, spec: BacktestSpec): Promise<{ strategy: Strategy; label: string }> {
-  let base = spec.version ?? (await journal.getState('active_version')) ?? '0.1';
+  let base = spec.version ?? (await journal.getState('active_version')) ?? DEFAULT_VERSION;
   let diff: Record<string, unknown> | null = null;
   const labels: string[] = [];
   if (spec.experiment) {

@@ -63,6 +63,23 @@ describe('COA 2.0 reads the at-the-money strike (course ch15)', () => {
   });
 });
 
+describe('each side\'s numbered condition and the scenario label, like the practice tool', () => {
+  const chain = (hhmm: string, pe23950: number) => makeChain({
+    spot: 24037, step: 50, ts: istTs(DAY, hhmm),
+    pe: { 23900: { volume: 10000, oi: 10000 }, 23950: { volume: pe23950, oi: pe23950 } },
+    ce: { 24200: { volume: 10000, oi: 10000 }, 24150: { volume: 9000, oi: 9000 } },
+  });
+  it('names the support and resistance conditions, with phases and how long the current phase has lasted, and the label scenario-S/R', () => {
+    const r = analyzeSession([chain('09:15', 9000), chain('09:30', 100)], { now: istTs(DAY, '09:30', 30) });
+    if (r.empty || !r.usable) throw new Error('expected a usable analysis');
+    // Support: weak toward top, then strong (WTT TO STRONG): "initially WTT then became strong" = condition 5. Resistance: weak toward bottom from the start = condition 1.
+    expect(r.coa1.conditions.support).toMatchObject({ number: 5, exact: true, pressure: 'B' });
+    expect(r.coa1.conditions.resistance).toMatchObject({ number: 1, exact: true, pressure: 'B' });
+    expect(r.coa1.label).toBe('6-S5/R1');
+    expect(r.coa1.conditions.resistance.currentPhaseMinutes).toBeGreaterThanOrEqual(0);
+  });
+});
+
 describe('Break Down / Break Out in the log rows: a reversal the spot has already passed (real SENSEX 11:23, spot 71940)', () => {
   const chain = () => makeChain({
     spot: 24037, step: 50, ts: istTs(DAY, '09:30'),

@@ -5,7 +5,7 @@ import type { LtpStore } from '@/lib/ltp/store';
 import { splitDays, type Split } from './holdout';
 import type { JournalStore } from './journal-store';
 import { applyDiff, getPath, strategySchema } from './strategy';
-import { BUNDLED_STRATEGIES, loadStrategy } from './strategy-store';
+import { BUNDLED_CHANGELOG, BUNDLED_STRATEGIES, DEFAULT_VERSION, loadStrategy } from './strategy-store';
 
 const versionKey = (v: string) => v.split('.').map(Number) as [number, number];
 const byVersion = (a: { version: string }, b: { version: string }) => versionKey(a.version)[0] - versionKey(b.version)[0] || versionKey(a.version)[1] - versionKey(b.version)[1];
@@ -14,8 +14,8 @@ export type VersionRow = { version: string; changelog: string; active: boolean }
 
 export async function listVersions(journal: JournalStore): Promise<VersionRow[]> {
   const stored = await journal.listStrategies();
-  const active = (await journal.getState('active_version')) ?? '0.1';
-  const all = new Map<string, string>(Object.keys(BUNDLED_STRATEGIES).map((v) => [v, 'The pure course rules.']));
+  const active = (await journal.getState('active_version')) ?? DEFAULT_VERSION;
+  const all = new Map<string, string>(Object.keys(BUNDLED_STRATEGIES).map((v) => [v, BUNDLED_CHANGELOG[v] ?? 'Bundled strategy.']));
   for (const s of stored) all.set(s.version, s.changelog);
   return [...all.entries()].map(([version, changelog]) => ({ version, changelog, active: version === active })).sort(byVersion);
 }
@@ -30,7 +30,7 @@ export async function approveExperiment(deps: { store: LtpStore; journal: Journa
   const experiment = await journal.getExperiment(id);
   if (!experiment) throw new Error(`No experiment ${id}.`);
   if (experiment.status !== 'awaiting_approval') throw new Error(`Experiment ${id} is ${experiment.status}; only an experiment that is awaiting_approval can be approved.`);
-  const active = (await journal.getState('active_version')) ?? '0.1';
+  const active = (await journal.getState('active_version')) ?? DEFAULT_VERSION;
   if (active !== experiment.baseVersion) throw new Error(`Experiment ${id} was tested against version ${experiment.baseVersion}, but ${active} is active.`);
   const parent = await loadStrategy(journal, experiment.baseVersion);
   const taken = new Set((await listVersions(journal)).map((v) => v.version));

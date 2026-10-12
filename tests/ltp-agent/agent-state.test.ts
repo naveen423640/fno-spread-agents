@@ -25,6 +25,7 @@ async function replayed(path: [string, number][] = WINNER) {
 describe('buildAgentState: what the Agent tab shows', () => {
   it('header: the version, the phase counter, the heartbeat and the pause switch', async () => {
     const { store, journal } = await replayed();
+    await journal.setState('active_version', '0.1'); // the replayed trades were made under v0.1
     await journal.setState('heartbeat_ts', String(NOW - 30));
     await journal.setState('paused', 'true');
     const s = await buildAgentState({ store, journal, holidays: none }, { nowTs: NOW });
@@ -85,6 +86,7 @@ describe('buildAgentState: what the Agent tab shows', () => {
   });
   it('experiments stay locked below 100 and unlock at exactly 100', async () => {
     const { store, journal } = freshStores();
+    await journal.setState('active_version', '0.1'); // the seeded trades are v0.1's
     await seedClosedTrades(journal, { n: 99, days: ['2026-10-01'] });
     expect((await buildAgentState({ store, journal, holidays: none }, { nowTs: NOW })).experimentsLocked).toBe(true);
     await seedClosedTrades(journal, { n: 1, days: ['2026-10-02'] });

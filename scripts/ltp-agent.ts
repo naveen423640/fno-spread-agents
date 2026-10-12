@@ -15,6 +15,7 @@ import { agentReplayDay, type AgentContext } from '../lib/ltp-agent/agent';
 import { dueJobs, markDone, previousMonth, type ScheduleInput } from '../lib/ltp-agent/schedule';
 import { writeExperimentFile } from '../lib/ltp-agent/experiment-files';
 import type { Experiment } from '../lib/ltp-agent/experiment-types';
+import { DEFAULT_VERSION } from '../lib/ltp-agent/default-version';
 import { createJournalStore } from '../lib/ltp-agent/journal-store';
 import { readStrategyFile } from '../lib/ltp-agent/strategy-files';
 import { UNDERLYINGS } from '../lib/ltp/recorder';
@@ -113,7 +114,7 @@ function findDatabase(): string | undefined {
 async function replay() {
   const from = option('from');
   const to = option('to') ?? from;
-  const version = option('version') ?? '0.1';
+  const version = option('version') ?? DEFAULT_VERSION;
   const dbPath = findDatabase();
   if (!from || !to) { console.error('Usage: agent-replay --from YYYY-MM-DD --to YYYY-MM-DD [--version 0.1] [--db <file>] [--underlying <symbol>]'); process.exitCode = 1; return; }
   if (!dbPath || !existsSync(dbPath)) { console.error('No local app database found. Pass --db <file>.'); process.exitCode = 1; return; }

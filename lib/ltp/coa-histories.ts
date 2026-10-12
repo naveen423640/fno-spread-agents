@@ -9,7 +9,8 @@ const TEXT: Record<Kind, string> = {
   init: 'STABLE STRONG', up: 'Shifted from Bottom to Top', down: 'Shifted from Top to Bottom',
   wtt: 'WEAK TOWARDS TOP', wtb: 'WEAK TOWARDS BOTTOM', fromWtt: 'WTT TO STRONG', fromWtb: 'WTB TO STRONG',
 };
-export const eventsOf = (kinds: Kind[]): SideEvent[] => kinds.map((k, i) => ({ ts: i, strike: 0, status: 'strong', second: null, label: '', text: TEXT[k], direction: 'neutral' }));
+// Events 30 minutes apart, so no phase is short enough to be taken for noise.
+export const eventsOf = (kinds: Kind[]): SideEvent[] => kinds.map((k, i) => ({ ts: i * 1800, strike: 0, status: 'strong', second: null, label: '', text: TEXT[k], direction: 'neutral' }));
 
 export type Condition = { wording: string; log: Kind[] };
 export const HISTORY_CONDITIONS: Record<Status, Condition[]> = {

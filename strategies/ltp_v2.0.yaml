@@ -1,0 +1,56 @@
+# LTP strategy v2.0: the course rules (Detailed Chart of Accuracy, all 529 practice-tool cases verified) with the knowledge graph as a guard.
+# Same values as v0.1, plus graph_consistent_required.
+# Values are the defaults of the LTP Agent brief (section A).
+# Only the fields listed in TUNABLE_FIELDS (lib/ltp-agent/strategy.ts) may ever be changed by the reviewer, and only within their bounds.
+version: "2.0"
+name: course rules with the knowledge graph as a guard
+
+# Which side may be traded in each COA 1.0 scenario (the Detailed Chart of Accuracy: 6 = Blood Bath, shorts only; 7 = Bull Run, longs only;
+# 8 and 9 are tradable, with the top at EOR+1 / WTT-1 and the bottom at EOS-1 / WTB+1). A side with no level in the chart is never traded.
+scenarios_traded:
+  "1": { long: true, short: true }
+  "2": { long: true, short: true }
+  "3": { long: true, short: true }
+  "4": { long: true, short: true }
+  "5": { long: true, short: true }
+  "6": { long: false, short: true }
+  "7": { long: true, short: false }
+  "8": { long: true, short: true }
+  "9": { long: true, short: true }
+block_scenarios: []
+
+entry_profile: risky # risky = EOS / EOR, moderate = EOS-1 / EOR+1
+setups_enabled:
+  coa1_reversal: true
+  nine_twenty: true
+  soc: true
+  end_of_diversion: false # the engine has no trade rule for it yet
+
+touch_tolerance_pts: 5
+window:
+  start: "09:30"
+  end: "14:45"
+  nine_twenty_start: "09:21"
+max_hit_number: 2
+require_coa2_agree: false # COA 2.0 is logged either way
+block_on_opposing_soc: true
+graph_consistent_required: true # skip a signal when the live scenario and the knowledge graph disagree (docs/data/ltp-knowledge-graph.json)
+
+stop_rule: nine_twenty # EOR+2 / EOS-2 beyond the entry, plus the buffer; or next_level
+stop_buffer_pts: 10
+time_exit: "15:15"
+exit_on_level_shift: false
+
+risk:
+  max_trades_per_day: 3 # per underlying
+  max_concurrent: 1 # per underlying
+  daily_loss_cap_inr: 15000 # per book
+
+books:
+  buy: { strike: atm } # atm or otm1
+  sell: { hedge_width: 4 } # strikes between the short leg and its hedge
+
+fills:
+  slippage_ticks: 1
+  tick: 0.05
+  fallback_slippage_pct: 2 # used with LTP when bid or ask is missing

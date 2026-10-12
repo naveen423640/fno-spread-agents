@@ -95,3 +95,16 @@ describe('strategy files', () => {
     expect(() => readStrategyFile('9.9')).toThrow(/9\.9/);
   });
 });
+
+describe('ltp_v2.0.yaml: the course rules plus the knowledge graph as a guard', () => {
+  const v20 = parseStrategy(readFileSync('strategies/ltp_v2.0.yaml', 'utf8'));
+  const v01s = parseStrategy(v01());
+  it('differs from v0.1 only in its version, its name and the graph guard', () => {
+    expect(v20.version).toBe('2.0');
+    expect(v20.graph_consistent_required).toBe(true);
+    expect(v01s.graph_consistent_required).toBe(false);
+    const { version: _a, name: _b, graph_consistent_required: _c, ...rest20 } = v20;
+    const { version: _d, name: _e, graph_consistent_required: _f, ...rest01 } = v01s;
+    expect(rest20).toEqual(rest01);
+  });
+});

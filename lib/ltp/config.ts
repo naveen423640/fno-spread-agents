@@ -15,6 +15,10 @@ export type LtpConfig = {
     windowStart: string; // brief: COA 2.0 is valid from this IST time
     windowEnd: string; // brief: ...until this IST time
   };
+  phases: {
+    minPhaseMinutes: number; // assumed: a weak or strong spell shorter than this is a blink and is ignored when naming a side's condition (a shift never is)
+    continuationMinutes: number; // assumed (owner: "2 or 3 hours"): a side that has stayed in one phase this long is in a continuation
+  };
   pctTrend: {
     lookbackMin: number; // assumed: minutes over which a weak side's percentage is read as rising or falling
     minChangePoints: number; // assumed: a smaller move than this many percentage points is flat
@@ -38,6 +42,7 @@ export const LTP_CONFIG: LtpConfig = {
   lotSize: { 'NSE:NIFTY50-INDEX': 65, 'NSE:NIFTYBANK-INDEX': 30, 'BSE:SENSEX-INDEX': 20 },
   hitTolerancePoints: 5,
   coa2: { stableBandPct: 5, lookbackMin: 30, windowStart: '09:45', windowEnd: '14:30' },
+  phases: { minPhaseMinutes: 3, continuationMinutes: 120 },
   pctTrend: { lookbackMin: 30, minChangePoints: 2 },
   soc: {
     oneHour: { minutes: 60, rangeMin: 2, rangeMax: 5 },
