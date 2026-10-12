@@ -112,6 +112,21 @@ describe('a level based on one metric only (course ch09)', () => {
   });
 });
 
+describe('the level only moves when a metric\'s own peak moves (real SENSEX support 2026-10-12: stayed 72500 while the spot crossed 72200, moved to 72000 at 10:47)', () => {
+  // Volume peaks at 24200, OI at 24000, and they never change until the last snapshot. Only the spot (and so the line) moves.
+  const at = (spot: number, ts: number, volumeAt24000 = 5000) => makeChain({ spot, step: 50, ts, pe: { 24200: { volume: 9000, oi: 1000 }, 24000: { volume: volumeAt24000, oi: 9000 } } });
+  it('the closer peak decides at first; a later move of the line alone does not switch the level', () => {
+    const { perSnapshot } = trackStrength([at(24137, 60), at(24037, 120)]);
+    expect(perSnapshot[0].levels!.support).toMatchObject({ strike: 24200, decidedBy: 'volume' }); // volume peak 50 from the line, OI peak 150
+    expect(perSnapshot[1].levels!.support).toMatchObject({ strike: 24200, decidedBy: 'volume' }); // line moved: a fresh look would pick 24000, the tool does not
+  });
+  it('when a peak moves, the choice is made again (here both metrics now peak at 24000)', () => {
+    const { perSnapshot, events } = trackStrength([at(24137, 60), at(24037, 120), at(24037, 180, 12000)]);
+    expect(perSnapshot[2].levels!.support).toMatchObject({ strike: 24000, decidedBy: 'volume+oi' });
+    expect(events.filter((e) => e.side === 'support' && e.metric === 'volume')).toEqual([{ ts: 180, side: 'support', metric: 'volume', fromStrike: 24200, toStrike: 24000, cause: 'second-became-highest' }]);
+  });
+});
+
 describe('shifts (C3)', () => {
   const sup = (second: number, top = 100000, ts = 0) => chain({ 24400: { volume: top, oi: top }, 24300: { volume: second, oi: second } }, {}, ts);
 

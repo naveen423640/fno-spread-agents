@@ -8,7 +8,7 @@ import { tradeMapping } from '@/lib/ltp/coa1';
 import { logLabel, logTime, popupTitle, tradeLevels, type TradeCell } from '@/lib/ltp/view';
 
 // What opens when you click the banner, like the real tool: the scenario, then the support and resistance changes since the open with the
-// spot, the futures price and the EOR / EOS family on each at every change.
+// spot and the EOR / EOS family at every change.
 const ordinal = (n: number) => `${n}${n === 1 ? 'ST' : n === 2 ? 'ND' : n === 3 ? 'RD' : 'TH'}`;
 const num = (v: number | null | undefined) => (v === null || v === undefined ? '–' : new Intl.NumberFormat('en-IN', { maximumFractionDigits: 2 }).format(v));
 
@@ -63,7 +63,7 @@ export function LtpScenarioDialog({ open, onOpenChange, analysis, name, nowLabel
           <div className="max-h-[46vh] overflow-auto rounded border border-slate-300">
             <table className="w-full border-collapse text-center text-sm text-slate-900">
               <thead className="sticky top-0 bg-slate-800 text-white">
-                <tr><th className="px-3 py-3">Time</th><th className="px-3 py-3">Spot price</th><th className="px-3 py-3">Spot Reversal*</th><th className="px-3 py-3">Fno price</th><th className="px-3 py-3">Future Reversal*</th><th className="px-2 py-3 capitalize">{side}</th><th className="px-2 py-3">Shifted</th><th className="px-2 py-3">Direction</th></tr>
+                <tr><th className="px-3 py-3">Time</th><th className="px-3 py-3">Spot price</th><th className="px-3 py-3">Spot Reversal*</th><th className="px-2 py-3 capitalize">{side}</th><th className="px-2 py-3">Shifted</th><th className="px-2 py-3">Direction</th></tr>
               </thead>
               <tbody>
                 {events.map((e, i) => (
@@ -71,8 +71,6 @@ export function LtpScenarioDialog({ open, onOpenChange, analysis, name, nowLabel
                     <td className="px-2 py-2 font-semibold">{logTime(e.ts)}</td>
                     <td className="px-2 py-2">{num(e.spot)}</td>
                     <td className="px-2 py-2">{family.map((label, k) => <div key={label}>{label}: {reversal(k === 0 ? e.reversals?.center : k === 1 ? e.reversals?.plus1 : e.reversals?.minus1)}</div>)}</td>
-                    <td className="px-2 py-2">{num(e.futures)}</td>
-                    <td className="px-2 py-2">{family.map((label, k) => <div key={label}>{label}: {reversal(k === 0 ? e.futuresReversals?.center : k === 1 ? e.futuresReversals?.plus1 : e.futuresReversals?.minus1)}</div>)}</td>
                     <td className="px-2 py-2 font-semibold">{logLabel(e)}</td>
                     <td className="px-2 py-2 font-semibold">{e.text}</td>
                     <td className="px-2 py-2 font-semibold capitalize">{e.direction}</td>
@@ -81,7 +79,7 @@ export function LtpScenarioDialog({ open, onOpenChange, analysis, name, nowLabel
               </tbody>
             </table>
             {!events.length ? <p className="p-4 text-sm text-slate-500">No changes recorded yet.</p> : null}
-            <p className="border-t border-slate-200 bg-slate-50 px-3 py-1.5 text-[11px] text-slate-500">* proxy ({analysis.method.label}). Only changes seen since our recorder started are listed; the real tool lists them from 09:15. Rows are recorded once a minute, so the seconds are always :00; the real tool also catches changes that come and go within a minute. Futures values appear only for minutes recorded with a futures price.</p>
+            <p className="border-t border-slate-200 bg-slate-50 px-3 py-1.5 text-[11px] text-slate-500">* proxy ({analysis.method.label}). Only changes seen since our recorder started are listed; the real tool lists them from 09:15. Rows are recorded once a minute, so the seconds are always :00; the real tool also catches changes that come and go within a minute.</p>
           </div>
         )}
         <div className="flex justify-end">

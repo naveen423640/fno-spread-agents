@@ -68,10 +68,21 @@ export function trackStrength(snaps: Snapshot[], cfg: LtpConfig = LTP_CONFIG): {
   const prev: Record<string, { strike: number; second: number | null } | undefined> = {};
   const events: LevelShift[] = [];
   const perSnapshot: StrengthPoint[] = [];
+  // The last peaks and decision per side. Which peak is "closer to the line" is only asked again when a metric's own peak moves: the real tool kept
+  // support at 72500 while the spot crossed 72200 (a fresh look would have flipped it twice) and moved it when the volume peak moved.
+  const decided: Partial<Record<LevelSide, { volume: number | null; oi: number | null; strike: number; decidedBy: SideLevel['decidedBy'] }>> = {};
 
   for (const s of ordered) {
-    const levels = computeLevels(s);
-    if (!levels) { perSnapshot.push({ ts: s.ts, levels: null, support: null, resistance: null }); continue; }
+    const fresh = computeLevels(s);
+    if (!fresh) { perSnapshot.push({ ts: s.ts, levels: null, support: null, resistance: null }); continue; }
+    const levels: Levels = { ...fresh };
+    for (const side of SIDES) {
+      const l = fresh[side];
+      const before = decided[side];
+      const same = before && before.volume === (l.byVolume?.strike ?? null) && before.oi === (l.byOi?.strike ?? null);
+      levels[side] = same ? { ...l, strike: before.strike, decidedBy: before.decidedBy } : l;
+      decided[side] = { volume: l.byVolume?.strike ?? null, oi: l.byOi?.strike ?? null, strike: levels[side].strike, decidedBy: levels[side].decidedBy };
+    }
     const point: StrengthPoint = { ts: s.ts, levels, support: null, resistance: null };
     for (const side of SIDES) {
       const level = side === 'support' ? levels.support : levels.resistance;

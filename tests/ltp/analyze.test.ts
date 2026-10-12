@@ -63,6 +63,26 @@ describe('COA 2.0 reads the at-the-money strike (course ch15)', () => {
   });
 });
 
+describe('Break Down / Break Out in the log rows: a reversal the spot has already passed (real SENSEX 11:23, spot 71940)', () => {
+  const chain = () => makeChain({
+    spot: 24037, step: 50, ts: istTs(DAY, '09:30'),
+    pe: { 24000: { volume: 9000, oi: 9000, ltp: 10 }, 24050: { ltp: 5 }, 23950: { ltp: 20 } },
+    ce: { 24050: { volume: 9000, oi: 9000, ltp: 5 }, 24000: { ltp: 10 }, 24100: { ltp: 8 } },
+  });
+  it('a put reversal at or above the spot is Break Down, one below it is a number', () => {
+    const r = analyzeSession([chain()], { now: istTs(DAY, '09:31'), method: writerBreakeven });
+    if (r.empty || !r.usable) throw new Error('expected a usable analysis');
+    expect(r.levels.support.strike).toBe(24000);
+    expect(r.direction.support.events[0].reversals).toEqual({ center: 23990, plus1: 'broken', minus1: 23930 }); // 24050 - 5 = 24045 is above the spot 24037
+  });
+  it('a call reversal at or below the spot is Break Out, one above it is a number', () => {
+    const r = analyzeSession([chain()], { now: istTs(DAY, '09:31'), method: writerBreakeven });
+    if (r.empty || !r.usable) throw new Error('expected a usable analysis');
+    expect(r.levels.resistance.strike).toBe(24050);
+    expect(r.direction.resistance.events[0].reversals).toEqual({ center: 24055, plus1: 24108, minus1: 'broken' }); // 24000 + 10 = 24010 is below the spot
+  });
+});
+
 describe('Risky entry', () => {
   const chain = (ce: Record<number, { volume: number; oi: number }>) => makeChain({ spot: 24037, step: 50, ts: istTs(DAY, '09:30'), pe: { 23900: { volume: 10000, oi: 10000 } }, ce });
   it('is one strike inside the level normally, and the reversal at the weak strike when resistance is WTB (real tool: Risky 22521.5 with resistance 22600 WTB-22500)', () => {
@@ -131,18 +151,6 @@ describe('analyzeSession (C1 to C10 together)', () => {
     expect(first.reversals).toEqual({ center: 23860, plus1: 23850, minus1: 23820 });
     const res = r.direction.resistance.events[0];
     expect(res.reversals).toEqual({ center: 24255, plus1: 24295, minus1: 24250 }); // CE 24200:55, 24250:45, 24150:100
-  });
-
-  it('each logged event also carries the futures price and the same reversal family on it ("Fno price" and "Future Reversal" in the tool)', () => {
-    const withFutures = day.map((x) => ({ ...x, futures: x.spot + 150 }));
-    const r = analyzeSession(withFutures, { now: at('09:30'), method: writerBreakeven });
-    if (r.empty || !r.usable) throw new Error('expected a usable analysis');
-    const first = r.direction.support.events[0];
-    expect(first.futures).toBe(withFutures[0].futures);
-    expect(first.futuresReversals).toEqual(first.reversals); // writer breakeven does not depend on the spot, so the family is identical
-    const none = analyzeSession(day, { now: at('09:30'), method: writerBreakeven });
-    if (none.empty || !none.usable) throw new Error('expected a usable analysis');
-    expect(none.direction.support.events[0]).toMatchObject({ futures: null, futuresReversals: null });
   });
 
   it('reads the levels, status, scenario and extensions of the latest snapshot', () => {
