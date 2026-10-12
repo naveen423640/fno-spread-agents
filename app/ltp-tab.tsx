@@ -88,6 +88,15 @@ function LtpLevels() {
     } catch { setRecordMsg('Could not reach the recorder.'); }
   }, [load]);
 
+  // Hands the token this browser is logged in with to the cloud recorder (server to server), so it can record while the Mac is off.
+  const sendCloudToken = useCallback(async () => {
+    try {
+      const res = await fetch('/api/ltp/cloud-token', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+      const b = (await res.json()) as { ok?: boolean; error?: string };
+      setRecordMsg(b.ok ? 'Token sent to the cloud recorder. It records from the next minute, 09:15 to 15:30 IST.' : (b.error ?? 'Could not send the token.'));
+    } catch { setRecordMsg('Could not send the token.'); }
+  }, []);
+
   useEffect(() => {
     if (!auto) return;
     const first = setTimeout(() => void recordNow(), 0);
@@ -167,6 +176,7 @@ function LtpLevels() {
           <span className={`rounded-md px-2 py-1 font-medium ${BADGE_CLASS[badge]}`}>{BADGE_TEXT[badge]}{state ? ` · last ${clock(state.health.lastSuccessTs)}` : ''}</span>
           <Button size="sm" variant="secondary" onClick={() => { setLoading(true); void load(); }} disabled={loading}><RefreshCw className={loading ? 'animate-spin' : ''} />Refresh</Button>
           <Button size="sm" variant="secondary" onClick={() => void recordNow()}>Record now</Button>
+          <Button size="sm" variant="secondary" onClick={() => void sendCloudToken()}>Send token to cloud</Button>
           <label className="flex items-center gap-1.5"><input type="checkbox" checked={auto} onChange={(e) => setAuto(e.target.checked)} />Auto-record</label>
         </span>
       </div>
