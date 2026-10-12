@@ -22,7 +22,7 @@ describe('imaginaryLine (C1)', () => {
 describe('computeLevels (C2)', () => {
   const spot = 24037; // line 24000 / 24050
 
-  it('support is the highest PE value at or below the line; resistance the highest CE value at or above it', () => {
+  it('support is the highest PE value from the upper strike of the line downward; resistance the highest CE value from the lower strike of the line upward', () => {
     const s = makeChain({ spot, step: 50, pe: { 23900: { volume: 5000, oi: 5000 }, 24000: { volume: 3000, oi: 3000 }, 24100: { volume: 9000, oi: 9000 } }, ce: { 24150: { volume: 6000, oi: 6000 }, 24100: { volume: 2000, oi: 2000 }, 23950: { volume: 9999, oi: 9999 } } });
     const l = computeLevels(s)!;
     expect(l.line).toEqual({ low: 24000, high: 24050, exact: false });
@@ -30,6 +30,17 @@ describe('computeLevels (C2)', () => {
     expect(l.resistance.byVolume!).toEqual({ strike: 24150, value: 6000, secondStrike: 24100, secondValue: 2000 }); // the CE at 23950 is below the line and ignored
     expect(l.support.strike).toBe(23900);
     expect(l.support.decidedBy).toBe('volume+oi');
+  });
+
+  it('both strikes of the pair belong to both searches (real NIFTY 10:30, spot 22464.65): support 22500 sits above the spot, resistance 22600', () => {
+    const s = makeChain({ spot: 22464.65, step: 50, pe: { 22500: { volume: 4279053, oi: 331252 }, 22400: { volume: 2526135, oi: 265833 }, 22450: { volume: 2020976, oi: 180696 } }, ce: { 22600: { volume: 2859099, oi: 390490 }, 22700: { volume: 2077280, oi: 331263 }, 22450: { volume: 494973, oi: 46845 } } });
+    const l = computeLevels(s)!;
+    expect(l.line).toEqual({ low: 22450, high: 22500, exact: false });
+    expect(l.support.strike).toBe(22500);
+    expect(l.resistance.strike).toBe(22600);
+    // The call at the lower strike of the pair is searched, the put at the upper strike too.
+    const callBelow = computeLevels(makeChain({ spot: 22464.65, step: 50, ce: { 22450: { volume: 99999, oi: 99999 } } }))!;
+    expect(callBelow.resistance.strike).toBe(22450);
   });
 
   it('equal highest values: the strike closer to the line wins, on both sides', () => {
@@ -60,14 +71,14 @@ describe('computeLevels (C2)', () => {
   });
 
   it('skips strikes with no value instead of treating them as zero (no OI on one side of the line)', () => {
-    const nullOi = Object.fromEntries([23500, 23550, 23600, 23650, 23700, 23750, 23800, 23850, 23900, 23950, 24000].map((k) => [k, { oi: null }]));
+    const nullOi = Object.fromEntries([23500, 23550, 23600, 23650, 23700, 23750, 23800, 23850, 23900, 23950, 24000, 24050].map((k) => [k, { oi: null }]));
     const s = makeChain({ spot, step: 50, pe: { ...nullOi, 23800: { oi: 10 } } });
     const l = computeLevels(s)!;
     expect(l.support.byOi!).toEqual({ strike: 23800, value: 10, secondStrike: null, secondValue: null });
   });
 
   it('uses the other metric when one metric has no data at all on a side', () => {
-    const allNull = Object.fromEntries([23500, 23550, 23600, 23650, 23700, 23750, 23800, 23850, 23900, 23950, 24000].map((k) => [k, { oi: null }]));
+    const allNull = Object.fromEntries([23500, 23550, 23600, 23650, 23700, 23750, 23800, 23850, 23900, 23950, 24000, 24050].map((k) => [k, { oi: null }]));
     const s = makeChain({ spot, step: 50, pe: { ...allNull, 23900: { volume: 7000, oi: null } } });
     const l = computeLevels(s)!;
     expect(l.support.strike).toBe(23900);

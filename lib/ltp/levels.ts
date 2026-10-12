@@ -44,10 +44,11 @@ export function computeLevels(s: Snapshot): Levels | null {
   const strikes = strikesOf(s);
   const line = imaginaryLine(s.spot, strikes);
   if (!line) return null;
-  const supportStrikes = strikes.filter((k) => k <= line.low);
-  const resistanceStrikes = strikes.filter((k) => k >= line.high);
-  const downFromLine = (k: number) => line.low - k;
-  const upFromLine = (k: number) => k - line.high;
+  // Both strikes of the pair belong to both searches (the real tool shows support above the spot when the spot sits just under a strike).
+  const supportStrikes = strikes.filter((k) => k <= line.high);
+  const resistanceStrikes = strikes.filter((k) => k >= line.low);
+  const downFromLine = (k: number) => line.high - k;
+  const upFromLine = (k: number) => k - line.low;
   const support = decide(pick(s, supportStrikes, 'PE', 'volume', downFromLine), pick(s, supportStrikes, 'PE', 'oi', downFromLine), downFromLine);
   const resistance = decide(pick(s, resistanceStrikes, 'CE', 'volume', upFromLine), pick(s, resistanceStrikes, 'CE', 'oi', upFromLine), upFromLine);
   if (!support || !resistance) return null;

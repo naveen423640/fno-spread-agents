@@ -4,7 +4,7 @@ import { computeLevels } from '@/lib/ltp/levels';
 import { pctOf, statusOf, trackStrength } from '@/lib/ltp/strength';
 import { makeChain } from '../support/ltp-chain';
 
-// Spot 24437 makes the imaginary line 24400 / 24450, so support searches 24400 and below, resistance 24450 and above.
+// Spot 24437 makes the imaginary line 24400 / 24450, so support searches 24450 and below (the upper strike of the pair), resistance 24400 and above.
 const SPOT = 24437;
 type Cells = Record<number, { volume?: number; oi?: number }>;
 const chain = (pe: Cells = {}, ce: Cells = {}, ts = 0) => makeChain({ spot: SPOT, step: 50, ts, pe, ce });
@@ -34,7 +34,7 @@ describe('pct and the 75% boundary (C3)', () => {
   });
 
   it('a highest value of zero gives no pct and a Strong level, not an error', () => {
-    const zeros = Object.fromEntries([24400, 24350, 24300, 24250, 24200, 24150, 24100, 24050, 24000, 23950, 23900].map((k) => [k, { volume: 0, oi: 0 }]));
+    const zeros = Object.fromEntries([24450, 24400, 24350, 24300, 24250, 24200, 24150, 24100, 24050, 24000, 23950, 23900].map((k) => [k, { volume: 0, oi: 0 }]));
     const s = status('support', chain(zeros));
     expect(s.status).toBe('strong');
     expect(s.byMetric.volume.pct).toBeNull();
