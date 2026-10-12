@@ -30,7 +30,7 @@ export function LtpScenarioDialog({ open, onOpenChange, analysis, name, nowLabel
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] max-w-4xl overflow-y-auto bg-white p-5 text-slate-900" style={{ colorScheme: 'light' }}>
+      <DialogContent className="max-h-[92vh] w-[95vw] gap-3 overflow-y-auto bg-white p-5 text-slate-900 sm:max-w-5xl" style={{ colorScheme: 'light' }}>
         <DialogHeader>
           <DialogTitle className="text-center text-xl font-bold">LTP Calculator – {name} {kind === 'mixed' ? 'SIDES DISAGREE' : `IS IN ${analysis.direction.banner.text.toUpperCase()}`}</DialogTitle>
           <DialogDescription className="sr-only">Support and resistance changes since the open</DialogDescription>
@@ -44,14 +44,13 @@ export function LtpScenarioDialog({ open, onOpenChange, analysis, name, nowLabel
           <span className="text-base font-semibold">Today {nowLabel}</span>
         </div>
         <div className="grid overflow-hidden rounded-xl text-center text-sm font-bold text-white sm:grid-cols-2">
-          <div className="bg-red-600 px-3 py-3">
-            <div>Risky Resistance : {show(t.short.risky, t.ruledOut.short)}</div>
-            <div>Moderate Resistance : {show(t.short.moderate, t.ruledOut.short)}</div>
-            <div>Max Pain : {show(t.short.maxPain, t.ruledOut.short)} &nbsp; Max Gain : {show(t.short.maxGain, t.ruledOut.short)}</div>
+          <div className="grid grid-cols-2 gap-x-4 gap-y-1 bg-red-600 px-4 py-3 text-left sm:text-center">
+            <span>Risky Resistance : {show(t.short.risky, t.ruledOut.short)}</span><span>Moderate Resistance : {show(t.short.moderate, t.ruledOut.short)}</span>
+            <span>Max Pain : {show(t.short.maxPain, t.ruledOut.short)}</span><span>Max Gain : {show(t.short.maxGain, t.ruledOut.short)}</span>
           </div>
-          <div className="bg-green-600 px-3 py-3">
-            <div>Risky Support : {show(t.long.risky, t.ruledOut.long)} &nbsp; Moderate Support : {show(t.long.moderate, t.ruledOut.long)}</div>
-            <div>Max Pain : {show(t.long.maxPain, t.ruledOut.long)} &nbsp; Max Gain : {show(t.long.maxGain, t.ruledOut.long)}</div>
+          <div className="grid grid-cols-2 gap-x-4 gap-y-1 bg-green-600 px-4 py-3 text-left sm:text-center">
+            <span>Risky Support : {show(t.long.risky, t.ruledOut.long)}</span><span>Moderate Support : {show(t.long.moderate, t.ruledOut.long)}</span>
+            <span>Max Pain : {show(t.long.maxPain, t.ruledOut.long)}</span><span>Max Gain : {show(t.long.maxGain, t.ruledOut.long)}</span>
           </div>
         </div>
 
@@ -64,10 +63,10 @@ export function LtpScenarioDialog({ open, onOpenChange, analysis, name, nowLabel
             <p className="text-xs text-slate-500">All reversal values are proxies ({analysis.method.label}).</p>
           </div>
         ) : (
-          <div className="max-h-[420px] overflow-auto rounded border border-slate-300">
-            <table className="w-full border-collapse text-center text-xs text-slate-900">
+          <div className="max-h-[46vh] overflow-auto rounded border border-slate-300">
+            <table className="w-full border-collapse text-center text-sm text-slate-900">
               <thead className="sticky top-0 bg-slate-800 text-white">
-                <tr><th className="px-2 py-3">Time</th><th className="px-2 py-3">Spot price</th><th className="px-2 py-3">Spot Reversal*</th><th className="px-2 py-3 capitalize">{side}</th><th className="px-2 py-3">Shifted</th><th className="px-2 py-3">Direction</th></tr>
+                <tr><th className="px-3 py-3">Time</th><th className="px-3 py-3">Spot price</th><th className="px-3 py-3">Spot Reversal*</th><th className="px-2 py-3 capitalize">{side}</th><th className="px-2 py-3">Shifted</th><th className="px-2 py-3">Direction</th></tr>
               </thead>
               <tbody>
                 {events.map((e, i) => (
@@ -86,6 +85,9 @@ export function LtpScenarioDialog({ open, onOpenChange, analysis, name, nowLabel
             <p className="border-t border-slate-200 bg-slate-50 px-3 py-1.5 text-[11px] text-slate-500">* proxy ({analysis.method.label}). Only changes seen since our recorder started are listed; the real tool lists them from 09:15. Futures columns are not shown because futures are not recorded.</p>
           </div>
         )}
+        <div className="flex justify-end">
+          <button type="button" onClick={() => onOpenChange(false)} className="rounded bg-blue-600 px-6 py-2 text-sm font-bold uppercase text-white hover:bg-blue-700">Close</button>
+        </div>
       </DialogContent>
     </Dialog>
   );
