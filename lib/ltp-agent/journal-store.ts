@@ -2,6 +2,7 @@
 // triggers; outcomes and reviews are separate tables linked by decision_id, so nothing learned afterwards can change the recorded "why".
 import type { D1Like } from '@/lib/agents/store';
 import type { Book, ClosedTrade } from './books';
+import type { Experiment } from './experiment-types';
 import type { RuleStep, SetupType } from './signals';
 
 type Raw = Record<string, string | number | null>;
@@ -101,6 +102,17 @@ export function createJournalStore(db: D1Like) {
     async reviewFor(decisionId: string) {
       const r = await first('SELECT review_json FROM trade_reviews WHERE decision_id = ?', decisionId);
       return r ? parse<unknown>(r.review_json) : null;
+    },
+    // Experiments are kept for good: there is deliberately no way to remove one.
+    async saveExperiment(e: Experiment) {
+      await db.prepare('INSERT INTO agent_experiments (id, status, json, created_ts) VALUES (?, ?, ?, ?) ON CONFLICT(id) DO UPDATE SET status = excluded.status, json = excluded.json').bind(e.id, e.status, JSON.stringify(e), e.createdTs).run();
+    },
+    async getExperiment(id: string) {
+      const r = await first('SELECT json FROM agent_experiments WHERE id = ?', id);
+      return r ? parse<Experiment>(r.json) : null;
+    },
+    async listExperiments() {
+      return (await all('SELECT json FROM agent_experiments ORDER BY id')).map((r) => parse<Experiment>(r.json));
     },
     async getState(key: string) {
       const r = await first('SELECT value FROM agent_state WHERE key = ?', key);

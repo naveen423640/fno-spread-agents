@@ -81,3 +81,8 @@ export function applyDiff(strategy: Strategy, diff: Record<string, unknown>): St
   }
   return strategySchema.parse(next);
 }
+
+// The value at a dotted path such as "window.start".
+export function getPath(strategy: Strategy, path: string): unknown {
+  return path.split('.').reduce<unknown>((node, key) => (node as Record<string, unknown> | undefined)?.[key], strategy);
+}

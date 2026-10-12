@@ -50,7 +50,7 @@ Do not invent facts that are not in the data.`;
 
 const messagesFor = (input: ReviewInput): LlmMessage[] => [{ role: 'system', content: SYSTEM }, { role: 'user', content: JSON.stringify(input) }];
 
-function extractJson(text: string): unknown {
+export function extractJson(text: string): unknown {
   const fenced = /```(?:json)?\s*([\s\S]*?)```/.exec(text);
   const body = (fenced ? fenced[1] : text).trim();
   const start = body.indexOf('{');

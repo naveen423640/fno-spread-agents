@@ -1,11 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
 import { assertLearning, phaseOf, PhaseLockedError, REQUIRED_TRADES } from '@/lib/ltp-agent/phase';
-import type { ClosedTrade } from '@/lib/ltp-agent/books';
 import { freshStores } from '../support/ltp-agent-day';
-import { makeDecision } from '../support/ltp-agent-journal';
-
-const closed = (net: number): ClosedTrade => ({ book: 'buy', underlying: 'NSE:NIFTY50-INDEX', direction: 'long', date: '2026-10-12', openedTs: 1, closedTs: 2, qty: 65, legs: [], grossPnl: net, charges: { brokerage: 0, stt: 0, exchange: 0, sebi: 0, gst: 0, stamp: 0, total: 0 }, netPnl: net, plannedRiskInr: 100, rMultiple: 0, maeSpot: 0, mfeSpot: 0, maeInr: 0, mfeInr: 0, holdingMinutes: 1, exitReason: 'target', fillQuality: 'quote' });
+import { closedTrade, makeDecision } from '../support/ltp-agent-journal';
 
 describe('the phase follows the closed-trade counter of the strategy version', () => {
   it('the journal phase shows the counter, up to 99', () => {
@@ -26,7 +23,7 @@ describe('assertLearning rejects work before 100 closed trades and allows it at 
       const d = makeDecision({ decisionId: `d${i}`, ts: 1791780000 + i });
       await journal.recordDecision(d);
       await journal.recordTrade({ decisionId: d.decisionId, book: 'buy', status: 'open', openedTs: d.ts, position: {} });
-      await journal.recordOutcome(d.decisionId, 'buy', closed(10));
+      await journal.recordOutcome(d.decisionId, 'buy', closedTrade(10));
     }
   };
   it('99 closed trades: locked, with the counter in the message', async () => {
