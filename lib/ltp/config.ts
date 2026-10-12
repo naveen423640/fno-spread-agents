@@ -7,6 +7,7 @@ export type LtpConfig = {
   weakThresholdPct: number; // brief: second-highest / highest above this percent makes a level Weak (75 itself is still Strong)
   strikecount: number; // brief: strikes requested around the money from the option chain
   expectedStep: Record<string, number>; // brief: expected strike step per underlying; a different derived step only logs a warning
+  lotSize: Record<string, number>; // display only: the real tool shows OI and volume in lots
   hitTolerancePoints: number; // assumed: a price within this many points of a reversal level counts as touching it
   coa2: {
     stableBandPct: number; // assumed: an OI change within +/- this percent over the lookback is "stable"
@@ -30,6 +31,7 @@ export const LTP_CONFIG: LtpConfig = {
   weakThresholdPct: 75,
   strikecount: 20,
   expectedStep: { 'NSE:NIFTY50-INDEX': 50, 'NSE:NIFTYBANK-INDEX': 100, 'BSE:SENSEX-INDEX': 100 },
+  lotSize: { 'NSE:NIFTY50-INDEX': 65, 'NSE:NIFTYBANK-INDEX': 30, 'BSE:SENSEX-INDEX': 20 },
   hitTolerancePoints: 5,
   coa2: { stableBandPct: 5, lookbackMin: 30, windowStart: '09:45', windowEnd: '14:30' },
   soc: {

@@ -15,8 +15,10 @@ import { istDate, istHhmm } from '@/lib/ltp/time';
 import { healthBadge } from '@/lib/ltp/view';
 
 import { LtpChainTable } from '@/app/ltp-chain-table';
+import { LTP_CONFIG } from '@/lib/ltp/config';
 
 const LtpCharts = lazy(() => import('@/app/ltp-charts').then((m) => ({ default: m.LtpCharts })));
+const MagicalChart = lazy(() => import('@/app/ltp-charts').then((m) => ({ default: m.MagicalChart })));
 
 type CalibrationReply = { error?: string; entries?: CalibrationEntry[]; summary?: Record<string, MethodSummary> };
 const REFRESH_MS = 60_000;
@@ -105,27 +107,10 @@ export function LtpTab() {
   const bias = a?.coa1.scenario.bias ?? '';
   const kind = a?.direction.banner.kind;
   const bannerClass = kind === 'bull_run' ? 'bg-emerald-600' : kind === 'blood_bath' ? 'bg-red-600' : 'bg-slate-500';
-  const bannerText = a ? (kind === 'mixed' ? `sides disagree (support ${a.direction.support.current}, resistance ${a.direction.resistance.current})` : `in ${a.direction.banner.text}`) : '';
   const lastEvent = (side: 'support' | 'resistance') => a?.direction[side].events.slice(-1)[0];
   const [panel, setPanel] = useState<'scenario' | 'lines' | 'weekly' | 'charts' | 'shifts' | 'calibration'>('scenario');
   const PANELS: [typeof panel, string][] = [['scenario', 'Scenario & levels'], ['lines', '9:20 lines'], ['weekly', 'Weekly range'], ['charts', 'Charts'], ['shifts', 'Side logs'], ['calibration', 'Calibration']];
 
-  const DIRECTION_CLASS = { bullish: 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-400', bearish: 'bg-red-500/20 text-red-700 dark:text-red-400', neutral: 'bg-muted text-muted-foreground' };
-  const sidePill = (side: 'support' | 'resistance') => {
-    if (!a) return null;
-    const ev = lastEvent(side);
-    const dir = a.direction[side].current;
-    return (
-      <div className={`rounded-md border px-3 py-1.5 text-xs ${side === 'support' ? 'border-emerald-600/50 bg-emerald-500/10' : 'border-red-600/50 bg-red-500/10'}`}>
-        <div className="font-bold">{side === 'support' ? 'SUPPORT' : 'RESISTANCE'} {ev?.label ?? a.levels[side].strike}</div>
-        <div className="flex flex-wrap items-center gap-2 text-[11px]">
-          <span className="font-semibold">{ev?.text ?? ''}</span>
-          <span className={`rounded px-1.5 py-0.5 font-semibold capitalize ${DIRECTION_CLASS[dir]}`}>{dir}</span>
-          <span className="text-muted-foreground">since {ev ? clock(ev.ts) : '–'}</span>
-        </div>
-      </div>
-    );
-  };
   // The tool's header strip: Risky / Moderate / Max Pain / Max Gain on each side. The side the banner rules out shows NA.
   const tradeStrip = (which: 'short' | 'long') => {
     if (!a) return null;
@@ -134,37 +119,52 @@ export function LtpTab() {
       ? { risky: e.eorMinus1, moderate: e.eor, maxPain: e.eorPlus[1], maxGain: e.eos }
       : { risky: e.eosPlus1, moderate: e.eos, maxPain: e.eosMinus[1], maxGain: e.eor };
     const ruledOut = (which === 'long' && kind === 'blood_bath') || (which === 'short' && kind === 'bull_run');
-    const cell = (name: string, l: { value: number | null }) => <span key={name}><span className="text-muted-foreground">{name} </span><strong className="tabular-nums">{ruledOut || l.value === null ? 'NA' : num(l.value)}</strong></span>;
+    const cell = (name: string, l: { value: number | null }) => <span key={name} className="whitespace-nowrap">{name} : <strong className="tabular-nums">{ruledOut || l.value === null ? 'NA' : num(l.value)}</strong></span>;
     return (
-      <div className={`rounded-md border px-3 py-2 text-xs ${which === 'short' ? 'border-red-600/50 bg-red-500/10' : 'border-emerald-600/50 bg-emerald-500/10'}`}>
-        <div className="mb-1 text-[11px] font-semibold uppercase text-muted-foreground">{which === 'short' ? 'Short at resistance' : 'Long at support'} · proxy ({a.method.label}){ruledOut ? ' · ruled out by the banner' : ''}</div>
-        <div className="flex flex-wrap gap-x-4 gap-y-0.5">{cell(which === 'short' ? 'Risky (EOR-1)' : 'Risky (EOS+1)', v.risky)}{cell(which === 'short' ? 'Moderate (EOR)' : 'Moderate (EOS)', v.moderate)}{cell(which === 'short' ? 'Max Pain (EOR+2)' : 'Max Pain (EOS-2)', v.maxPain)}{cell(which === 'short' ? 'Max Gain (EOS)' : 'Max Gain (EOR)', v.maxGain)}</div>
+      <div className="text-center text-sm font-bold" title={`proxy values (${a.method.label})`}>
+        <div className="flex flex-wrap justify-center gap-x-4">{cell('Risky', v.risky)}{cell('Moderate', v.moderate)}</div>
+        <div className="flex flex-wrap justify-center gap-x-4">{cell('Max Pain', v.maxPain)}{cell('Max Gain', v.maxGain)}</div>
+      </div>
+    );
+  };
+  const sidePill = (side: 'support' | 'resistance') => {
+    if (!a) return null;
+    const ev = lastEvent(side);
+    const dir = a.direction[side].current;
+    return (
+      <div className="flex items-center gap-3 rounded-md border-2 border-slate-300 bg-white px-3 py-1.5 text-slate-900">
+        <span className={`rounded px-2 py-1 text-[10px] font-extrabold uppercase leading-tight text-white ${side === 'support' ? 'bg-green-600' : 'bg-red-600'}`}>{side === 'support' ? 'Put side' : 'Call side'}</span>
+        <div className="min-w-0 flex-1 text-center">
+          <div className="text-sm font-bold">{side === 'support' ? 'SUPPORT' : 'RESISTANCE'} {ev?.label ?? a.levels[side].strike}</div>
+          <span className={`inline-block rounded px-2 py-0.5 text-[11px] font-extrabold uppercase text-white ${dir === 'bullish' ? 'bg-green-600' : dir === 'bearish' ? 'bg-red-600' : 'bg-slate-500'}`}>{ev?.text ?? ''}</span>
+          <span className="ml-2 text-[11px] text-slate-500">{dir} · since {ev ? clock(ev.ts) : '–'}</span>
+        </div>
       </div>
     );
   };
 
   return (
     <div className="mx-auto grid w-full max-w-[1500px] gap-3 px-3 py-4">
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2 rounded-md bg-slate-900 px-3 py-2 text-white">
         <Select value={underlying} onValueChange={(v) => v && setUnderlying(v)}>
-          <SelectTrigger className="w-[130px]"><SelectValue>{name}</SelectValue></SelectTrigger>
+          <SelectTrigger className="w-[130px] border-slate-600 bg-slate-800 text-white"><SelectValue>{name}</SelectValue></SelectTrigger>
           <SelectContent>{UNDERLYING_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
         </Select>
-        <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="w-[150px]" aria-label="Stored day" />
-        {date ? <Button size="sm" variant="ghost" onClick={() => setDate('')}>Latest</Button> : null}
+        <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="w-[150px] border-slate-600 bg-slate-800 text-white" aria-label="Stored day" />
+        {date ? <Button size="sm" variant="ghost" className="text-white" onClick={() => setDate('')}>Latest</Button> : null}
         <Select value={method} onValueChange={(v) => v && setMethod(v)}>
-          <SelectTrigger className="w-[250px]"><SelectValue>{`EOS/EOR proxy: ${method.replace(/_/g, ' ')}`}</SelectValue></SelectTrigger>
+          <SelectTrigger className="w-[250px] border-slate-600 bg-slate-800 text-white"><SelectValue>{`EOS/EOR proxy: ${method.replace(/_/g, ' ')}`}</SelectValue></SelectTrigger>
           <SelectContent>
             <SelectItem value="iv_move">EOS/EOR proxy: IV move (fitted to the real tool)</SelectItem>
             <SelectItem value="writer_breakeven">EOS/EOR proxy: writer breakeven</SelectItem>
             <SelectItem value="time_value_only">EOS/EOR proxy: time value only</SelectItem>
           </SelectContent>
         </Select>
-        {state && !state.empty ? <span className="text-sm"><span className="text-muted-foreground">Spot </span><strong className="tabular-nums">{num(spot)}</strong> <span className="text-muted-foreground">· Expiry </span>{a?.expiry ?? '–'}</span> : null}
-        <span className="ml-auto flex flex-wrap items-center gap-2 text-xs">
+        {a ? <span className={`mx-auto rounded-full px-5 py-1.5 text-sm font-extrabold uppercase tracking-wide text-white ${bannerClass}`}>{name} IS {kind === 'mixed' ? 'MIXED' : `IN ${a.direction.banner.text.toUpperCase()}`}</span> : <span className="mx-auto" />}
+        <span className="flex flex-wrap items-center gap-2 text-xs">
           <span className={`rounded-md px-2 py-1 font-medium ${BADGE_CLASS[badge]}`}>{BADGE_TEXT[badge]}{state ? ` · last ${clock(state.health.lastSuccessTs)}` : ''}</span>
-          <Button size="sm" variant="outline" onClick={() => { setLoading(true); void load(); }} disabled={loading}><RefreshCw className={loading ? 'animate-spin' : ''} />Refresh</Button>
-          <Button size="sm" variant="outline" onClick={() => void recordNow()}>Record now</Button>
+          <Button size="sm" variant="secondary" onClick={() => { setLoading(true); void load(); }} disabled={loading}><RefreshCw className={loading ? 'animate-spin' : ''} />Refresh</Button>
+          <Button size="sm" variant="secondary" onClick={() => void recordNow()}>Record now</Button>
           <label className="flex items-center gap-1.5"><input type="checkbox" checked={auto} onChange={(e) => setAuto(e.target.checked)} />Auto-record</label>
         </span>
       </div>
@@ -180,25 +180,28 @@ export function LtpTab() {
         <>
           {!a ? <p className="rounded-md border border-dashed border-border px-4 py-6 text-center text-sm text-muted-foreground">{state.analysis.empty ? '' : state.analysis.flags.join(' ')}</p> : (
             <>
-              <div className={`rounded-md px-4 py-2 text-center text-sm font-bold uppercase tracking-wide text-white ${bannerClass}`}>
-                {name} {bannerText}
-                <span className="ml-3 text-[11px] font-normal normal-case opacity-90">COA 1.0 scenario {a.coa1.scenario.number} ({bias}) · {state.date}{state.viewingStoredDay ? ' (stored day)' : ''} · snapshot {clock(state.snapshotTs)}</span>
+              <div className="flex flex-wrap items-center justify-between gap-2 rounded-md bg-slate-100 px-3 py-1.5 text-xs text-slate-900">
+                <span><strong>{state.date}</strong>{state.viewingStoredDay ? ' (stored day)' : ''} · snapshot {clock(state.snapshotTs)}</span>
+                <span className="rounded-full bg-orange-500 px-4 py-1 text-sm font-bold text-white">Spot : {num(spot)}</span>
+                <span>COA 1.0 scenario <strong>{a.coa1.scenario.number}</strong> ({bias}) · Expiry {a.expiry}</span>
               </div>
-              <div className="grid gap-2 sm:grid-cols-2">{tradeStrip('short')}{tradeStrip('long')}</div>
+              <div className="grid grid-cols-1 overflow-hidden rounded-md text-white md:grid-cols-[1fr_auto_1fr]">
+                <div className="bg-red-600 px-3 py-2">{tradeStrip('short')}</div>
+                <div className="flex items-center justify-center bg-slate-900 px-4 text-sm font-extrabold">LOT : {LTP_CONFIG.lotSize[underlying]}</div>
+                <div className="bg-green-600 px-3 py-2">{tradeStrip('long')}</div>
+              </div>
+              <div className="grid gap-2 md:grid-cols-2">{sidePill('resistance')}{sidePill('support')}</div>
+              {a.flags.map((f) => <p key={f} className="rounded-md bg-amber-500/10 px-3 py-1.5 text-xs">{f}</p>)}
+
+              <div className="grid items-start gap-3 xl:grid-cols-[minmax(0,1fr)_420px]">
+                <LtpChainTable chain={state.chain} analysis={a} methodLabel={methodLabel} spot={spot} underlying={underlying} />
+                <Suspense fallback={<p className="text-xs text-muted-foreground">Loading chart…</p>}><MagicalChart analysis={a} lines0920={state.lines0920} height={620} /></Suspense>
+              </div>
               <div className="grid gap-2 text-xs sm:grid-cols-2 lg:grid-cols-4">
                 <div className="rounded-md border border-border bg-card px-3 py-1.5"><span className="text-muted-foreground">Top reversal </span><strong>{a.coa1.top ? `${a.coa1.top.label.replace(/ \(.*/, '')} ${num(a.coa1.top.value)}` : '–'}</strong> <span className="text-muted-foreground">proxy · hits {a.coa1.hits.top.count}</span></div>
                 <div className="rounded-md border border-border bg-card px-3 py-1.5"><span className="text-muted-foreground">Bottom reversal </span><strong>{a.coa1.bottom ? `${a.coa1.bottom.label.replace(/ \(.*/, '')} ${num(a.coa1.bottom.value)}` : '–'}</strong> <span className="text-muted-foreground">proxy · hits {a.coa1.hits.bottom.count}</span></div>
                 <div className="rounded-md border border-border bg-card px-3 py-1.5"><span className="text-muted-foreground">Allowed </span>{a.coa1.scenario.allowed.join(', ') || 'none'}</div>
                 <div className="rounded-md border border-border bg-card px-3 py-1.5"><span className="text-muted-foreground">COA 2.0 </span>{a.coa2.result.status === 'ok' ? `#${a.coa2.result.number} ${a.coa2.result.outcome}` : { outside_window: 'outside 09:45–14:30', not_on_first_hit: 'not on first hit', no_data: 'not enough OI history' }[a.coa2.result.status]}</div>
-              </div>
-              {a.flags.map((f) => <p key={f} className="rounded-md bg-amber-500/10 px-3 py-1.5 text-xs">{f}</p>)}
-
-              <div className="grid items-start gap-3 xl:grid-cols-[minmax(0,1fr)_380px]">
-                <div className="grid gap-2">
-                  <div className="grid gap-2 sm:grid-cols-2">{sidePill('resistance')}{sidePill('support')}</div>
-                  <LtpChainTable chain={state.chain} analysis={a} methodLabel={methodLabel} spot={spot} />
-                </div>
-                <Suspense fallback={<p className="text-xs text-muted-foreground">Loading chart…</p>}><LtpCharts analysis={a} lines0920={state.lines0920} only="spot" height={680} /></Suspense>
               </div>
 
               <div className="flex flex-wrap gap-1 border-b border-border">

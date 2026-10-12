@@ -1,7 +1,7 @@
 'use client';
 
 import { Component, useEffect, useRef, type ReactNode } from 'react';
-import { createChart, LineSeries, LineStyle, type UTCTimestamp } from 'lightweight-charts';
+import { CandlestickSeries, createChart, LineSeries, LineStyle, type UTCTimestamp } from 'lightweight-charts';
 
 import type { UsableAnalysis } from '@/lib/ltp/analyze';
 import type { Lines0920 } from '@/lib/ltp/lines0920';
@@ -115,6 +115,74 @@ export function LtpCharts({ analysis, lines0920, only = 'all', height }: { analy
         series={[{ color: RED, title: 'CE OI at resistance', points: toPoints(s.ceOiAtResistance, (r) => r.oi) }, { color: GREEN, title: 'PE OI at support', points: toPoints(s.peOiAtSupport, (r) => r.oi) }]}
         guides={[]}
       /></> : null}
+    </div>
+  );
+}
+
+
+// The "magical lines" chart, like the real tool: 5-minute candles of the spot (built from our stored one-minute spots) with Max Pain, EOR+1, EOR,
+// EOS, EOS-1 and Max Pain drawn across it, and the frozen 9:20 lines dotted. All reversal values are proxies.
+type Candle = { time: UTCTimestamp; open: number; high: number; low: number; close: number };
+function candles(spot: { ts: number; spot: number }[]): Candle[] {
+  const out: Candle[] = [];
+  for (const p of spot) {
+    const bucket = Math.floor((p.ts + IST_OFFSET) / 300) * 300;
+    const last = out[out.length - 1];
+    if (last && last.time === bucket) { last.high = Math.max(last.high, p.spot); last.low = Math.min(last.low, p.spot); last.close = p.spot; }
+    else out.push({ time: bucket as UTCTimestamp, open: p.spot, high: p.spot, low: p.spot, close: p.spot });
+  }
+  return out;
+}
+
+function CandleCanvas({ data, guides, height }: { data: Candle[]; guides: Guide[]; height: number }) {
+  const container = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const element = container.current;
+    if (!element) return;
+    const chart = createChart(element, {
+      autoSize: true,
+      layout: { background: { color: '#ffffff' }, textColor: '#1f2937', fontSize: 11 },
+      grid: { vertLines: { color: 'rgba(0,0,0,0.05)' }, horzLines: { color: 'rgba(0,0,0,0.05)' } },
+      rightPriceScale: { borderVisible: false },
+      timeScale: { borderVisible: false, timeVisible: true, secondsVisible: false },
+    });
+    const series = chart.addSeries(CandlestickSeries, { upColor: GREEN, downColor: RED, wickUpColor: GREEN, wickDownColor: RED, borderVisible: false, priceLineVisible: false });
+    series.setData(data);
+    const prices = guides.map((g) => g.price);
+    series.applyOptions({ autoscaleInfoProvider: (original: () => { priceRange: { minValue: number; maxValue: number } | null } | null) => {
+      const r = original();
+      if (!r?.priceRange) return r;
+      return { ...r, priceRange: { minValue: Math.min(r.priceRange.minValue, ...prices), maxValue: Math.max(r.priceRange.maxValue, ...prices) } };
+    } });
+    for (const g of guides) series.createPriceLine({ price: g.price, color: g.color, lineWidth: g.style === LineStyle.Solid ? 2 : 1, lineStyle: g.style ?? LineStyle.Dashed, axisLabelVisible: true, title: g.title });
+    chart.timeScale().fitContent();
+    return () => chart.remove();
+  }, [data, guides, height]);
+  return <div ref={container} style={{ height }} className="w-full" />;
+}
+
+export function MagicalChart({ analysis, lines0920, height = 560 }: { analysis: UsableAnalysis; lines0920: Lines0920 | null; height?: number }) {
+  const e = analysis.extensions;
+  const val = (l: { value: number | null } | null | undefined) => (l && l.value !== null ? l.value : null);
+  const g = (price: number | null, color: string, title: string, style: LineStyle = LineStyle.Solid): Guide[] => (price === null ? [] : [{ price, color, title, style }]);
+  const l0 = lines0920;
+  const guides: Guide[] = [
+    ...g(val(e.eorPlus[1]), '#ef4444', 'Max Pain', LineStyle.Dashed), ...g(val(e.eorPlus[0]), '#dc2626', 'EOR+1'), ...g(val(e.eor), '#dc2626', 'EOR'),
+    ...g(analysis.spot, '#111827', 'Spot', LineStyle.Dotted),
+    ...g(val(e.eos), '#16a34a', 'EOS'), ...g(val(e.eosMinus[0]), '#16a34a', 'EOS-1'), ...g(val(e.eosMinus[1]), '#ef4444', 'Max Pain', LineStyle.Dashed),
+    ...(l0 ? [
+      ...g(val(l0.short.moderate), '#f87171', '9:20 EOR', LineStyle.Dotted), ...g(val(l0.short.maxPain), '#fbbf24', '9:20 Max Pain', LineStyle.Dotted),
+      ...g(val(l0.long.moderate), '#4ade80', '9:20 EOS', LineStyle.Dotted), ...g(val(l0.long.maxPain), '#fbbf24', '9:20 Max Pain', LineStyle.Dotted),
+    ] : []),
+  ];
+  const data = candles(analysis.series.spot);
+  return (
+    <div className="bg-white text-slate-900">
+      <div className="flex items-center justify-between border-b border-slate-200 px-3 py-1.5 text-xs font-bold">
+        <span>Magical SPOT Lines <span className="ml-1 rounded bg-red-600 px-1.5 py-0.5 text-[10px] text-white">Live</span></span>
+        <span className="font-normal text-slate-500">5 min candles · proxy lines ({analysis.method.label})</span>
+      </div>
+      <ChartBoundary><CandleCanvas data={data} guides={guides} height={height} /></ChartBoundary>
     </div>
   );
 }
