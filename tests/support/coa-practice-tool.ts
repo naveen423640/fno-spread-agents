@@ -2,43 +2,9 @@
 // the tool offers becomes a synthetic event log of one side, in the words sideEvents() writes, plus the status the side has now.
 import { readFileSync } from 'node:fs';
 
-import type { SideEvent } from '@/lib/ltp/direction';
 import type { Status } from '@/lib/ltp/types';
 
-type Kind = 'init' | 'up' | 'down' | 'wtt' | 'wtb' | 'fromWtt' | 'fromWtb';
-const TEXT: Record<Kind, string> = {
-  init: 'STABLE STRONG', up: 'Shifted from Bottom to Top', down: 'Shifted from Top to Bottom',
-  wtt: 'WEAK TOWARDS TOP', wtb: 'WEAK TOWARDS BOTTOM', fromWtt: 'WTT TO STRONG', fromWtb: 'WTB TO STRONG',
-};
-export const eventsOf = (kinds: Kind[]): SideEvent[] => kinds.map((k, i) => ({ ts: i, strike: 0, status: 'strong', second: null, label: '', text: TEXT[k], direction: 'neutral' }));
-
-// The index of a condition in the tool's list gives the history it describes (the tool's wording is in the JSON file).
-const STRONG: Kind[][] = [
-  ['init'], // 0 strong since morning
-  ['init', 'down'], // 1 strong but shifted top to bottom
-  ['init', 'up'], // 2 strong but shifted bottom to top
-  ['wtb', 'fromWtb'], // 3 initially WTB then strong
-  ['wtt', 'fromWtt'], // 4 initially WTT then strong
-  ['init', 'down', 'wtt', 'fromWtt', 'down'], // 5 (user-confirmed) double shifting down, with weak or strong stretches between the two shifts
-  ['init', 'up', 'wtb', 'fromWtb', 'up'], // 6 the mirror of 5
-  ['init', 'down', 'wtb', 'wtt', 'fromWtt', 'up', 'wtt', 'wtb', 'fromWtb'], // 7 (user: brief weak spells either side) shifted down, WTB then WTT then strong, shifted up, WTT then WTB then strong
-  ['init', 'down', 'wtt', 'wtt', 'up'], // 8 (user-confirmed) shifted down with WTT, WTT at a new strike above, the level shifted up to it, now strong
-  ['init', 'down', 'wtt', 'wtt', 'fromWtt'], // 9 (user-confirmed) shifted down with WTT, WTT at a new strike, then WTT turned strong without a shift
-  ['init', 'up', 'wtt', 'wtb', 'fromWtb', 'down', 'wtb', 'wtt', 'fromWtt'], // 10 the mirror of 7
-  ['init', 'up', 'wtb', 'wtb', 'down'], // 11 the mirror of 8
-  ['init', 'up', 'wtb', 'wtb', 'fromWtb'], // 12 the mirror of 9
-];
-const WTB: Kind[][] = [
-  ['wtb'], // 0 weak towards bottom
-  ['wtb', 'down', 'wtb'], // 1 (user-confirmed) was WTB earlier, shifted down, WTB again now
-  ['init', 'up', 'wtb'], // 2 shifted up and in that continuation WTB
-  ['wtt', 'up', 'wtb', 'fromWtb', 'wtb'], // 3 (user-confirmed) WTT, shifted up with WTB at the old strike, WTB gone (strong), then a new WTB
-  ['init', 'up', 'wtb', 'wtb'], // 4 (user-confirmed) shifted up, WTB continues, then the weak strike moves (a second WTB row)
-];
-const WTT: Kind[][] = [
-  ['wtt'], ['wtt', 'up', 'wtt'], ['init', 'down', 'wtt'], ['wtb', 'down', 'wtt', 'fromWtt', 'wtt'], ['init', 'down', 'wtt', 'wtt'],
-];
-export const HISTORIES: Record<Status, Kind[][]> = { strong: STRONG, wtb: WTB, wtt: WTT };
+export { eventsOf, HISTORIES } from '@/lib/ltp/coa-histories';
 
 export type PracticeRow = { box: number; heading: string; support: Status; resistance: Status; supportIndex: number; resistanceIndex: number; supportCondition: string; resistanceCondition: string; top: string | null; bottom: string | null; explanation: string; rare: boolean };
 type File = { explanations: string[]; boxes: { heading: string; support: Status; resistance: Status; supportConditions: string[]; resistanceConditions: string[]; rows: string[] }[] };

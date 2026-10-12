@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 
 import { selectDetailed } from '@/lib/ltp/coa1-detailed';
 import { pressureOf } from '@/lib/ltp/pressure';
+import { HISTORY_CONDITIONS } from '@/lib/ltp/coa-histories';
+import { readFileSync } from 'node:fs';
 import { eventsOf, HISTORIES, loadPracticeRows } from '../support/coa-practice-tool';
 
 // Every case of the practice tool at https://howtouseltpcalculator.in/chart-of-accuracy-practice-tool/ run through our engine: each side's history
@@ -14,6 +16,13 @@ const ours = (r: (typeof rows)[number]) => {
 };
 
 describe('the practice tool, all cases', () => {
+  it('the wording of our history conditions is the tool\'s wording, in the tool\'s order', () => {
+    const file = JSON.parse(readFileSync('docs/data/ltp-coa-practice-tool.json', 'utf8')) as { boxes: { support: string; resistance: string; supportConditions: string[]; resistanceConditions: string[] }[] };
+    for (const box of file.boxes) {
+      expect(HISTORY_CONDITIONS[box.support as 'strong'].map((c) => c.wording)).toEqual(box.supportConditions);
+      expect(HISTORY_CONDITIONS[box.resistance as 'strong'].map((c) => c.wording)).toEqual(box.resistanceConditions);
+    }
+  });
   it('in the rare scenario (highly bearish against highly bullish) the tool says do not trade, and names a risky top and bottom for anyone who still does', () => {
     const rare = rows.filter((r) => r.rare);
     expect(rare).toHaveLength(8);
