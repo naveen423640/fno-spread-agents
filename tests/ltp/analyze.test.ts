@@ -34,6 +34,15 @@ describe('analyzeSession (C1 to C10 together)', () => {
     expect(JSON.stringify(analyzeSession(reversed, { now: at('12:00') }))).toBe(JSON.stringify(analyzeSession(day, { now: at('12:00') })));
   });
 
+  it('carries each side\'s event log, its current direction and the banner they make together', () => {
+    const r = analyzeSession(day, { now: at('12:00', 0) });
+    if (r.empty || !r.usable) throw new Error('expected a usable analysis');
+    expect(r.direction.support.events[0].text).toMatch(/STRONG|WEAK/);
+    expect(['bullish', 'bearish', 'neutral']).toContain(r.direction.support.current);
+    expect(['blood_bath', 'bull_run', 'mixed']).toContain(r.direction.banner.kind);
+    expect(r.direction.resistance.events.length).toBeGreaterThan(0);
+  });
+
   it('reads the levels, status, scenario and extensions of the latest snapshot', () => {
     const r = analyzeSession(day, { now: at('12:00', 0), method: writerBreakeven });
     if (r.empty || !r.usable) throw new Error('expected a usable analysis');

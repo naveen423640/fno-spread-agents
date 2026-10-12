@@ -3,8 +3,9 @@
 import { classifyTrend, selectCoa2, type Coa2Result, type Trend } from './coa2';
 import { countHits, hitLabel, scenarioLevels, selectCoa1, type Coa1Scenario } from './coa1';
 import { LTP_CONFIG, type LtpConfig } from './config';
+import { banner, currentDirection, sideEvents, type Banner, type Direction, type SideEvent, type SideState } from './direction';
 import { diversionCount, diversionPath, type DiversionPoint } from './diversions';
-import { extensionLevels, ivMove, type ExtLevel, type Extensions, type ExtensionMethod } from './extensions';
+import { extensionLevels, ivMove, weakStrike, type ExtLevel, type Extensions, type ExtensionMethod } from './extensions';
 import type { Levels } from './levels';
 import { freezeLines0920, type Lines0920 } from './lines0920';
 import { detectSoc, type SocResult } from './soc';
@@ -27,6 +28,7 @@ export type UsableAnalysis = {
   coa2: { callTrend: Trend | null; putTrend: Trend | null; result: Coa2Result; firstHitOfExtension: boolean };
   diversions: { count: number; bullish: DiversionPoint[]; bearish: DiversionPoint[] };
   soc: SocResult | null;
+  direction: { support: { events: SideEvent[]; current: Direction }; resistance: { events: SideEvent[]; current: Direction }; banner: Banner };
   lines0920: Lines0920 | null;
   events: LevelShift[];
   series: {
@@ -74,6 +76,21 @@ export function analyzeSession(snapshots: Snapshot[], opts: AnalysisOptions): Se
   const firstHitOfExtension = onFirstExtensionHit(scenario.top, top, hits.top) || onFirstExtensionHit(scenario.bottom, bottom, hits.bottom);
   const result = selectCoa2(callTrend, putTrend, istHhmm(latest.ts), { firstHitOfExtension }, cfg);
 
+  // Each side's event log and direction, and the banner they make together (see direction.ts).
+  const statesOf = (side: 'support' | 'resistance'): SideState[] => perSnapshot.flatMap((p) => {
+    const strength = p[side];
+    const level = p.levels?.[side];
+    if (!strength || !level) return [];
+    return [{ ts: p.ts, strike: strength.strike, status: strength.status, second: strength.status === 'strong' ? null : weakStrike(strength, level) }];
+  });
+  const supportEvents = sideEvents(statesOf('support'));
+  const resistanceEvents = sideEvents(statesOf('resistance'));
+  const direction = {
+    support: { events: supportEvents, current: currentDirection(supportEvents) },
+    resistance: { events: resistanceEvents, current: currentDirection(resistanceEvents) },
+    banner: banner(currentDirection(supportEvents), currentDirection(resistanceEvents)),
+  };
+
   const flags: string[] = [];
   const allExt = [ext.eos, ext.eor, ...ext.eosMinus, ...ext.eorPlus];
   if (allExt.some((e) => e.value === null)) flags.push('Some reversal values are unavailable because an option LTP is missing.');
@@ -84,7 +101,7 @@ export function analyzeSession(snapshots: Snapshot[], opts: AnalysisOptions): Se
     coa1: { scenario, top, bottom, hits },
     coa2: { callTrend, putTrend, result, firstHitOfExtension },
     diversions: { count: diversionCount(levels.support.strike, levels.resistance.strike, latest.step), bullish: diversionPath(latest, levels.support.strike, levels.resistance.strike, 'bullish', method), bearish: diversionPath(latest, levels.support.strike, levels.resistance.strike, 'bearish', method) },
-    soc: detectSoc(perSnapshot, events, cfg),
+    soc: detectSoc(perSnapshot, events, cfg), direction,
     lines0920: freezeLines0920(snaps, method, cfg),
     events,
     series: {

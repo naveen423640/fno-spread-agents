@@ -87,7 +87,7 @@ const level = (s: Snapshot, method: ExtensionMethod, name: string, strike: numbe
 });
 
 // The strike where the weakness is: the second-highest strike of the weak metric that decided the status (the larger pct if both did).
-function weakStrike(status: SideStatus, lv: SideLevel): number | null {
+export function weakStrike(status: SideStatus, lv: SideLevel): number | null {
   const candidates = (['volume', 'oi'] as Metric[])
     .filter((m) => status.byMetric[m].weak && status.byMetric[m].direction === status.status)
     .sort((a, b) => (status.byMetric[b].pct ?? 0) - (status.byMetric[a].pct ?? 0));
