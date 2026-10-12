@@ -48,6 +48,9 @@ export function createJournalStore(db: D1Like) {
         : await all('SELECT * FROM agent_decisions WHERE trade_date = ? ORDER BY ts, decision_id', date);
       return rows.map(toDecision);
     },
+    async recentDecisions(limit: number) {
+      return (await all('SELECT * FROM agent_decisions ORDER BY ts DESC, decision_id DESC LIMIT ?', Math.max(1, Math.min(1000, Math.floor(limit))))).map(toDecision);
+    },
     async recordTrade(t: TradeRow) {
       await db.prepare('INSERT INTO agent_trades (decision_id, book, status, opened_ts, position_json) VALUES (?, ?, ?, ?, ?)').bind(t.decisionId, t.book, t.status, t.openedTs, JSON.stringify(t.position)).run();
     },

@@ -19,6 +19,7 @@ import { LtpScenarioDialog } from '@/app/ltp-scenario-dialog';
 import { LTP_CONFIG } from '@/lib/ltp/config';
 
 const LtpCharts = lazy(() => import('@/app/ltp-charts').then((m) => ({ default: m.LtpCharts })));
+const LtpAgentTab = lazy(() => import('@/app/ltp-agent-tab').then((m) => ({ default: m.LtpAgentTab })));
 const MagicalChart = lazy(() => import('@/app/ltp-charts').then((m) => ({ default: m.MagicalChart })));
 
 type CalibrationReply = { error?: string; entries?: CalibrationEntry[]; summary?: Record<string, MethodSummary> };
@@ -47,7 +48,7 @@ const Proxy = ({ level }: { level: ExtLevel | null }) => (
   <span className="tabular-nums">{level ? `${num(level.value)}` : '–'}<span className="ml-1 text-[10px] text-muted-foreground">{level ? level.label.replace(/^[^(]*/, '') : ''}</span></span>
 );
 
-export function LtpTab() {
+function LtpLevels() {
   const [underlying, setUnderlying] = useState(UNDERLYING_OPTIONS[0].value);
   const [method, setMethod] = useState('iv_move');
   const [date, setDate] = useState('');
@@ -330,5 +331,20 @@ function Calibration({ underlying, date }: { underlying: string; date: string })
       ) : <p className="text-xs text-muted-foreground">No entries yet.</p>}
       {entries.length ? <p className="text-[11px] text-muted-foreground">{entries.length} entries logged; the latest was {istDate(entries[entries.length - 1].entryTs)} {istHhmm(entries[entries.length - 1].entryTs)} IST.</p> : null}
     </Section>
+  );
+}
+
+// The LTP tab has two sides: the levels screen, and the paper-trading agent that trades the same rules.
+export function LtpTab() {
+  const [side, setSide] = useState<'levels' | 'agent'>('levels');
+  return (
+    <div>
+      <div className="mx-auto flex max-w-[1800px] gap-1 border-b border-border px-2 pt-2">
+        {([['levels', 'LTP Levels'], ['agent', 'LTP Agent']] as const).map(([id, label]) => (
+          <button key={id} type="button" onClick={() => setSide(id)} className={`rounded-t-md px-4 py-1.5 text-sm font-semibold ${side === id ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'}`}>{label}</button>
+        ))}
+      </div>
+      {side === 'levels' ? <LtpLevels /> : <Suspense fallback={<p className="p-4 text-xs text-muted-foreground">Loading the agent…</p>}><LtpAgentTab /></Suspense>}
+    </div>
   );
 }

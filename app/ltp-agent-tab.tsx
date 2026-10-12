@@ -1,0 +1,161 @@
+'use client';
+
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Pause, Play, RefreshCw } from 'lucide-react';
+
+import { Button } from '@/components/ui/button';
+import type { AgentState, TodayTrade } from '@/lib/ltp-agent/state';
+import { istHhmm } from '@/lib/ltp/time';
+import { AgentExperiments } from '@/app/ltp-agent-parts/experiments';
+import { AgentJournal } from '@/app/ltp-agent-parts/journal';
+import { LineChart } from '@/app/ltp-agent-parts/line-chart';
+
+const BADGE = { green: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400', amber: 'bg-amber-500/15 text-amber-700 dark:text-amber-400', red: 'bg-red-500/15 text-red-700 dark:text-red-400' };
+const inr = (v: number) => `${v < 0 ? '-' : ''}₹${new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 }).format(Math.abs(v))}`;
+const short = (u: string) => u.split(':')[1]?.replace('-INDEX', '') ?? u;
+const colour = (v: number) => (v > 0 ? 'text-emerald-600' : v < 0 ? 'text-red-600' : 'text-muted-foreground');
+type Section = 'today' | 'performance' | 'journal' | 'experiments';
+const SECTIONS: [Section, string][] = [['today', 'Today'], ['performance', 'Performance'], ['journal', 'Journal'], ['experiments', 'Experiments']];
+
+function TradeCard({ t }: { t: TodayTrade }) {
+  return (
+    <div className="grid gap-2 rounded-lg border border-border bg-card p-3 text-xs">
+      <div className="flex flex-wrap items-baseline gap-x-3"><strong className="text-sm">{short(t.underlying)} {t.direction.toUpperCase()}</strong><span className="text-muted-foreground">{t.setup} · {istHhmm(t.ts)} IST</span></div>
+      <p>{t.reason}</p>
+      <p className="tabular-nums text-muted-foreground">Entry {t.entry ?? '–'} · stop {t.stop ?? '–'} · target {t.target ?? '–'} · risk {t.plannedRiskPts?.toFixed(0) ?? '–'} pts · reward {t.rewardPts?.toFixed(0) ?? '–'} pts</p>
+      <div className="grid gap-2 sm:grid-cols-2">
+        {(['buy', 'sell'] as const).map((b) => {
+          const book = t.books[b];
+          if (!book) return <div key={b} className="rounded-md border border-dashed border-border px-2 py-1.5 text-muted-foreground"><strong className="uppercase">{b}</strong> not opened (no usable quote)</div>;
+          const value = book.status === 'open' ? book.mtm ?? 0 : book.netPnl ?? 0;
+          return (
+            <div key={b} className="rounded-md border border-border px-2 py-1.5">
+              <div className="flex items-center justify-between"><strong className="uppercase">{b} book</strong><span className={`tabular-nums font-semibold ${colour(value)}`}>{inr(value)} {book.status === 'open' ? 'open (before charges)' : 'net'}</span></div>
+              <div className="text-muted-foreground">{book.status === 'closed' ? `closed: ${book.exitReason}` : 'open'} · risk {inr(book.plannedRiskInr)}{book.marginEstimate ? ` · margin ≈ ${inr(book.marginEstimate)} (estimate)` : ''} · <span className={book.fillQuality === 'ltp_fallback' ? 'font-semibold text-amber-600' : ''}>fills: {book.fillQuality === 'quote' ? 'bid/ask' : 'LTP fallback (no quote)'}</span></div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function Group({ title, rows }: { title: string; rows: Record<string, { n: number; buyNet: number; sellNet: number }> }) {
+  const keys = Object.keys(rows).sort();
+  return (
+    <div className="rounded-lg border border-border bg-card p-2 text-xs">
+      <div className="mb-1 font-semibold">{title}</div>
+      {keys.length ? <table className="w-full tabular-nums"><thead className="text-muted-foreground"><tr><th className="text-left font-normal">Group</th><th className="text-right font-normal">Trades</th><th className="text-right font-normal">BUY net</th><th className="text-right font-normal">SELL net</th></tr></thead>
+        <tbody>{keys.map((k) => <tr key={k} className="border-t border-border"><td>{k.includes(':') ? short(k) : k}</td><td className="text-right">{rows[k].n}</td><td className={`text-right ${colour(rows[k].buyNet)}`}>{inr(rows[k].buyNet)}</td><td className={`text-right ${colour(rows[k].sellNet)}`}>{inr(rows[k].sellNet)}</td></tr>)}</tbody></table> : <span className="text-muted-foreground">No closed trades yet.</span>}
+    </div>
+  );
+}
+
+export function LtpAgentTab() {
+  const [state, setState] = useState<AgentState | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [section, setSection] = useState<Section>('today');
+  const [busy, setBusy] = useState(false);
+
+  const load = useCallback(async () => {
+    try {
+      const res = await fetch('/api/ltp/agent/state', { cache: 'no-store' });
+      const body = (await res.json()) as AgentState | { error: string };
+      if ('error' in body) throw new Error(body.error);
+      setState(body); setError(null);
+    } catch (e) { setError(e instanceof Error ? e.message : 'Unable to read the agent state.'); }
+  }, []);
+  useEffect(() => {
+    const first = setTimeout(() => void load(), 0);
+    const id = setInterval(() => void load(), 60_000);
+    return () => { clearTimeout(first); clearInterval(id); };
+  }, [load]);
+
+  async function togglePause() {
+    if (!state) return;
+    setBusy(true);
+    try {
+      await fetch('/api/ltp/agent/experiments', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: state.header.paused ? 'resume' : 'pause' }) });
+      await load();
+    } finally { setBusy(false); }
+  }
+
+  const equitySeries = useMemo(() => {
+    if (!state) return [];
+    const p = state.performance;
+    const line = (title: string, color: string, pts: { ts: number; equity: number }[]) => ({ title, color, points: pts.map((x) => ({ ts: x.ts, value: x.equity })) });
+    return [line('BUY', '#3b82f6', p.equity.buy), line('SELL', '#f59e0b', p.equity.sell)];
+  }, [state]);
+  const versionSeries = useMemo(() => {
+    if (!state) return [];
+    const palette = ['#3b82f6', '#22c55e', '#a855f7', '#ef4444', '#14b8a6'];
+    return Object.entries(state.performance.byVersion).flatMap(([v, books], i) => [
+      { title: `v${v} BUY`, color: palette[i % palette.length], points: books.buy.map((x) => ({ ts: x.ts, value: x.equity })) },
+      { title: `v${v} SELL`, color: `${palette[i % palette.length]}99`, points: books.sell.map((x) => ({ ts: x.ts, value: x.equity })) },
+    ]);
+  }, [state]);
+
+  const h = state?.header;
+  const book = (b: 'buy' | 'sell') => state?.performance.buyVsSell[b];
+  return (
+    <div className="mx-auto grid w-full max-w-[1500px] gap-3 px-3 py-4">
+      {h ? (
+        <div className="flex flex-wrap items-center gap-2 text-xs">
+          <span className="rounded-md bg-slate-900 px-2.5 py-1 font-semibold text-white">Strategy v{h.activeVersion}</span>
+          <span className={`rounded-md px-2.5 py-1 font-semibold ${h.phase.unlocked ? 'bg-blue-500/15 text-blue-700 dark:text-blue-300' : 'bg-amber-500/15 text-amber-700 dark:text-amber-400'}`}>{h.phase.counter}</span>
+          <span className={`rounded-md px-2 py-1 font-medium ${BADGE[h.recorder.badge]}`}>Recorder {h.recorder.badge === 'green' ? 'recording' : h.recorder.badge === 'amber' ? 'lagging' : 'stopped'}{h.recorder.lastSuccessTs ? ` · last ${istHhmm(h.recorder.lastSuccessTs)}` : ''}</span>
+          <span className={`rounded-md px-2 py-1 font-medium ${BADGE[h.heartbeat]}`}>Agent heartbeat {h.heartbeatAgeSeconds === null ? 'none yet' : `${h.heartbeatAgeSeconds}s ago`}</span>
+          <Button size="sm" variant={h.paused ? 'default' : 'outline'} onClick={() => void togglePause()} disabled={busy}>{h.paused ? <Play /> : <Pause />}{h.paused ? 'Resume paper trading' : 'Pause paper trading'}</Button>
+          <Button size="sm" variant="ghost" onClick={() => void load()}><RefreshCw />Refresh</Button>
+          {h.paused ? <span className="font-semibold text-amber-600">PAUSED: no new trades; open trades are still managed.</span> : null}
+        </div>
+      ) : null}
+      {error ? <p className="rounded-md border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm">{error}</p> : null}
+      {h && h.heartbeat === 'red' && h.heartbeatAgeSeconds === null ? <p className="rounded-md border border-dashed border-border px-3 py-2 text-xs text-muted-foreground">The agent has not run yet. Start it with <code>npm run agent-run</code> (the recorder must be running too); it steps the agent once a minute during market hours.</p> : null}
+
+      <div className="flex flex-wrap gap-1 border-b border-border">
+        {SECTIONS.map(([id, label]) => <button key={id} type="button" onClick={() => setSection(id)} className={`rounded-t-md px-3 py-1.5 text-xs font-medium ${section === id ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'}`}>{label}</button>)}
+      </div>
+
+      {section === 'today' && state ? (
+        <div className="grid gap-3">
+          <h2 className="text-sm font-semibold">Open trades ({state.today.open.length})</h2>
+          {state.today.open.length ? state.today.open.map((t) => <TradeCard key={t.decisionId} t={t} />) : <p className="text-xs text-muted-foreground">No open trades.</p>}
+          <h2 className="text-sm font-semibold">Closed today ({state.today.closed.length})</h2>
+          {state.today.closed.length ? state.today.closed.map((t) => <TradeCard key={t.decisionId} t={t} />) : <p className="text-xs text-muted-foreground">No trades closed today.</p>}
+          <h2 className="text-sm font-semibold">Skipped signals ({state.today.skipped.length}). No trade is always a valid decision.</h2>
+          {state.today.skipped.length ? (
+            <div className="grid gap-1">{state.today.skipped.map((s) => <div key={s.decisionId} className="rounded-md border border-border px-3 py-1.5 text-xs"><span className="mr-2 tabular-nums text-muted-foreground">{istHhmm(s.ts)}</span><span className="mr-2 rounded bg-slate-500/15 px-1.5 py-0.5 font-semibold">{s.skipReason}</span>{s.reason}</div>)}</div>
+          ) : <p className="text-xs text-muted-foreground">Nothing skipped today.</p>}
+        </div>
+      ) : null}
+
+      {section === 'performance' && state ? (
+        <div className="grid gap-3">
+          <div className="grid gap-3 lg:grid-cols-2">
+            <div className="rounded-lg border border-border bg-card p-3"><h3 className="mb-1 text-xs font-semibold">Equity (net of charges), per book</h3><LineChart series={equitySeries} empty="No closed trades yet." /></div>
+            <div className="rounded-lg border border-border bg-card p-3"><h3 className="mb-1 text-xs font-semibold">Equity per strategy version</h3><LineChart series={versionSeries} empty="No closed trades yet." /></div>
+          </div>
+          <div className="rounded-lg border border-border bg-card p-2 text-xs">
+            <div className="mb-1 font-semibold">BUY versus SELL (every signal is booked in both)</div>
+            <table className="w-full tabular-nums"><thead className="text-muted-foreground"><tr><th className="text-left font-normal">Book</th><th className="text-right font-normal">Trades</th><th className="text-right font-normal">Net</th><th className="text-right font-normal">Win rate</th><th className="text-right font-normal">Expectancy / trade</th></tr></thead>
+              <tbody>{(['buy', 'sell'] as const).map((b) => <tr key={b} className="border-t border-border"><td className="uppercase">{b}</td><td className="text-right">{book(b)?.n}</td><td className={`text-right ${colour(book(b)?.net ?? 0)}`}>{inr(book(b)?.net ?? 0)}</td><td className="text-right">{Math.round((book(b)?.winRate ?? 0) * 100)}%</td><td className={`text-right ${colour(book(b)?.expectancy ?? 0)}`}>{inr(book(b)?.expectancy ?? 0)}</td></tr>)}</tbody></table>
+          </div>
+          <div className="grid gap-3 lg:grid-cols-3">
+            <Group title="By setup" rows={state.performance.breakdowns.bySetup} />
+            <Group title="By COA 1.0 scenario" rows={state.performance.breakdowns.byScenario} />
+            <Group title="By hit number" rows={state.performance.breakdowns.byHit} />
+            <Group title="By time of day" rows={state.performance.breakdowns.byTimeBucket} />
+            <Group title="By underlying" rows={state.performance.breakdowns.byUnderlying} />
+            <div className="rounded-lg border border-border bg-card p-2 text-xs"><div className="mb-1 font-semibold">Mistake tags (from reviews)</div>{Object.keys(state.performance.breakdowns.byTag).length ? Object.entries(state.performance.breakdowns.byTag).sort((a, b) => b[1] - a[1]).map(([t, n]) => <div key={t} className="flex justify-between border-t border-border first:border-t-0"><span>{t.replace(/_/g, ' ')}</span><span className="tabular-nums">{n}</span></div>) : <span className="text-muted-foreground">No reviews yet.</span>}</div>
+          </div>
+        </div>
+      ) : null}
+
+      {section === 'journal' ? <AgentJournal /> : null}
+      {section === 'experiments' ? <AgentExperiments /> : null}
+
+      <p className="border-t border-border pt-3 text-[11px] text-muted-foreground">Paper trading only. EOS/EOR are proxies. Results are not validated for live trading.</p>
+    </div>
+  );
+}

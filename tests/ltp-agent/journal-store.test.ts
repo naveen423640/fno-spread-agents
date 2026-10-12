@@ -127,3 +127,14 @@ describe('reviews and state', () => {
     expect((await store.decisionsForDay('2026-10-12', 'NSE:NIFTYBANK-INDEX')).map((d) => d.decisionId)).toEqual(['c']);
   });
 });
+
+describe('recentDecisions', () => {
+  it('lists the newest decisions first, across days, up to the limit', async () => {
+    const { store } = fresh();
+    await store.recordDecision(makeDecision({ decisionId: 'old', ts: 10, tradeDate: '2026-10-09' }));
+    await store.recordDecision(makeDecision({ decisionId: 'mid', ts: 20, tradeDate: '2026-10-12' }));
+    await store.recordDecision(makeDecision({ decisionId: 'new', ts: 30, tradeDate: '2026-10-12' }));
+    expect((await store.recentDecisions(10)).map((d) => d.decisionId)).toEqual(['new', 'mid', 'old']);
+    expect((await store.recentDecisions(2)).map((d) => d.decisionId)).toEqual(['new', 'mid']);
+  });
+});
