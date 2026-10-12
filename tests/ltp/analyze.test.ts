@@ -11,6 +11,28 @@ const DAY = '2026-10-12';
 const day = syntheticDay(DAY);
 const at = (hhmm: string, sec = 30) => istTs(DAY, hhmm, sec);
 
+describe('COA 1.0 scenario follows the side directions, like the real tool', () => {
+  const chain = (hhmm: string, pe23950: number) => makeChain({
+    spot: 24037, step: 50, ts: istTs(DAY, hhmm),
+    pe: { 23900: { volume: 10000, oi: 10000 }, 23950: { volume: pe23950, oi: pe23950 } },
+    ce: { 24200: { volume: 10000, oi: 10000 }, 24150: { volume: 9000, oi: 9000 } },
+  });
+  it('support WTT back to Strong (bearish) with resistance WTB (bearish) is scenario 6, Blood Bath, even though the support is Strong now', () => {
+    const r = analyzeSession([chain('09:15', 9000), chain('09:16', 100)], { now: istTs(DAY, '09:16', 30) });
+    if (r.empty || !r.usable) throw new Error('expected a usable analysis');
+    expect(r.strength.support.status).toBe('strong');
+    expect(r.strength.resistance.status).toBe('wtb');
+    expect(r.direction.support.current).toBe('bearish');
+    expect(r.coa1.scenario.number).toBe(6);
+    expect(r.direction.banner.kind).toBe('blood_bath');
+  });
+  it('support still weak towards top (bullish) with resistance WTB (bearish) is scenario 9, not tradable', () => {
+    const r = analyzeSession([chain('09:15', 9000)], { now: istTs(DAY, '09:15', 30) });
+    if (r.empty || !r.usable) throw new Error('expected a usable analysis');
+    expect(r.coa1.scenario.number).toBe(9);
+  });
+});
+
 describe('analyzeSession (C1 to C10 together)', () => {
   it('has 376 synthetic snapshots from 09:15 to 15:30', () => {
     expect(day).toHaveLength(376);

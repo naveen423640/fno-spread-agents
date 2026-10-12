@@ -11,7 +11,7 @@ import { freezeLines0920, type Lines0920 } from './lines0920';
 import { detectSoc, type SocResult } from './soc';
 import { trackStrength, type LevelShift, type SideStrength } from './strength';
 import { istDate, istHhmm } from './time';
-import { valueAt, type Snapshot } from './types';
+import { valueAt, type Snapshot, type Status } from './types';
 
 export type AnalysisOptions = { now: number; method?: ExtensionMethod; cfg?: LtpConfig };
 
@@ -59,23 +59,6 @@ export function analyzeSession(snapshots: Snapshot[], opts: AnalysisOptions): Se
   const { levels, support, resistance } = point;
   const ext = extensionLevels(latest, levels, support, resistance, method);
 
-  // COA 1.0 and its hit counter (spot touches of each reversal level today).
-  const scenario = selectCoa1(support.status, resistance.status);
-  const { top, bottom } = scenarioLevels(scenario, ext);
-  const spots = snaps.map((s) => s.spot);
-  const hit = (lv: ExtLevel | null): Hit => { const count = countHits(spots, lv?.value ?? null, cfg.hitTolerancePoints); return { level: lv?.value ?? null, count, label: hitLabel(count) }; };
-  const hits = { top: hit(top), bottom: hit(bottom) };
-
-  // COA 2.0: CE OI at the resistance strike and PE OI at the support strike since the open.
-  const ceOi = snaps.flatMap((s) => { const oi = valueAt(s, levels.resistance.strike, 'CE', 'oi'); return oi === null ? [] : [{ ts: s.ts, oi }]; });
-  const peOi = snaps.flatMap((s) => { const oi = valueAt(s, levels.support.strike, 'PE', 'oi'); return oi === null ? [] : [{ ts: s.ts, oi }]; });
-  const callTrend = classifyTrend(ceOi, latest.ts, cfg);
-  const putTrend = classifyTrend(peOi, latest.ts, cfg);
-  // The first touch of an extension level (anything other than plain EOS / EOR) is not read with COA 2.0.
-  const onFirstExtensionHit = (label: string | null, lv: ExtLevel | null, h: Hit) => label !== null && label !== 'EOS' && label !== 'EOR' && lv?.value != null && Math.abs(latest.spot - lv.value) <= cfg.hitTolerancePoints && h.count <= 1;
-  const firstHitOfExtension = onFirstExtensionHit(scenario.top, top, hits.top) || onFirstExtensionHit(scenario.bottom, bottom, hits.bottom);
-  const result = selectCoa2(callTrend, putTrend, istHhmm(latest.ts), { firstHitOfExtension }, cfg);
-
   // Each side's event log and direction, and the banner they make together (see direction.ts).
   const statesOf = (side: 'support' | 'resistance'): SideState[] => perSnapshot.flatMap((p) => {
     const strength = p[side];
@@ -90,6 +73,26 @@ export function analyzeSession(snapshots: Snapshot[], opts: AnalysisOptions): Se
     resistance: { events: resistanceEvents, current: currentDirection(resistanceEvents) },
     banner: banner(currentDirection(supportEvents), currentDirection(resistanceEvents)),
   };
+
+  // COA 1.0: the scenario follows each side's direction (WTT and "WTB to Strong" are bullish, WTB and "WTT to Strong" bearish, Strong with no pressure neutral),
+  // which is how the real tool picks it. A side that is Strong but just came back from a weakness therefore counts as pressure.
+  const asStatus = (d: Direction): Status => (d === 'bullish' ? 'wtt' : d === 'bearish' ? 'wtb' : 'strong');
+  // COA 1.0 and its hit counter (spot touches of each reversal level today).
+  const scenario = selectCoa1(asStatus(direction.support.current), asStatus(direction.resistance.current));
+  const { top, bottom } = scenarioLevels(scenario, ext);
+  const spots = snaps.map((s) => s.spot);
+  const hit = (lv: ExtLevel | null): Hit => { const count = countHits(spots, lv?.value ?? null, cfg.hitTolerancePoints); return { level: lv?.value ?? null, count, label: hitLabel(count) }; };
+  const hits = { top: hit(top), bottom: hit(bottom) };
+
+  // COA 2.0: CE OI at the resistance strike and PE OI at the support strike since the open.
+  const ceOi = snaps.flatMap((s) => { const oi = valueAt(s, levels.resistance.strike, 'CE', 'oi'); return oi === null ? [] : [{ ts: s.ts, oi }]; });
+  const peOi = snaps.flatMap((s) => { const oi = valueAt(s, levels.support.strike, 'PE', 'oi'); return oi === null ? [] : [{ ts: s.ts, oi }]; });
+  const callTrend = classifyTrend(ceOi, latest.ts, cfg);
+  const putTrend = classifyTrend(peOi, latest.ts, cfg);
+  // The first touch of an extension level (anything other than plain EOS / EOR) is not read with COA 2.0.
+  const onFirstExtensionHit = (label: string | null, lv: ExtLevel | null, h: Hit) => label !== null && label !== 'EOS' && label !== 'EOR' && lv?.value != null && Math.abs(latest.spot - lv.value) <= cfg.hitTolerancePoints && h.count <= 1;
+  const firstHitOfExtension = onFirstExtensionHit(scenario.top, top, hits.top) || onFirstExtensionHit(scenario.bottom, bottom, hits.bottom);
+  const result = selectCoa2(callTrend, putTrend, istHhmm(latest.ts), { firstHitOfExtension }, cfg);
 
   const flags: string[] = [];
   const allExt = [ext.eos, ext.eor, ...ext.eosMinus, ...ext.eorPlus];
